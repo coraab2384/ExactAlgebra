@@ -43,24 +43,22 @@ public class PrimMathUtils {
          * Indicates a range from {@code -MAX_VALUE} to {@code MAX_VALUE}, ignoring the {@code MIN_VALUE}
          * being as it cannot be negated
          */
-        @Fenum(ENUM_NAME) SHORTENED,
+        SHORTENED,
         /**
          * Standard boundaries; {@code MIN_VALUE} to {@code MAX_VALUE}
          */
-        @Fenum(ENUM_NAME) DEFAULT,
+        DEFAULT,
         /**
          * Indicates a range from {@code MIN_VALUE} to {@code -MIN_VALUE}; since {@code -MIN_VALUE}
          * is normally not contained within any integral type, some other action will need to be taken
          * to deal with this, but there are situation where this is feasible
          */
-        @Fenum(ENUM_NAME) EXTENDED,
+        EXTENDED,
         /**
          * Indicates an {@link Unsigned} range, from {@code 0} to {@code MAX_VALUE - MIN_VALUE}
          * (ignoring overflow for the moment)
          */
-        @Fenum(ENUM_NAME) UNSIGNED;
-        
-        static final String ENUM_NAME = "IntegralBoundaryTypes";
+        UNSIGNED;
         
         /**
          * Returns the same value, unless it was {@code null}, in which {@link #DEFAULT} is returned.
@@ -83,7 +81,7 @@ public class PrimMathUtils {
          *
          * @return  the ordinal of the input, or {@code 1} if {@code boundaryType == null}
          */
-        static @Fenum(ENUM_NAME) int ordinal(
+        static int ordinal(
                 @Nullable IntegralBoundaryTypes boundaryType
         ) {
             return (boundaryType != null) ? boundaryType.ordinal() : 1;

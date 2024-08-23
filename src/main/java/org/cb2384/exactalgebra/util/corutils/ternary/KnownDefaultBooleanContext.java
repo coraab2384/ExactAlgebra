@@ -4,9 +4,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.cb2384.corutils.NullnessUtils;
-import org.cb2384.corutils.ternary.BooleanValuedContext;
-import org.cb2384.corutils.ternary.ThreeValued;
+import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
@@ -28,8 +26,8 @@ import org.checkerframework.dataflow.qual.*;
  *
  * @author  Corinne Buxton
  */
-public abstract class KnownDefaultBooleanContext<T extends org.cb2384.corutils.ternary.ThreeValued>
-        implements org.cb2384.corutils.ternary.BooleanValuedContext<T> {
+public abstract class KnownDefaultBooleanContext<T extends ThreeValued>
+        implements BooleanValuedContext<T> {
     
     /**
      * The javadoc compiler doesn't like it if I don't explicitly write this out and put a comment here;
@@ -67,7 +65,7 @@ public abstract class KnownDefaultBooleanContext<T extends org.cb2384.corutils.t
      *
      * @param   <T> the {@link org.cb2384.corutils.ternary.ThreeValued} implementation that the returned context will be compatible with
      */
-    public static <T extends org.cb2384.corutils.ternary.ThreeValued> @NonNull KnownDefaultBooleanContext<T> buildContext(
+    public static <T extends ThreeValued> @NonNull KnownDefaultBooleanContext<T> buildContext(
             @NonNull T trueTernary,
             @Nullable T unknownTernary,
             @NonNull T falseTernary,

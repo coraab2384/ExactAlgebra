@@ -1,7 +1,5 @@
 package org.cb2384.exactalgebra.util.corutils.ternary;
 
-import org.cb2384.corutils.ternary.ThreeValuedContext;
-
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 

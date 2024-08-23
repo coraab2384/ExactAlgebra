@@ -1,7 +1,5 @@
 package org.cb2384.exactalgebra.util.corutils.ternary;
 
-import org.cb2384.corutils.ternary.Ternary;
-import org.cb2384.corutils.ternary.ThreeValued;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
@@ -18,7 +16,7 @@ import org.checkerframework.dataflow.qual.*;
  *
  * @author  Corinne Buxton
  */
-public interface ThreeValuedContext<T extends org.cb2384.corutils.ternary.ThreeValued> {
+public interface ThreeValuedContext<T extends ThreeValued> {
     
     /**
      * A logical not or negation within in this context.

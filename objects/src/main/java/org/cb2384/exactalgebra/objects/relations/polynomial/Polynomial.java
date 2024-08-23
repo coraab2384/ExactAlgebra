@@ -2,13 +2,13 @@ package org.cb2384.exactalgebra.objects.relations.polynomial;
 
 import java.util.stream.Stream;
 
-import org.cb2384.corutils.ternary.ComparableSwitchSignum;
-import org.cb2384.corutils.ternary.Signum;
 import org.cb2384.exactalgebra.objects.AlgebraObject;
 import org.cb2384.exactalgebra.objects.AlgebraicRing;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.pair.FunctionRemainderPair;
 import org.cb2384.exactalgebra.objects.relations.AlgebraFunction;
+import org.cb2384.exactalgebra.util.corutils.ternary.ComparableSwitchSignum;
+import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
 import org.checkerframework.checker.index.qual.*;
 import org.checkerframework.checker.nullness.qual.*;
@@ -18,7 +18,7 @@ import org.checkerframework.dataflow.qual.*;
 
 public interface Polynomial<N extends AlgebraNumber>
         extends AlgebraFunction<N, N>, AlgebraicRing<Polynomial<?>>, AlgebraObject<Polynomial<?>>,
-                ComparableSwitchSignum<Polynomial<?>>, Iterable<N> {
+        ComparableSwitchSignum<Polynomial<?>>, Iterable<N> {
     
     @Pure
     @Positive int length();

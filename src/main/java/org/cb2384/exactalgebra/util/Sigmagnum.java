@@ -5,7 +5,7 @@ import static org.cb2384.exactalgebra.util.PrimMathUtils.IntegralBoundaryTypes.D
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import org.cb2384.corutils.ternary.Signum;
+import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;

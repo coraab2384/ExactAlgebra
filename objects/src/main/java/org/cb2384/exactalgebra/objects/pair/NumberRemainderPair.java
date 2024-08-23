@@ -8,7 +8,7 @@ import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 public record NumberRemainderPair<Q extends R, R extends AlgebraNumber>(Q value, R remainder)
-        implements RemainderPair<Q, R, AlgebraNumber, NumberRemainderPair<?, ?>> {
+        implements RemainderPair<Q, R, AlgebraNumber, NumberRemainderPair<Q, R>> {
     
     /**
      * <p>Creates the {@link RemainderPair} given the value component as well as the original value

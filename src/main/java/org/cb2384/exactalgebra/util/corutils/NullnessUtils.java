@@ -15,8 +15,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.cb2384.corutils.StringUtils;
-
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
@@ -49,7 +47,7 @@ public class NullnessUtils {
      * @throws  IllegalAccessException  always
      */
     private NullnessUtils() throws IllegalAccessException {
-        throw new IllegalAccessException("This should never be called" + org.cb2384.corutils.StringUtils.INTERROBANG);
+        throw new IllegalAccessException("This should never be called" + StringUtils.INTERROBANG);
     }
     
     /**

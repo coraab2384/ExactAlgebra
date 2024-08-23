@@ -3,10 +3,6 @@ package org.cb2384.exactalgebra.util.corutils.ternary;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.cb2384.corutils.ternary.KnownDefaultBooleanContext;
-import org.cb2384.corutils.ternary.ThreeValued;
-import org.cb2384.corutils.ternary.ThreeValuedContext;
-
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
@@ -351,7 +347,7 @@ public enum Ternary
      *          the given mapping for {@link #DEFAULT}
      */
     @SideEffectFree
-    public static @NonNull org.cb2384.corutils.ternary.KnownDefaultBooleanContext<Ternary> booleanFromTernary(
+    public static @NonNull KnownDefaultBooleanContext<Ternary> booleanFromTernary(
             boolean defaultValue
     ) {
         return new KnownDefaultBooleanContext<Ternary>() {

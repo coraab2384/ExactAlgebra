@@ -3,8 +3,6 @@ package org.cb2384.exactalgebra.util.corutils.ternary;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.cb2384.corutils.ternary.ThreeValued;
-
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
@@ -18,7 +16,7 @@ import org.checkerframework.dataflow.qual.*;
  *
  * @author  Corinne Buxton
  */
-public interface BooleanValuedContext<T extends org.cb2384.corutils.ternary.ThreeValued> {
+public interface BooleanValuedContext<T extends ThreeValued> {
     
     /**
      * Returns the boolean value of the given {@link org.cb2384.corutils.ternary.ThreeValued} argument, according to this context.

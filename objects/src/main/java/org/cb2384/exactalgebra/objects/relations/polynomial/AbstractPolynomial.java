@@ -11,12 +11,12 @@ import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.cb2384.corutils.ternary.Signum;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.integral.AlgebraInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.FiniteInteger;
 import org.cb2384.exactalgebra.objects.pair.FunctionRemainderPair;
 import org.cb2384.exactalgebra.util.MiscUtils;
+import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
 import org.checkerframework.checker.index.qual.*;
 import org.checkerframework.checker.nullness.qual.*;

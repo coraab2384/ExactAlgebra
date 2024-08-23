@@ -8,10 +8,10 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.cb2384.corutils.Arrayz;
-import org.cb2384.corutils.ternary.ComparableSwitchSignum;
-import org.cb2384.corutils.ternary.Signum;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
+import org.cb2384.exactalgebra.util.corutils.Arrayz;
+import org.cb2384.exactalgebra.util.corutils.ternary.ComparableSwitchSignum;
+import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
 import org.checkerframework.checker.index.qual.*;
 import org.checkerframework.checker.nullness.qual.*;

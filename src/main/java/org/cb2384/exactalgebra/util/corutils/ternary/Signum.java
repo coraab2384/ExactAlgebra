@@ -3,8 +3,6 @@ package org.cb2384.exactalgebra.util.corutils.ternary;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import org.cb2384.corutils.ternary.Ternary;
-import org.cb2384.corutils.ternary.ThreeValued;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
