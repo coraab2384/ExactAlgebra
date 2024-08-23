@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.cb2384.exactalgebra.text'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    // https://mvnrepository.com/artifact/org.checkerframework/checker-qual
+    implementation group: 'org.checkerframework', name: 'checker-qual', version: '3.43.0'
+
+    // https://mvnrepository.com/artifact/org.checkerframework/jdk8
+    implementation group: 'org.checkerframework', name: 'jdk8', version: '3.3.0'
+
+    //implementation files('src/main/resources/CorUtils-1.1-Beta.jar')
+}
+
+test {
+    useJUnitPlatform()
+}
