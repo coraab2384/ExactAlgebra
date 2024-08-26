@@ -1,6 +1,6 @@
 rootProject.name = 'exactalgebra'
 include 'objects'
 include 'text'
-include 'shuanshu'
 include 'external'
+include 'util'
 

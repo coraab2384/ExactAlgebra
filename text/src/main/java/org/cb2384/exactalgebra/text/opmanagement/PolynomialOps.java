@@ -9,7 +9,6 @@ import org.cb2384.exactalgebra.text.OpNames;
 import org.cb2384.exactalgebra.text.opmanagement.FunctionRank.FunctionalType;
 import org.cb2384.exactalgebra.text.opmanagement.PairRank.FunctionPairRank;
 import org.cb2384.exactalgebra.text.opmanagement.PairRank.NumberPairRank;
-import org.cb2384.exactalgebra.util.MiscUtils;
 import org.cb2384.exactalgebra.util.corutils.StringUtils;
 
 import org.checkerframework.checker.nullness.qual.*;

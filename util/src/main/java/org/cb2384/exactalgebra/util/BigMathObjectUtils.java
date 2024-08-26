@@ -5,6 +5,8 @@ import static org.cb2384.exactalgebra.util.PrimMathUtils.IntegralBoundaryTypes;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import org.cb2384.exactalgebra.util.corutils.StringUtils;
+
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.checker.signedness.qual.*;
 import org.checkerframework.common.value.qual.*;
@@ -20,7 +22,7 @@ import org.checkerframework.dataflow.qual.*;
  *
  * @author  Corinne Buxton
  */
-public class BigMathObjectUtils {
+public final class BigMathObjectUtils {
     private static final String NEG_EXP_EXC = "Negative exponent!";
     /**
      * {@link Long#MAX_VALUE} as a {@link BigInteger}
@@ -74,6 +76,15 @@ public class BigMathObjectUtils {
      * which is for reference {@link PrimMathUtils#LONG_TO_INT_MASK} when a {@code long}
      */
     public static final BigInteger INTEGER_UNSIGNED_MAX_BI = BigInteger.valueOf(PrimMathUtils.LONG_TO_INT_MASK);
+    
+    /**
+     * This should never be called
+     *
+     * @throws  IllegalAccessException    always
+     */
+    private BigMathObjectUtils() throws IllegalAccessException {
+        throw new IllegalAccessException("This should never be called" + StringUtils.INTERROBANG);
+    }
     
     /**
      * Checks if the {@link BigInteger} can be a {@code long}. The boundary behavior

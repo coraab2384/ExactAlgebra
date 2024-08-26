@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.cb2384.exactalgebra.objects.AlgebraicRing;
+import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
 import org.cb2384.exactalgebra.objects.numbers.rational.RationalFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
@@ -18,7 +19,7 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 public interface AlgebraInteger
-        extends AlgebraicRing<AlgebraInteger>, Rational {
+        extends AlgebraicRing<AlgebraInteger, AlgebraNumber>, Rational {
     
     @Override
     @Pure

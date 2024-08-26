@@ -4,7 +4,8 @@ import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.LongPredicate;
 
-import org.checkerframework.checker.fenum.qual.*;
+import org.cb2384.exactalgebra.util.corutils.StringUtils;
+
 import org.checkerframework.checker.index.qual.*;
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.checker.signedness.qual.*;
@@ -16,11 +17,20 @@ import org.checkerframework.dataflow.qual.*;
  *
  * @author  Corinne Buxton
  */
-public class PrimMathUtils {
+public final class PrimMathUtils {
     
     private static final String BAD_GCF = "Undefined input pair: 0, 0";
     
     static final String BAD_LCM = "Disallowed input: 0";
+    
+    /**
+     * This should never be called
+     *
+     * @throws  IllegalAccessException    always
+     */
+    private PrimMathUtils() throws IllegalAccessException {
+        throw new IllegalAccessException("This should never be called" + StringUtils.INTERROBANG);
+    }
     
     /**
      * {@code &}ing this with a {@code long} results in only the lower 32 bits; that is, the {@code int}.
@@ -81,7 +91,7 @@ public class PrimMathUtils {
          *
          * @return  the ordinal of the input, or {@code 1} if {@code boundaryType == null}
          */
-        static int ordinal(
+        static @IntRange(from = 0, to = 3) int ordinal(
                 @Nullable IntegralBoundaryTypes boundaryType
         ) {
             return (boundaryType != null) ? boundaryType.ordinal() : 1;

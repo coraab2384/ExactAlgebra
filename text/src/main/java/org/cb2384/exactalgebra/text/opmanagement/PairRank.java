@@ -15,7 +15,7 @@ import org.cb2384.exactalgebra.objects.relations.polynomial.Polynomial;
 import org.checkerframework.dataflow.qual.*;
 
 public sealed interface PairRank<T extends AlgebraObject<T>, R extends Rank<T, R>,
-                E extends PairRank<T, R, E, P>, P extends RemainderPair<? extends T, ? extends T, T, P>>
+                E extends PairRank<T, R, E, P>, P extends RemainderPair<?, ?, T, P>>
         extends Rank<P, E> {
     
     @SideEffectFree

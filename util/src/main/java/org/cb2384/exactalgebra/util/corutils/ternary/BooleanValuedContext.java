@@ -8,18 +8,18 @@ import org.checkerframework.dataflow.qual.*;
 
 /**
  * A {@link BooleanValuedContext} is an object that defines a context for boolean-yielding operations
- * performed an a {@link org.cb2384.corutils.ternary.ThreeValued} type. It is up to the implementation whether to accept {@code null}
+ * performed an a {@link ThreeValued} type. It is up to the implementation whether to accept {@code null}
  * inputs for the operations or not, but whichever way it is, it should be <i>consistent</i>
  * and <i>documented</i>.
  *
- * @param   <T> the {@link org.cb2384.corutils.ternary.ThreeValued} implementation that this context is compatible with
+ * @param   <T> the {@link ThreeValued} implementation that this context is compatible with
  *
  * @author  Corinne Buxton
  */
 public interface BooleanValuedContext<T extends ThreeValued> {
     
     /**
-     * Returns the boolean value of the given {@link org.cb2384.corutils.ternary.ThreeValued} argument, according to this context.
+     * Returns the boolean value of the given {@link ThreeValued} argument, according to this context.
      *
      * @param   value   the Three-Valued object to get the {@code boolean} value of
      *

@@ -8,7 +8,7 @@ import java.util.Objects;
 
 import com.numericalmethod.suanshu.Constant;
 import com.numericalmethod.suanshu.number.big.BigDecimalUtils;
-import org.cb2384.exactalgebra.objects.internalaccess.FiniteIntegerFabricator;
+import org.cb2384.exactalgebra.objects.internalaccess.CacheInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.AbstractAlgebraInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.AlgebraInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.FiniteInteger;
@@ -85,11 +85,11 @@ public abstract class AbstractAlgebraNumber
                     new FiniteInteger[CACHE_DEPTH]
             };
             
-            CACHE[1][0] = new FiniteIntegerFabricator(0);
+            CACHE[1][0] = new CacheInteger(0);
             for (short i = -1; i <= 1; i++) {
                 short iOld = i++;
                 for (short j = CACHE_DEPTH; j > 0;) {
-                    CACHE[i][j] = new FiniteIntegerFabricator(iOld * j--);
+                    CACHE[i][j] = new CacheInteger(iOld * j--);
                 }
             }
         }

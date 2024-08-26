@@ -12,13 +12,14 @@ import org.checkerframework.dataflow.qual.*;
  * {@link java.util.Collections}. When used in some situations, a user might like to receive the original
  * collection back after adding something, rather than the customary {@code boolean} that {@link Collection#add}
  * normally gives, such as appending something to the end of a List before handing it off.</p>
- * These functions fill that gap. There are self-returning (self being the Collection or Map argument, not the
+ *
+ * <p>These functions fill that gap. There are self-returning (self being the Collection or Map argument, not the
  * receiver, as these are static) methods for adding a value to a collection, an entry to a map, or a collection
  * or map to another collection or map, respectively.</p>
  *
  * @author  Corinne Buxton
  */
-public class Collectionz {
+public final class Collectionz {
     
     /**
      * Shouldn't ever be called
@@ -34,13 +35,15 @@ public class Collectionz {
      * .add(}{@code element}{@link Collection#add(Object) )}<code>; return collection;}</code>,
      * but written here for the ability to use a direct method reference.
      *
-     * @param collection    the collection {@code element} will be added to
-     * @param element       the element to add to {@code collection}
+     * @param   collection  the collection {@code element} will be added to
+     *
+     * @param   element the element to add to {@code collection}
      *
      * @return  {@code collection}, now containing {@code element}
      *
-     * @param <C>   the specific type of {@code collection}
-     * @param <E>   the specific type of {@code collection}'s elements, which should be a superclass/interface
+     * @param   <C> the specific type of {@code collection}
+     *
+     * @param   <E> the specific type of {@code collection}'s elements, which should be a superclass/interface
      *              of {@code element}'s actual type
      */
     @Deterministic
@@ -57,13 +60,15 @@ public class Collectionz {
      * Collection#addAll(Collection) .addAll(}{@code addedCollection}{@link Collection#addAll(Collection)
      * )}<code>; return receiverCollection;}</code>, but written here for the ability to use a direct method reference.
      *
-     * @param receiverCollection    the collection {@code addedCollection} will be added to
-     * @param addedCollection       the collection to add to {@code receiverCollection}
+     * @param   receiverCollection  the collection {@code addedCollection} will be added to
+     *
+     * @param   addedCollection the collection to add to {@code receiverCollection}
      *
      * @return  {@code receiverCollection}, now containing all of {@code addedCollection}
      *
-     * @param <C>   the specific type of {@code receiverCollection}
-     * @param <E>   the specific type of {@code receiverCollection}'s elements, which should be a superclass/interface
+     * @param   <C> the specific type of {@code receiverCollection}
+     *
+     * @param   <E> the specific type of {@code receiverCollection}'s elements, which should be a superclass/interface
      *              of {@code addedCollection}'s elements
      */
     @Deterministic
@@ -80,13 +85,15 @@ public class Collectionz {
      * pre-defined which Collection will be added to the other; whichever is smaller will be added,
      * defaulting to the first ({@code leftCollection}) still.
      *
-     * @param leftCollection    the first Map to combine
-     * @param rightCollection   the second Map to combine
+     * @param   leftCollection  the first Map to combine
+     *
+     * @param   rightCollection the second Map to combine
      *
      * @return  the larger of the two input Collections, now containing the other
      *
-     * @param <C>   the specific type of the input Collections
-     * @param <E>   the specific type of {@code C}'s elements
+     * @param   <C> the specific type of the input Collections
+     *
+     * @param   <E> the specific type of {@code C}'s elements
      *
      * @see #addAllOrdered(Collection, Collection)
      */
@@ -108,17 +115,20 @@ public class Collectionz {
      * .put(}{@code key, value}{@link Map#put(Object, Object) )}<code>; return map;}</code>,
      * but written here for the ability to use a direct method reference.
      *
-     * @param map   the map {@code key} and {@code value} will be added to
-     * @param key   the key to add to {@code map}
-     * @param value the value to add for {@code key}
+     * @param   map the map {@code key} and {@code value} will be added to
      *
+     * @param   key the key to add to {@code map}
+     *
+     * @param   value   the value to add for {@code key}
      *
      * @return  {@code map}, now containing {@code key} with the mapping {@code value}
      *
-     * @param <M>   the specific type of {@code map}
-     * @param <K>   the specific type of {@code maps}'s keys, which should be a superclass/interface
+     * @param   <M> the specific type of {@code map}
+     *
+     * @param   <K> the specific type of {@code maps}'s keys, which should be a superclass/interface
      *              of {@code key}'s actual type
-     * @param <V>   the specific type of {@code maps}'s values, which should be a superclass/interface
+     *
+     * @param   <V> the specific type of {@code maps}'s values, which should be a superclass/interface
      *              of {@code value}'s actual type
      */
     @Deterministic
@@ -137,16 +147,18 @@ public class Collectionz {
      * .getValue()}{@link Map#put(Object, Object) )}<code>; return map;}</code>,
      * but written here for the ability to use a direct method reference.
      *
-     * @param map   the map {@code entry} will be added to
-     * @param entry the entry to add to {@code map}
+     * @param   map the map {@code entry} will be added to
      *
+     * @param   entry   the entry to add to {@code map}
      *
      * @return  {@code map}, now containing the {@code entry}
      *
-     * @param <M>   the specific type of {@code map}
-     * @param <K>   the specific type of {@code maps}'s keys, which should be a superclass/interface
+     * @param   <M> the specific type of {@code map}
+     *
+     * @param   <K> the specific type of {@code maps}'s keys, which should be a superclass/interface
      *              of {@code entry}'s key type
-     * @param <V>   the specific type of {@code maps}'s values, which should be a superclass/interface
+     *
+     * @param   <V> the specific type of {@code maps}'s values, which should be a superclass/interface
      *              of {@code entry}'s value type
      */
     @Deterministic
@@ -163,15 +175,18 @@ public class Collectionz {
      * Map#putAll(Map) .putAll(}{@code addedMap}{@link Map#putAll(Map) )}<code>; return receiverMap;}</code>,
      * but written here for the ability to use a direct method reference.
      *
-     * @param receiverMap   the map {@code addedMap} will be added to
-     * @param addedMap      the map to add to {@code receiverMap}
+     * @param   receiverMap the map {@code addedMap} will be added to
+     *
+     * @param   addedMap    the map to add to {@code receiverMap}
      *
      * @return  {@code receiverMap}, now containing all of {@code addedMap}
      *
-     * @param <M>   the specific type of {@code receiverMap}
-     * @param <K>   the specific type of {@code receiverMap}'s keys, which should be a superclass/interface
+     * @param   <M> the specific type of {@code receiverMap}
+     *
+     * @param   <K> the specific type of {@code receiverMap}'s keys, which should be a superclass/interface
      *              of {@code addedMap}'s key type
-     * @param <V>   the specific type of {@code receiverMap}'s values, which should be a superclass/interface
+     *
+     * @param   <V> the specific type of {@code receiverMap}'s values, which should be a superclass/interface
      *              of {@code addedMap}'s value type
      */
     @Deterministic
@@ -188,14 +203,17 @@ public class Collectionz {
      * will be added to the other; whichever is smaller will be added,
      * defaulting to the first ({@code leftMap}) still.
      *
-     * @param leftMap   the first Map to combine
-     * @param rightMap  the second Map to combine
+     * @param   leftMap the first Map to combine
+     *
+     * @param   rightMap    the second Map to combine
      *
      * @return  the larger of the two input Maps, now containing the other
      *
-     * @param <M>   the specific type of the input Maps
-     * @param <K>   the specific type of {@code M}'s keys
-     * @param <V>   the specific type of {@code M}'s values
+     * @param   <M> the specific type of the input Maps
+     *
+     * @param   <K> the specific type of {@code M}'s keys
+     *
+     * @param   <V> the specific type of {@code M}'s values
      *
      * @see #putAllOrdered(Map, Map)
      */

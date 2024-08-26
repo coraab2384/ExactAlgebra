@@ -11,15 +11,18 @@ import org.checkerframework.dataflow.qual.*;
  * Some utilities for dealing with Strings.
  * There are methods for determining if something starts with a vowel,
  * (for English-language a-an distinction), as well as one that prepends the appropriate indefinite article.
- * There is also a utility that is similar to {@link Class#getName}, {@link #getIdealName}
+ * There is also a utility that is similar to {@link Class#getName}, {@link #getIdealName(Class)}
  * which is essentially {@link Class#getSimpleName} unless it is empty or just "{@code []}",
  * in which case returns {@link Class#getName()}.
  * There is a version for generic {@link Type}s as well.
  *
  * @author  Corinne Buxton
  */
-public class StringUtils {
+public final class StringUtils {
     
+    /**
+     * Static constant for easy access. I like them okay
+     */
     public static final char INTERROBANG = 0x203D;
     
     /**
@@ -177,7 +180,6 @@ public class StringUtils {
         }
         return false;
     }
-    
     
     /**
      * Gets the name of this {@link Type}. If the given type is just a {@link Class}, calls

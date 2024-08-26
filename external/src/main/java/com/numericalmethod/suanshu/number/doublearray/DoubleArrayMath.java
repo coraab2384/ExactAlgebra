@@ -40,7 +40,7 @@ public class DoubleArrayMath {
     /**
      * Get the minimum of the values.
      *
-     * @param doubles an array of <tt>double</tt>s
+     * @param doubles an array of {@code double}s
      * @return the smallest of the inputs
      */
     public static double min(double... doubles) {
@@ -58,7 +58,7 @@ public class DoubleArrayMath {
     /**
      * Get the maximum of the values.
      *
-     * @param doubles an array of <tt>double</tt>s
+     * @param doubles an array of {@code double}s
      * @return the biggest of the inputs
      */
     public static double max(double... doubles) {
@@ -76,7 +76,7 @@ public class DoubleArrayMath {
     /**
      * Get the maximum of the values.
      *
-     * @param integers an array of <tt>int</tt>s
+     * @param integers an array of {@code int}s
      * @return the biggest of the inputs
      */
     public static int max(int... integers) {
@@ -94,7 +94,7 @@ public class DoubleArrayMath {
     /**
      * Get the absolute values.
      *
-     * @param doubles an array of <tt>double</tt>s
+     * @param doubles an array of {@code double}s
      * @return the absolute values of the inputs
      */
     public static double[] abs(double[] doubles) {//we use double[] instead of double... to avoid conflict with Math.abs
@@ -110,7 +110,7 @@ public class DoubleArrayMath {
     /**
      * Get the sum of the values.
      *
-     * @param doubles an array of <tt>double</tt>s
+     * @param doubles an array of {@code double}s
      * @return the sum of the inputs
      */
     public static double sum(double... doubles) {
@@ -126,7 +126,7 @@ public class DoubleArrayMath {
     /**
      * Get the sum of the values.
      *
-     * @param integers an array of <tt>int</tt>s
+     * @param integers an array of {@code int}s
      * @return the sum of the inputs
      */
     public static int sum(int... integers) {
@@ -142,7 +142,7 @@ public class DoubleArrayMath {
     /**
      * Get the sum of squares of the values.
      *
-     * @param doubles an array of <tt>double</tt>s
+     * @param doubles an array of {@code double}s
      * @return the sum of squares of the inputs
      */
     public static double sum2(double... doubles) {
@@ -158,7 +158,7 @@ public class DoubleArrayMath {
     /**
      * Get the logs of values.
      *
-     * @param doubles an array of <tt>double</tt>s
+     * @param doubles an array of {@code double}s
      * @return the logs of the inputs
      */
     public static double[] log(double[] doubles) {
@@ -174,7 +174,7 @@ public class DoubleArrayMath {
     /**
      * Get the exponentials of values.
      *
-     * @param doubles an array of <tt>double</tt>s
+     * @param doubles an array of {@code double}s
      * @return the exponentials of the inputs
      */
     public static double[] exp(double[] doubles) {
@@ -190,7 +190,7 @@ public class DoubleArrayMath {
     /**
      * Get the square roots of values.
      *
-     * @param doubles an array of <tt>double</tt>s
+     * @param doubles an array of {@code double}s
      * @return the square roots of the inputs
      */
     public static double[] sqrt(double[] doubles) {
@@ -206,7 +206,7 @@ public class DoubleArrayMath {
     /**
      * Get the signs of values.
      *
-     * @param doubles an array of <tt>double</tt>s
+     * @param doubles an array of {@code double}s
      * @return the signs of the inputs
      */
     public static double[] signum(double[] doubles) {

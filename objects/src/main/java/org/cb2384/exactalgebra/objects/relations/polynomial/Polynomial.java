@@ -17,8 +17,8 @@ import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 public interface Polynomial<N extends AlgebraNumber>
-        extends AlgebraFunction<N, N>, AlgebraicRing<Polynomial<?>>, AlgebraObject<Polynomial<?>>,
-        ComparableSwitchSignum<Polynomial<?>>, Iterable<N> {
+        extends AlgebraFunction<N, N>, AlgebraicRing<Polynomial<?>, Polynomial<?>>,
+        AlgebraObject<Polynomial<?>>, ComparableSwitchSignum<Polynomial<?>>, Iterable<N> {
     
     @Pure
     @Positive int length();

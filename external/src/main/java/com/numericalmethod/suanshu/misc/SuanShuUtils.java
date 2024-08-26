@@ -77,7 +77,7 @@ public class SuanShuUtils {
      * <em>Guess</em> a reasonable precision parameter.
      * In numerical computing, we often need to <em>guess</em> how small a number needs to be for it to be considered 0.
      * Changing the threshold often changes the results, e.g., the numerical rank of a matrix.
-     * <p/>
+     * <p>
      * This method suggests a more 'objective' way to determine the 'correct' epsilon from the inputs. Roughly,
      * <blockquote><i>
      * auto ε = |max(inputs)| * sqrt(number of inputs) * machine ε * 10
@@ -100,7 +100,7 @@ public class SuanShuUtils {
      * <em>Guess</em> a reasonable precision parameter.
      * In numerical computing, we often need to <em>guess</em> how small a number needs to be for it to be considered 0.
      * Changing the threshold often changes the results, e.g., the numerical rank of a matrix.
-     * <p/>
+     * <p>
      * This method suggests a more 'objective' way to determine the 'correct' epsilon from the inputs. Roughly,
      * <blockquote><i>
      * auto ε = |max(inputs)| * sqrt(number of inputs) * machine ε * 10
@@ -126,7 +126,7 @@ public class SuanShuUtils {
      * <em>Guess</em> a reasonable precision parameter.
      * In numerical computing, we often need to <em>guess</em> how small a number needs to be for it to be considered 0.
      * Changing the threshold often changes the results, e.g., the numerical rank of a matrix.
-     * <p/>
+     * <p>
      * This method suggests a more 'objective' way to determine the 'correct' epsilon from the inputs. Roughly,
      * <blockquote><i>
      * auto ε = |max(inputs)| * sqrt(number of inputs) * machine ε * 10

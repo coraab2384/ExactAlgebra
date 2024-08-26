@@ -2,8 +2,8 @@ plugins {
     id 'java'
 }
 
-group = 'org.cb2384.exactalgebra.text'
-version = '1.0-SNAPSHOT'
+group = 'org.cb2384.exactalgebra'
+version = '1.0'
 
 repositories {
     mavenCentral()
@@ -17,9 +17,10 @@ dependencies {
     implementation group: 'org.checkerframework', name: 'checker-qual', version: '3.43.0'
 
     // https://mvnrepository.com/artifact/org.checkerframework/jdk8
-    implementation group: 'org.checkerframework', name: 'jdk8', version: '3.3.0'
+    compileOnly group: 'org.checkerframework', name: 'jdk8', version: '3.3.0'
 
-    //implementation files('src/main/resources/CorUtils-1.1-Beta.jar')
+    implementation project(':objects')
+    implementation project(':util')
 }
 
 test {
