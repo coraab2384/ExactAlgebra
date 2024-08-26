@@ -27,11 +27,11 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
-public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObject<? super S>,
+public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObject<T>,
                 T extends AlgebraObject<T>>
         implements AlgebraObject<SavedAO<R, ?, T>>, Serializable {
     
-    private final R type;
+    final R type;
     
     private final Set<OpFlag> flags;
     
@@ -48,9 +48,9 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
     ) {
         return switch (input) {
             case AlgebraNumber number -> new SavedNumber<>(number);
-            case NumberRemainderPair<?, ?> numberRP -> new SavedNumbRP<>(numberRP);
+            case NumberRemainderPair<?, ?> numberRP -> SavedNumbRP.constructor(numberRP);
             case AlgebraFunction<?, ?> function -> new SavedFunction<>((Polynomial<?>) function);
-            case FunctionRemainderPair<?, ?> functionRP -> new SavedFuncRP<>(functionRP);
+            case FunctionRemainderPair<?, ?> functionRP -> SavedFuncRP.constructor(functionRP);
             default -> throw new CommandStateException("Cannot process input: " + input);
         };
     }
@@ -136,7 +136,7 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
     }
     
     private sealed static abstract class SavedRP<V extends W, W extends T, T extends AlgebraObject<T>,
-                    R extends Rank<T, R>, P extends RemainderPair<V, W, T, P>>
+                    R extends Rank<T, R>, P extends RemainderPair<?, ?, T, P>>
             extends SavedAO<PairRank<T, ?, ?, ?>, V, T> {
         
         private final P remainderPair;
@@ -156,12 +156,12 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
         @Override
         @Pure
         public V value() {
-            return remainderPair().value();
+            return (V) remainderPair().value();
         }
         
         @Pure
         public W remainder() {
-            return remainderPair().remainder();
+            return (W) remainderPair().remainder();
         }
         
         @Pure
@@ -228,7 +228,7 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
     }
     
     static final class SavedNumbRP<Q extends R, R extends AlgebraNumber>
-            extends SavedRP<Q, R, AlgebraNumber, NumberRank, NumberRemainderPair<Q, R>> {
+            extends SavedRP<Q, R, AlgebraNumber, NumberRank, NumberRemainderPair<?, ?>> {
         
         @Serial
         private static final long serialVersionUID = 0xF6D489C234567BF8L;
@@ -273,10 +273,17 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
                     ));
         }
         
+        @SideEffectFree
+        private static <Q extends R, R extends AlgebraNumber> SavedNumbRP<Q, R> constructor(
+                NumberRemainderPair<?, ?> input
+        ) {
+            return new SavedNumbRP<>((NumberRemainderPair<Q, R>) input);
+        }
+        
         @Override
         @Pure
         public NumberRemainderPair<Q, R> remainderPair() {
-            return super.remainderPair;
+            return (NumberRemainderPair<Q, R>) super.remainderPair;
         }
         
         @Override
@@ -351,7 +358,7 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
     }
     
     static final class SavedFuncRP<Q extends R, R extends Polynomial<?>>
-            extends SavedRP<Q, R, Polynomial<?>, FunctionRank, FunctionRemainderPair<Q, R>> {
+            extends SavedRP<Q, R, Polynomial<?>, FunctionRank, FunctionRemainderPair<?, ?>> {
         
         @Serial
         private static final long serialVersionUID = 0x73F5E93DC5BAA574L;
@@ -399,10 +406,17 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
             );
         }
         
+        @SideEffectFree
+        private static <Q extends R, R extends Polynomial<?>> SavedFuncRP<Q, R> constructor(
+                FunctionRemainderPair<?, ?> input
+        ) {
+            return new SavedFuncRP<>((FunctionRemainderPair<Q, R>) input);
+        }
+        
         @Override
         @Pure
         public FunctionRemainderPair<Q, R> remainderPair() {
-            return super.remainderPair;
+            return (FunctionRemainderPair<Q, R>) super.remainderPair;
         }
         
         @Override

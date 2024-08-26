@@ -19,7 +19,7 @@ import org.cb2384.exactalgebra.objects.numbers.rational.RationalFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.objects.pair.RemainderPair;
 import org.cb2384.exactalgebra.util.MiscUtils;
-import org.cb2384.exactalgebra.util.Sigmagnum;
+import org.cb2384.exactalgebra.objects.Sigmagnum;
 import org.cb2384.exactalgebra.util.corutils.ternary.ComparableSwitchSignum;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 

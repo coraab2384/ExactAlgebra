@@ -7,8 +7,8 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
-public record FunctionRemainderPair<Q extends R, R extends Polynomial<?>>(Q value, R remainder)
-        implements RemainderPair<Q, R, Polynomial<?>, FunctionRemainderPair<Q, R>> {
+public record FunctionRemainderPair<Q extends Polynomial<?>, R extends Polynomial<?>>(Q value, R remainder)
+        implements RemainderPair<Q, R, Polynomial<?>, FunctionRemainderPair<?, ?>> {
     
     /**
      * <p>Creates the {@link RemainderPair} given the value component as well as the original value

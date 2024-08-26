@@ -12,12 +12,12 @@ import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.function.LongToIntFunction;
 
-import org.cb2384.exactalgebra.objects.internalaccess.FiniteIntegerFabricator;
+import org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException;
+import org.cb2384.exactalgebra.objects.internalaccess.CacheInteger;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
-import org.cb2384.exactalgebra.util.MiscUtils.DisallowedNarrowingException;
 import org.cb2384.exactalgebra.util.PrimMathUtils;
-import org.cb2384.exactalgebra.util.Sigmagnum;
+import org.cb2384.exactalgebra.objects.Sigmagnum;
 import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
@@ -30,7 +30,7 @@ import org.checkerframework.dataflow.qual.*;
 public sealed class FiniteInteger
         extends AbstractAlgebraInteger
         implements Serializable
-        permits FiniteIntegerFabricator {
+        permits CacheInteger {
     @Serial
     private static final long serialVersionUID = 0xBE0A89B78FE0C0DAL;
     
@@ -51,7 +51,7 @@ public sealed class FiniteInteger
     protected transient @MonotonicNonNull BigInteger valueBI;
     
     /**
-     * Exists solely for {@link FiniteIntegerFabricator}, which has the {@link BigInteger} cache pre-filled.
+     * Exists solely for {@link CacheInteger}, which has the {@link BigInteger} cache pre-filled.
      *
      * @param   value   the value to represent
      *

@@ -24,7 +24,6 @@ import java.util.stream.Stream;
 import org.cb2384.exactalgebra.text.ReservedSymbols;
 import org.cb2384.exactalgebra.text.parse.IndexWithDepth.RangeWithDepth;
 import org.cb2384.exactalgebra.text.parse.IndexWithDepth.StartWithDepth;
-import org.cb2384.exactalgebra.util.MiscUtils;
 import org.cb2384.exactalgebra.util.corutils.Collectionz;
 import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;

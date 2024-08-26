@@ -1,11 +1,10 @@
 package org.cb2384.exactalgebra.util.corutils.ternary;
 
-
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 /**
- * An interface designating a context for a {@link org.cb2384.corutils.ternary.ThreeValued} logic structure.
+ * An interface designating a context for a {@link ThreeValued} logic structure.
  * In Three-Valued Logic (3VL or TVL) there exists an additional value between the normal
  * {@link Boolean} true and false. However, what this value represents depends on the context&mdash;
  * that, is, dependent upon the implementation of this interface. It is up to the implementation
@@ -21,7 +20,7 @@ public interface ThreeValuedContext<T extends ThreeValued> {
     /**
      * A logical not or negation within in this context.
      *
-     * @param   value   the {@link org.cb2384.corutils.ternary.ThreeValued} value to negate
+     * @param   value   the {@link ThreeValued} value to negate
      *
      * @return  the 3VL equivalent of {@code !value} for this context
      */
@@ -31,9 +30,9 @@ public interface ThreeValuedContext<T extends ThreeValued> {
     /**
      * A logical and within the rules of this context.
      *
-     * @param   left    the left-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   left    the left-hand {@link ThreeValued} value
      *
-     * @param   right   the right-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   right   the right-hand {@link ThreeValued} value
      *
      * @return  the 3VL equivalent of {@code left & right}
      */
@@ -47,9 +46,9 @@ public interface ThreeValuedContext<T extends ThreeValued> {
      *                          left, right}{@link #and )}{@link #not )}; it should be overridden should
      *                          different behaviour be desired.</p>
      *
-     * @param   left    the left-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   left    the left-hand {@link ThreeValued} value
      *
-     * @param   right   the right-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   right   the right-hand {@link ThreeValued} value
      *
      * @return  the 3VL equivalent of {@code !(left & right)}
      */
@@ -64,9 +63,9 @@ public interface ThreeValuedContext<T extends ThreeValued> {
     /**
      * A logical or within the rules of this context.
      *
-     * @param   left    the left-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   left    the left-hand {@link ThreeValued} value
      *
-     * @param   right   the right-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   right   the right-hand {@link ThreeValued} value
      *
      * @return  the 3VL equivalent of {@code left | right}
      */
@@ -80,9 +79,9 @@ public interface ThreeValuedContext<T extends ThreeValued> {
      *                          left, right}{@link #or )}{@link #not )}; it should be overridden
      *                          should different behaviour be desired.</p>
      *
-     * @param   left    the left-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   left    the left-hand {@link ThreeValued} value
      *
-     * @param   right   the right-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   right   the right-hand {@link ThreeValued} value
      *
      * @return  the 3VL equivalent of {@code !(left | right)}
      */
@@ -97,9 +96,9 @@ public interface ThreeValuedContext<T extends ThreeValued> {
     /**
      * A logical xor within the rules of this context.
      *
-     * @param   left    the left-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   left    the left-hand {@link ThreeValued} value
      *
-     * @param   right   the right-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   right   the right-hand {@link ThreeValued} value
      *
      * @return  the 3VL equivalent of {@code left ^ right}
      */
@@ -113,9 +112,9 @@ public interface ThreeValuedContext<T extends ThreeValued> {
      *                          left, right}{@link #xor )}{@link #not )};
      *                          it should be overridden should different behaviour be desired.</p>
      *
-     * @param   left    the left-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   left    the left-hand {@link ThreeValued} value
      *
-     * @param   right   the right-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   right   the right-hand {@link ThreeValued} value
      *
      * @return  the 3VL equivalent of {@code !(left ^ right)}
      */
@@ -130,9 +129,9 @@ public interface ThreeValuedContext<T extends ThreeValued> {
     /**
      * A logical implication operation within the rules of this context.
      *
-     * @param   precondition    the left-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   precondition    the left-hand {@link ThreeValued} value
      *
-     * @param   postcondition   the right-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   postcondition   the right-hand {@link ThreeValued} value
      *
      * @return  the 3VL equivalent of {@code precondition -> postcondition}, where {@code ->}
      *          is a mathematical implication operation (if-then)
@@ -143,9 +142,9 @@ public interface ThreeValuedContext<T extends ThreeValued> {
     /**
      * A logical prevention ({@code P -> !Q}) within the rules of this context.
      *
-     * @param   precondition    the left-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   precondition    the left-hand {@link ThreeValued} value
      *
-     * @param   postcondition   the right-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   postcondition   the right-hand {@link ThreeValued} value
      *
      * @return  the 3VL equivalent of {@code precondition -> !postcondition}, where {@code ->}
      *          is a mathematical implication operation (if-then)
@@ -157,7 +156,7 @@ public interface ThreeValuedContext<T extends ThreeValued> {
      * A logical iff ({@code <->}) within the rules of this context. In standard {@code boolean} logic,
      * this is equivalent to {@link #xnor}, but that is not necessarily the case in 3VL.
      *
-     * @param   left    the left-hand {@link org.cb2384.corutils.ternary.ThreeValued} value
+     * @param   left    the left-hand {@link ThreeValued} value
      *
      * @param   right   the right-hand {@link ThreeValued} value
      *

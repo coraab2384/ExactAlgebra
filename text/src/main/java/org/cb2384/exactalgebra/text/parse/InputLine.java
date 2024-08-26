@@ -26,7 +26,6 @@ import org.cb2384.exactalgebra.text.parse.CreationCommand.FunctionCreationComman
 import org.cb2384.exactalgebra.text.parse.IndexWithDepth.RangeWithDepth;
 import org.cb2384.exactalgebra.text.parse.OperativeCommand.BinaryPrimCommand;
 import org.cb2384.exactalgebra.text.parse.OperativeCommand.BinaryStandardCommand;
-import org.cb2384.exactalgebra.util.MiscUtils;
 import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 import org.cb2384.exactalgebra.util.corutils.StringUtils;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;

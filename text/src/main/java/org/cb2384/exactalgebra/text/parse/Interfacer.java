@@ -1,6 +1,5 @@
 package org.cb2384.exactalgebra.text.parse;
 
-import java.io.Console;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -289,10 +288,7 @@ public final class Interfacer {
                      throw new ClassCastException("Loaded entry is of incorrect type!");
                  }
                  case SavedAO<?, ?, ?> savedObject -> savedObject;
-                 case AlgebraNumber number -> new SavedAO.SavedNumber<>(number);
-                 case AlgebraFunction<?, ?> function -> new SavedAO.SavedFunction<>((Polynomial<?>) function);
-                 case NumberRemainderPair<?, ?> numRP -> new SavedAO.SavedNumbRP<>(numRP);
-                 case FunctionRemainderPair<?, ?> funcRP -> new SavedAO.SavedFuncRP<>(funcRP);
+                 case AlgebraObject<?> object -> SavedAO.asSavedAO(object);
                  default -> throw new ClassCastException("Loaded Object does not appear to be a saved value!");
              };
          } catch (ClassNotFoundException oldCNFE) {

@@ -4,8 +4,8 @@ import org.cb2384.exactalgebra.objects.AlgebraObject;
 
 import org.checkerframework.dataflow.qual.*;
 
-public sealed interface RemainderPair<Q extends T, R extends T, T extends AlgebraObject<T>,
-                S extends RemainderPair<? extends T, ? extends T, T, S>>
+public sealed interface RemainderPair<Q extends AlgebraObject<T>, R extends AlgebraObject<T>,
+                T extends AlgebraObject<T>, S extends RemainderPair<?, ?, T, S>>
         extends AlgebraObject<S>
         permits NumberRemainderPair, FunctionRemainderPair {
     
@@ -72,6 +72,6 @@ public sealed interface RemainderPair<Q extends T, R extends T, T extends Algebr
     default boolean equiv(
             S that
     ) {
-        return value().equiv(that.value()) && remainder().equiv(that.remainder());
+        return value().equiv((T) that.value()) && remainder().equiv((T) that.remainder());
     }
 }

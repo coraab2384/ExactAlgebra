@@ -15,6 +15,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
@@ -28,7 +29,7 @@ import org.checkerframework.dataflow.qual.*;
  *
  * @author  Corinne Buxton
  */
-public class NullnessUtils {
+public final class NullnessUtils {
     
     /**
      * A consumer that simply eats whatever it is given

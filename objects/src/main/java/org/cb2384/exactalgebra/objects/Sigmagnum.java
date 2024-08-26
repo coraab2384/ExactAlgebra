@@ -1,10 +1,10 @@
-package org.cb2384.exactalgebra.util;
-
-import static org.cb2384.exactalgebra.util.PrimMathUtils.IntegralBoundaryTypes.DEFAULT;
+package org.cb2384.exactalgebra.objects;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import org.cb2384.exactalgebra.util.BigMathObjectUtils;
+import org.cb2384.exactalgebra.util.PrimMathUtils;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
 import org.checkerframework.checker.nullness.qual.*;
@@ -15,31 +15,31 @@ public enum Sigmagnum {
     /**
      * Indicates a value that is {@link Signum#NEGATIVE negative} and below {@code -1}
      */
-    NEGATIVE_SUB_MINUS_ONE(-3),
+    NEGATIVE_SUB_MINUS_ONE((byte) -3),
     /**
      * Indicates the value of {@code -1}
      */
-    NEGATIVE_ONE(-2),
+    NEGATIVE_ONE((byte) -2),
     /**
      * Indicates a value that is {@link Signum#NEGATIVE negative} but above {@code -1}
      */
-    NEGATIVE_SUP_MINUS_ONE(-1),
+    NEGATIVE_SUP_MINUS_ONE((byte) -1),
     /**
      * Indicates the value of {@code 0}
      */
-    ZERO(0),
+    ZERO((byte) 0),
     /**
      * Indicates a value that is {@link Signum#POSITIVE positive} but below {@code 1}
      */
-    POSITIVE_SUB_ONE(1),
+    POSITIVE_SUB_ONE((byte) 1),
     /**
      * Indicates the value of {@code 1}
      */
-    POSITIVE_ONE(2),
+    POSITIVE_ONE((byte) 2),
     /**
      * Indicates a value that is {@link Signum#POSITIVE positive} and above {@code 1}
      */
-    POSITIVE_SUP_ONE(3);
+    POSITIVE_SUP_ONE((byte) 3);
     /**
      * the byte value that this enum has replaced
      */
@@ -55,9 +55,11 @@ public enum Sigmagnum {
      * @param   sigmagnum   the byte value that this enum has replaced
      */
     @SideEffectFree
-    Sigmagnum(int sigmagnum) {
-        this.byteKey = (byte) sigmagnum;
-        signum = Signum.valueOf(this.byteKey);
+    Sigmagnum(
+            byte sigmagnum
+    ) {
+        byteKey = sigmagnum;
+        signum = Signum.valueOf(sigmagnum);
     }
     
     /**
@@ -136,7 +138,7 @@ public enum Sigmagnum {
     public static Sigmagnum valueOf(
             long value
     ) {
-        if (PrimMathUtils.canBeInt(value, DEFAULT)) {
+        if (PrimMathUtils.canBeInt(value, PrimMathUtils.IntegralBoundaryTypes.DEFAULT)) {
             return valueOf((int) value);
         } else if (value < 0) {
             return NEGATIVE_SUB_MINUS_ONE;

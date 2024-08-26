@@ -43,7 +43,7 @@ public class Constant {
     }
     /**
      * the machine epsilon
-     * <p/>
+     * <p>
      * This is the difference between 1 and the smallest exactly representable number greater than 1.
      *
      * @see <a href="http://en.wikipedia.org/wiki/Machine_epsilon">Wikipedia: Machine epsilon</a>
@@ -104,7 +104,7 @@ public class Constant {
      * @param base      base, e.g., 10
      * @param precision precision (number of digits)
      * @return the unit round off
-     * @see "G. H. Golub, C. F. van Loan, "Eq. 2.4.4, Section 2.4.1," Matrix Computations, 3rd edition."
+     * see "G. H. Golub, C. F. van Loan, "Eq. 2.4.4, Section 2.4.1," Matrix Computations, 3rd edition"
      */
     public static double unitRoundOff(int base, int precision) {
         return 0.5 * pow(base, 1 - precision);

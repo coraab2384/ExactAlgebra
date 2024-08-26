@@ -7,8 +7,8 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
-public record NumberRemainderPair<Q extends R, R extends AlgebraNumber>(Q value, R remainder)
-        implements RemainderPair<Q, R, AlgebraNumber, NumberRemainderPair<Q, R>> {
+public record NumberRemainderPair<Q extends AlgebraNumber, R extends AlgebraNumber>(Q value, R remainder)
+        implements RemainderPair<Q, R, AlgebraNumber, NumberRemainderPair<?, ?>> {
     
     /**
      * <p>Creates the {@link RemainderPair} given the value component as well as the original value

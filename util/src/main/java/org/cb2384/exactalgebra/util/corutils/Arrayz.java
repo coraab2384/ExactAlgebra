@@ -1,8 +1,16 @@
 package org.cb2384.exactalgebra.util.corutils;
 
+import java.io.Serializable;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 import java.util.stream.IntStream;
 
 import org.checkerframework.checker.index.qual.*;
@@ -27,7 +35,7 @@ import org.checkerframework.dataflow.qual.*;
  *
  * @author  Corinne Buxton
  */
-public class Arrayz {
+public final class Arrayz {
     
     /**
      * Shouldn't ever be called
@@ -786,8 +794,55 @@ public class Arrayz {
             @NonNegative @LTEqLengthOf({"source", "toStore"}) int length,
             @LTLengthOf("toStore") int resultOffset
     ) {
-        IntStream.range(start, length).parallel()
-                .forEach(i -> toStore[i + resultOffset] = mapper.apply(source[i]));
+        if (length >= 0x40) {
+            IntStream.range(start + resultOffset, start + length + resultOffset).parallel()
+                    .forEach(i -> toStore[i] = mapper.apply(source[i - resultOffset]));
+        } else {
+            for (int i = 0; i < length; i++) {
+                toStore[i + resultOffset] = mapper.apply(source[start + i]);
+            }
+        }
+    }
+    
+    public static <T> Collector<T, ?, T[]> existingArrayCollector(
+            T@NonNull[] destination,
+            @NonNegative int destinationStart,
+            @NonNegative int copyLength
+    ) {
+        Function<List<T>, T[]> finisher;
+        if (copyLength <= 0x30) {
+            finisher = (Function<List<T>, T[]> & Serializable) list -> {
+                int length = destinationStart + Math.min(list.size(), copyLength);
+                for (int i = destinationStart; i < length; i++) {
+                    destination[i] = list.get(i - destinationStart);
+                }
+                return destination;
+            };
+        } else if (copyLength <= 0x80) {
+            finisher = (Function<List<T>, T[]> & Serializable) list -> {
+                System.arraycopy(list.toArray(), 0, destination,
+                        destinationStart, Math.min(list.size(), copyLength));
+                
+                return destination;
+            };
+        } else {
+            finisher = (Function<List<T>, T[]> & Serializable) list -> {
+                IntConsumer storer = (IntConsumer & Serializable)
+                        i -> destination[i] = list.get(i - destinationStart);
+                
+                IntStream.range(destinationStart, Math.min(list.size(),  copyLength))
+                        .parallel()
+                        .forEach(storer);
+                
+                return destination;
+            };
+        }
+        return Collector.of(
+                (Supplier<List<T>> & Serializable) ArrayList::new,
+                (BiConsumer<List<T>, T> & Serializable) List::add,
+                (BinaryOperator<List<T>> & Serializable) Collectionz::addAllOrdered,
+                finisher
+        );
     }
     
     /**

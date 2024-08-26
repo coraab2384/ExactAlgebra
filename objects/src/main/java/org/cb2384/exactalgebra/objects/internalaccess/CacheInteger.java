@@ -16,7 +16,7 @@ import org.checkerframework.dataflow.qual.*;
  *
  * @author  Corinne Buxton
  */
-public final class FiniteIntegerFabricator
+public final class CacheInteger
         extends FiniteInteger {
     
     @Serial
@@ -28,7 +28,7 @@ public final class FiniteIntegerFabricator
      * @param   value   the value to represent
      */
     @SideEffectFree
-    public FiniteIntegerFabricator(
+    public CacheInteger(
             @IntRange(from = -AlgebraNumber.CACHE_DEPTH, to = AlgebraNumber.CACHE_DEPTH) int value
     ) {
         super(value, BigInteger.valueOf(value));
@@ -42,7 +42,7 @@ public final class FiniteIntegerFabricator
      * @param   valueBI the value to represent, as a {@link BigInteger} for the cache
      */
     @SideEffectFree
-    public FiniteIntegerFabricator(
+    public CacheInteger(
             @IntRange(from = MIN_VALUE) long value,
             BigInteger valueBI
     ) {
@@ -66,7 +66,7 @@ public final class FiniteIntegerFabricator
         if (Math.abs(value) <= CACHE_DEPTH) {
             return Cache.get((int) value);
         }
-        return new FiniteIntegerFabricator(value, valueBI);
+        return new CacheInteger(value, valueBI);
     }
     
     @Override

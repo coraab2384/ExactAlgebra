@@ -34,7 +34,7 @@ import com.numericalmethod.suanshu.number.big.BigDecimalUtils;
  * </i></blockquote>
  * <i>a</i> is called the significand or mantissa, and <i>1 &le; |a| &lt; 10</i>.
  * <i>b</i> is called the exponent and is an integer.
- * <p/>
+ * <p>
  * Strictly speaking, <i>0</i> cannot be represented in this notation.
  * This implementation, however, expresses it as <i>0 = 0 * 10<sup>0</sup></i>.
  *

@@ -3,7 +3,6 @@ package org.cb2384.exactalgebra.util.corutils.ternary;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
@@ -26,17 +25,17 @@ public enum Signum
     /**
      * Less than 0
      */
-    NEGATIVE(-1, Ternary.FALSE),
+    NEGATIVE((byte) -1, Ternary.FALSE),
     
     /**
      * Neither positive nor negative; is its own signum
      */
-    ZERO(0, Ternary.DEFAULT),
+    ZERO((byte) 0, Ternary.DEFAULT),
     
     /**
      * Greater than 0
      */
-    POSITIVE(1, Ternary.TRUE);
+    POSITIVE((byte) 1, Ternary.TRUE);
     
     /**
      * Signum of a negative value
@@ -70,10 +69,10 @@ public enum Signum
      */
     @SideEffectFree
     Signum(
-            int signum,
+            byte signum,
             Ternary ternary
     ) {
-        this.signum = (byte) signum;
+        this.signum = signum;
         this.ternary = ternary;
     }
     
@@ -333,13 +332,13 @@ public enum Signum
     }
     
     /**
-     * Yields a {@link Ternary} value tied to this {@link Signum}, for interoperability mainly.
+     * Yields a {@link org.cb2384.corutils.ternary.Ternary} value tied to this {@link Signum}, for interoperability mainly.
      * This enables, for example, an {@code isPositive} or {@code isNonNegative} function
-     * via {@link Ternary#booleanValue(boolean)}.
+     * via {@link org.cb2384.corutils.ternary.Ternary#booleanValue(boolean)}.
      *
-     * @return  a {@link Ternary} value for this {@link Signum}:
-     *          {@link #NEGATIVE} maps to {@link Ternary#FALSE}, {@link #ZERO} to {@link Ternary#DEFAULT},
-     *          and {@link #POSITIVE} to {@link Ternary#TRUE}. {@link Ternary#not()} can reverse this, if desired.
+     * @return  a {@link org.cb2384.corutils.ternary.Ternary} value for this {@link Signum}:
+     *          {@link #NEGATIVE} maps to {@link org.cb2384.corutils.ternary.Ternary#FALSE}, {@link #ZERO} to {@link org.cb2384.corutils.ternary.Ternary#DEFAULT},
+     *          and {@link #POSITIVE} to {@link org.cb2384.corutils.ternary.Ternary#TRUE}. {@link org.cb2384.corutils.ternary.Ternary#not()} can reverse this, if desired.
      */
     @Pure
     public @NonNull Ternary ternaryValue() {

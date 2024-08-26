@@ -8,7 +8,6 @@ import java.util.function.BiFunction;
 
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.text.OpNames;
-import org.cb2384.exactalgebra.util.MiscUtils;
 import org.cb2384.exactalgebra.util.corutils.StringUtils;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 

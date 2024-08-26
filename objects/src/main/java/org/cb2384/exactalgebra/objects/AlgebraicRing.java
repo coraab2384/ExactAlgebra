@@ -5,7 +5,7 @@ import org.cb2384.exactalgebra.objects.pair.RemainderPair;
 
 import org.checkerframework.dataflow.qual.*;
 
-public interface AlgebraicRing<T extends AlgebraicRing<T> & AlgebraObject<? super T>> {
+public interface AlgebraicRing<T extends AlgebraicRing<T, S> & AlgebraObject<S>, S extends AlgebraObject<S>> {
     /**
      * Returns the larger of this and {@code that}.
      *
@@ -69,7 +69,7 @@ public interface AlgebraicRing<T extends AlgebraicRing<T> & AlgebraObject<? supe
      * @throws  ArithmeticException if dividing by {@code 0}
      */
     @SideEffectFree
-    RemainderPair<? extends T, ? extends T, ?, ?> quotientZWithRemainder(T divisor);
+    RemainderPair<? extends S, ? extends S, S, ?> quotientZWithRemainder(T divisor);
     
     /**
      * Divides this by {@code divisor}, with the caveat that the quotient is a whole number

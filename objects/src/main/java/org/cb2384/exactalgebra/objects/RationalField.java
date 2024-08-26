@@ -5,7 +5,7 @@ import org.cb2384.exactalgebra.objects.pair.RemainderPair;
 
 import org.checkerframework.dataflow.qual.*;
 
-public interface RationalField<T extends RationalField<T> & AlgebraObject<? super T>> {
+public interface RationalField<T extends RationalField<T, S> & AlgebraObject<S>, S extends AlgebraObject<S>> {
     /**
      * Returns the larger of this and {@code that}.
      *

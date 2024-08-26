@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import org.cb2384.exactalgebra.text.parse.Command;
 import org.cb2384.exactalgebra.text.parse.Command.ReservedNames;
 import org.cb2384.exactalgebra.text.parse.Interfacer;
-import org.cb2384.exactalgebra.util.MiscUtils;
 import org.cb2384.exactalgebra.util.corutils.StringUtils;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or

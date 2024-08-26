@@ -4,7 +4,9 @@ import static org.cb2384.exactalgebra.util.PrimMathUtils.IntegralBoundaryTypes.S
 
 import java.math.BigInteger;
 
-import org.cb2384.exactalgebra.objects.internalaccess.AbstractFactory;
+import org.cb2384.exactalgebra.objects.AbstractFactory;
+import org.cb2384.exactalgebra.objects.internalaccess.factory.IntValuedParameter;
+import org.cb2384.exactalgebra.objects.internalaccess.factory.Parameter;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.rational.RationalFactory;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
@@ -20,7 +22,7 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
     /**
      * The basic parameter common to all whole
      */
-    protected @Nullable IntegralParameter whole;
+    protected @Nullable IntValuedParameter whole;
     
     protected IntegerFactory() {}
     
@@ -48,18 +50,28 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
     }
     
     /**
+     * Takes the parameter for this factory in the form of a pre-existing {@link AlgebraInteger}.
+     *
+     * @param   value   an {@link AlgebraInteger} representation of the value number to use; this same exact object
+     *                  may be returned by this the factory, though it will attempt narrowing if possible
+     *
+     * @return  this same factory, to allow chaining to {@link #build()}
+     */
+    @Deterministic
+    public abstract @This IntegerFactory<N> whole(AlgebraInteger value);
+    
+    /**
      * Takes the parameter for this factory in the form of a {@link BigInteger}.
      *
      * @param   value   a {@link BigInteger} representation of the value number to use
      *
      * @return  this same factory, to allow chaining to {@link #build()}
      */
-    @Override
     @Deterministic
     public @This IntegerFactory<N> whole(
             BigInteger value
     ) {
-        whole = new IntegralParameter(value);
+        whole = new IntValuedParameter(value);
         return this;
     }
     
@@ -70,16 +82,15 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
      *
      * @return  this same factory, to allow chaining to {@link #build()}
      */
-    @Override
     @Deterministic
     public @This IntegerFactory<N> whole(
             long value
     ) {
-        whole = new IntegralParameter(value);
+        whole = new IntValuedParameter(value);
         return this;
     }
     
-    private static final class IntegerFabricator
+    static final class IntegerFabricator
             extends IntegerFactory<AlgebraInteger> {
         
         private @Nullable AlgebraInteger wholeAI;
@@ -99,7 +110,7 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
         public @This IntegerFactory<AlgebraInteger> whole(
                 AlgebraInteger value
         ) {
-            wholeAI = confirmNonNull(value);
+            wholeAI = Parameter.confirmNonNull(value);
             return this;
         }
         
@@ -109,7 +120,7 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
                 BigInteger value
         ) {
             wholeAI = null;
-            whole = new IntegralParameter(value);
+            whole = new IntValuedParameter(value);
             return this;
         }
         
@@ -119,8 +130,14 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
                 long value
         ) {
             wholeAI = null;
-            whole = new IntegralParameter(value);
+            whole = new IntValuedParameter(value);
             return this;
+        }
+        
+        @Override
+        public void clear() {
+            wholeAI = null;
+            whole = null;
         }
         
         /**
@@ -145,11 +162,11 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
                         && (wholeAI instanceof ArbitraryInteger wholeAAI)) {
                     return wholeAAI;
                 }
-                whole = new IntegralParameter(wholeBI);
+                whole = new IntValuedParameter(wholeBI);
             }
             
             if (whole == null) {
-                throw new IllegalStateException(IllStateExc);
+                throw new IllegalStateException(Parameter.EMPTY_STATE_EXC);
             }
             return whole.asAlgebraObject();
         }

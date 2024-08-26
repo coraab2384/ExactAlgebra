@@ -12,7 +12,7 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 public interface Rational
-        extends AlgebraNumber, RationalField<Rational> {
+        extends AlgebraNumber, RationalField<Rational, AlgebraNumber> {
     
     /**
      * The numerator of this Rational value

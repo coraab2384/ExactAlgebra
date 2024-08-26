@@ -1,7 +1,10 @@
 package org.cb2384.exactalgebra.util.corutils.ternary;
 
+import java.io.Serializable;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import org.cb2384.exactalgebra.util.corutils.StringUtils;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
@@ -22,7 +25,7 @@ import org.checkerframework.dataflow.qual.*;
  * {@code null} and with better switch-support than a possibly-empty
  * {@link java.util.Optional Optional&lt;Boolean&gt;}.</p>
  *
- * <p>When actually-three-valued logic is desired, a {@link ThreeValuedContext} can be created for the
+ * <p>When actually-three-valued logic is desired, a {@link org.cb2384.corutils.ternary.ThreeValuedContext} can be created for the
  * Three-Valued logic paradigm desired. {@link org.cb2384.corutils.ternary.KnownDefaultBooleanContext} is provided, but this class
  * already has similar functions for just the case of the third value being default.</p>
  *
@@ -119,7 +122,7 @@ public enum Ternary
             case 2:
                 return TRUE;
         }
-        throw new IllegalArgumentException("Not a valid ordinal‽");
+        throw new IllegalArgumentException("Not a valid ordinal" + StringUtils.INTERROBANG);
     }
     
     /**
@@ -334,11 +337,12 @@ public enum Ternary
             boolean defaultValue,
             @NonNull Function<? super T, @PolyNull Ternary> ternaryFunction
     ) {
-        return t -> ternaryFunction.apply(t).booleanValue(defaultValue);
+        return (Predicate<@PolyNull T> & Serializable) t -> ternaryFunction.apply(t).booleanValue(defaultValue);
     }
     
     /**
-     * Creates a {@link org.cb2384.corutils.ternary.KnownDefaultBooleanContext} specific to {@link Ternary}.
+     * Creates a {@link org.cb2384.corutils.ternary.KnownDefaultBooleanContext} specific to {@link Ternary}. The returned instance is
+     * {@link Serializable}.
      *
      * @param   defaultValue    the value to use for {@link #DEFAULT} when collapsing a {@link Ternary}
      *                          to a {@code boolean}
@@ -350,23 +354,42 @@ public enum Ternary
     public static @NonNull KnownDefaultBooleanContext<Ternary> booleanFromTernary(
             boolean defaultValue
     ) {
-        return new KnownDefaultBooleanContext<Ternary>() {
-            /**
-             * Returns the boolean value of the given {@link Ternary} argument, according to this context.
-             *
-             * @param   value   the {@link Ternary} object to get the {@code boolean} value of
-             *
-             * @return  the {@code boolean} value of {@code value}
-             */
-            @Override
-            @Pure
-            public boolean booleanValue(
-                    @Nullable Ternary value
-            ) {
-                return (value != null)
-                        ? value.booleanValue(defaultValue)
-                        : defaultValue;
-            }
-        };
+        return new BooleanContextFromTernary(defaultValue);
+    }
+    
+    /**
+     * A glorified lambda.
+     * But the cereal gods be unyielding in their scorn of the local and the anonymous.
+     */
+    private static final class BooleanContextFromTernary
+            extends KnownDefaultBooleanContext<Ternary>
+            implements Serializable {
+        
+        private static final long serialVersionUID = 0x8E3B73D501B25E05L;
+        
+        private final boolean defaultValue;
+        
+        private BooleanContextFromTernary(
+                boolean defaultValue
+        ) {
+            this.defaultValue = defaultValue;
+        }
+        
+        /**
+         * Returns the boolean value of the given {@link Ternary} argument, according to this context.
+         *
+         * @param   value   the {@link Ternary} object to get the {@code boolean} value of
+         *
+         * @return  the {@code boolean} value of {@code value}
+         */
+        @Override
+        @Pure
+        public boolean booleanValue(
+                @Nullable Ternary value
+        ) {
+            return (value != null)
+                    ? value.booleanValue(defaultValue)
+                    : defaultValue;
+        }
     }
 }

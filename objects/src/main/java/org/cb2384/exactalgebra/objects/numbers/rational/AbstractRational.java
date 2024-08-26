@@ -16,7 +16,7 @@ import org.cb2384.exactalgebra.objects.numbers.integral.ArbitraryInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.IntegerFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
-import org.cb2384.exactalgebra.util.Sigmagnum;
+import org.cb2384.exactalgebra.objects.Sigmagnum;
 import org.cb2384.exactalgebra.util.corutils.functional.ObjectThenIntToObjectFunction;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 

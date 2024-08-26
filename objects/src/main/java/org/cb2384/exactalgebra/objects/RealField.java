@@ -6,8 +6,8 @@ import org.cb2384.exactalgebra.objects.pair.RemainderPair;
 
 import org.checkerframework.dataflow.qual.*;
 
-public interface RealField<I extends AlgebraicRing<I> & AlgebraObject<? super I>,
-        R extends RealField<I, R> & AlgebraObject<? super R>> {
+public interface RealField<I extends AlgebraicRing<I, R> & AlgebraObject<R>,
+        R extends RealField<I, R> & AlgebraObject<R>> {
     /**
      * Adds this to {@code augend}.
      *
@@ -52,7 +52,7 @@ public interface RealField<I extends AlgebraicRing<I> & AlgebraObject<? super I>
      * @throws  ArithmeticException if dividing by {@code 0}
      */
     @SideEffectFree
-    RemainderPair<? extends I, ? extends R, ?, ?> quotientZWithRemainder(R divisor);
+    RemainderPair<? extends I, ? extends R, R, ?> quotientZWithRemainder(R divisor);
     
     /**
      * Divides this by {@code divisor}, with the caveat that the quotient is a whole number

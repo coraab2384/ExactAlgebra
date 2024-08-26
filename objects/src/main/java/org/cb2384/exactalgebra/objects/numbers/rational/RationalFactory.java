@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.function.Function;
 
+import org.cb2384.exactalgebra.objects.internalaccess.factory.IntValuedParameter;
+import org.cb2384.exactalgebra.objects.internalaccess.factory.NarrowTo;
+import org.cb2384.exactalgebra.objects.internalaccess.factory.Parameter;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.integral.AlgebraInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.IntegerFactory;
@@ -44,12 +47,12 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     /**
      * parameter for numerator
      */
-    protected @MonotonicNonNull IntegralParameter numerator;
+    protected @MonotonicNonNull IntValuedParameter numerator;
     
     /**
      * parameter for denominator
      */
-    protected @MonotonicNonNull IntegralParameter denominator;
+    protected @MonotonicNonNull IntValuedParameter denominator;
     
     /**
      * The default, no-argument constructor, explicitly specified in order to provide
@@ -216,7 +219,7 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     public @This RationalFactory<N> numerator(
             BigInteger value
     ) {
-        numerator = new IntegralParameter(value);
+        numerator = new IntValuedParameter(value);
         return this;
     }
     
@@ -231,7 +234,7 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     public @This RationalFactory<N> numerator(
             long value
     ) {
-        numerator = new IntegralParameter(value);
+        numerator = new IntValuedParameter(value);
         return this;
     }
     
@@ -263,7 +266,7 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
         if (BigMathObjectUtils.isZero(value)) {
             throw new ArithmeticException(div0Exc);
         }
-        denominator = new IntegralParameter(value);
+        denominator = new IntValuedParameter(value);
         return this;
     }
     
@@ -281,145 +284,13 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
         if (value == 0) {
             throw new ArithmeticException(div0Exc);
         }
-        denominator = new IntegralParameter(value);
+        denominator = new IntValuedParameter(value);
         return this;
     }
     
-    /**
-     * Normalizes and simplifies the parameters down to just a numerator and denominator, and then
-     * builds a {@link Rational} of the appropriate size from those parameters
-     *
-     * @return  the constructed {@link Rational} (or rather subclass)
-     *
-     * @throws IllegalStateException    if no parameters have been given yet
-     */
-    @Override
-    public N build() {
-        normalize();
-        
-        if (currentDepth == NarrowTo.ARBITRARY) {
-            reduceFromBI();
-        } else {
-            reduceFromPrim();
-        }
-        
-        assert (numerator != null) && (denominator != null) && (denominator.value().signum() == 1);
-        if (BigMathObjectUtils.isOne(denominator.value())) {
-            return (N) numerator.asAlgebraObject();
-        }
-        boolean canBeFinite = switch(currentDepth) {
-            case ARBITRARY -> false;
-            case LONG -> (-PrimMathUtils.LONG_TO_INT_MASK <= numerator.primValue())
-                    && (numerator.primValue() <= PrimMathUtils.LONG_TO_INT_MASK)
-                    && (denominator.primValue() <= PrimMathUtils.NEG_INT_MIN);
-            default -> true;
-        };
-        
-        BigInteger numBI = numerator.value();
-        BigInteger denomBI = denominator.value();
-        
-        if (canBeFinite) {
-            @Unsigned int numPrim;
-            int denomPrim;
-            if (numerator.isNegative()) {
-                numPrim = (int) -numerator.primValue();
-                denomPrim = (int) -denominator.primValue();
-            } else {
-                numPrim = (int) numerator.primValue();
-                // (int) NEG_INT_MIN = 0
-                denomPrim = (int) denominator.primValue();
-            }
-            
-            return (N) new FiniteRational(numPrim, denomPrim, numBI, denomBI);
-        }
-        
-        return (N) new ArbitraryRational(numBI, denomBI);
-    }
-    
-    /**
-     * Normalizes the parameters; the denominator is made positive (and numerator sign switched if so),
-     * the whole number is multiplied by the denominator and added to the numerator,
-     * and the denominator of the 0 fraction is standardized to 1
-     */
-    @EnsuresNonNull({"numerator", "denominator"})
-    private void normalize() {
-        boolean noWhole = (whole == null);
-        boolean noNumerator = (numerator == null);
-        boolean noDenominator = (denominator == null);
-        
-        if (noWhole && noNumerator && noDenominator) {
-            throw new IllegalStateException(IllStateExc);
-        }
-        
-        boolean negativeDenom = false;
-        if (noDenominator) {
-            denominator = new IntegralParameter(1);
-            currentDepth = NarrowTo.BYTE;
-        } else {
-            if (denominator.isNegative()) {
-                negativeDenom = true;
-                denominator.negate();
-            }
-            currentDepth = denominator.process(currentDepth);
-        }
-        
-        if (noNumerator) {
-            if (noWhole) {
-                numerator = new IntegralParameter(0);
-            } else {
-                BigInteger newNumerator = whole.value().multiply(denominator.value());
-                noWhole = true;
-                numerator(newNumerator);
-            }
-        } else if (negativeDenom) {
-            numerator.negate();
-            currentDepth = numerator.process(currentDepth);
-        }
-        
-        if (!noWhole) {
-            BigInteger addToNumerator = whole.value().multiply(denominator.value());
-            numerator.reset( numerator.value().add(addToNumerator) );
-            currentDepth = numerator.process(currentDepth);
-        }
-    }
-    
-    /**
-     * simplifies the numerator and denominator to lowest form, if at least one of them is large enough
-     * to be a BigInteger
-     */
-    @RequiresNonNull({"numerator", "denominator"})
-    private void reduceFromBI() {
-        assert (numerator != null) && (denominator != null);
-        BigInteger gcf = numerator.value().gcd(denominator.value());
-        if (!BigMathObjectUtils.isOne(gcf)) {
-            numerator.reset( numerator.value().divide(gcf) );
-            denominator.reset( denominator.value().divide(gcf) );
-            
-            currentDepth = NarrowTo.NULL;
-            currentDepth = numerator.process(currentDepth);
-            currentDepth = denominator.process(currentDepth);
-        }
-    }
-    
-    /**
-     * simplifies the numerator and denominator to lowest form, if both of them can be represented as longs
-     * or smaller
-     */
-    @RequiresNonNull({"numerator", "denominator"})
-    private void reduceFromPrim() {
-        assert (numerator != null) && (denominator != null);
-        long gcf = PrimMathUtils.gcf(numerator.primValue(), denominator.primValue());
-        if (gcf != 1) {
-            numerator.reset(numerator.primValue() / gcf);
-            denominator.reset(denominator.primValue() / gcf);
-            
-            currentDepth = NarrowTo.NULL;
-            currentDepth = numerator.process(currentDepth);
-            currentDepth = denominator.process(currentDepth);
-        }
-    }
-    
     private static final class RationalFabricator extends RationalFactory<Rational> {
+        
+        private NarrowTo currentDepth = NarrowTo.NULL;
         
         private RationalFabricator() {}
         
@@ -453,6 +324,144 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
                 long value
         ) {
             return (RationalFactory<Rational>) super.whole(value);
+        }
+        
+        @Override
+        public void clear() {
+            whole = null;
+            numerator = null;
+            denominator = null;
+            currentDepth = NarrowTo.NULL;
+        }
+        
+        /**
+         * Normalizes and simplifies the parameters down to just a numerator and denominator, and then
+         * builds a {@link Rational} of the appropriate size from those parameters
+         *
+         * @return  the constructed {@link Rational} (or rather subclass)
+         *
+         * @throws IllegalStateException    if no parameters have been given yet
+         */
+        @Override
+        public Rational build() {
+            normalize();
+            
+            if (currentDepth == NarrowTo.ARBITRARY) {
+                reduceFromBI();
+            } else {
+                reduceFromPrim();
+            }
+            
+            assert (numerator != null) && (denominator != null) && (denominator.value().signum() == 1);
+            if (BigMathObjectUtils.isOne(denominator.value())) {
+                return numerator.asAlgebraObject();
+            }
+            boolean canBeFinite = switch(currentDepth) {
+                case ARBITRARY -> false;
+                case LONG -> (-PrimMathUtils.LONG_TO_INT_MASK <= numerator.primValue())
+                        && (numerator.primValue() <= PrimMathUtils.LONG_TO_INT_MASK)
+                        && (denominator.primValue() <= PrimMathUtils.NEG_INT_MIN);
+                default -> true;
+            };
+            
+            BigInteger numBI = numerator.value();
+            BigInteger denomBI = denominator.value();
+            
+            if (canBeFinite) {
+                @Unsigned int numPrim;
+                int denomPrim;
+                if (numerator.isNegative()) {
+                    numPrim = (int) -numerator.primValue();
+                    denomPrim = (int) -denominator.primValue();
+                } else {
+                    numPrim = (int) numerator.primValue();
+                    // (int) NEG_INT_MIN = 0
+                    denomPrim = (int) denominator.primValue();
+                }
+                
+                return new FiniteRational(numPrim, denomPrim, numBI, denomBI);
+            }
+            
+            return new ArbitraryRational(numBI, denomBI);
+        }
+        
+        /**
+         * Normalizes the parameters; the denominator is made positive (and numerator sign switched if so),
+         * the whole number is multiplied by the denominator and added to the numerator,
+         * and the denominator of the 0 fraction is standardized to 1
+         */
+        @EnsuresNonNull({"numerator", "denominator"})
+        private void normalize() {
+            boolean noWhole = (whole == null);
+            boolean noNumerator = (numerator == null);
+            boolean noDenominator = (denominator == null);
+            
+            if (noWhole && noNumerator && noDenominator) {
+                throw new IllegalStateException(Parameter.EMPTY_STATE_EXC);
+            }
+            
+            boolean negativeDenom = false;
+            if (noDenominator) {
+                denominator = new IntValuedParameter(1);
+                currentDepth = NarrowTo.BYTE;
+            } else {
+                if (denominator.isNegative()) {
+                    negativeDenom = true;
+                    denominator.negate();
+                }
+                currentDepth = denominator.process(currentDepth);
+            }
+            
+            if (noNumerator) {
+                if (noWhole) {
+                    numerator = new IntValuedParameter(0);
+                } else {
+                    BigInteger newNumerator = whole.value().multiply(denominator.value());
+                    noWhole = true;
+                    numerator(newNumerator);
+                }
+            } else if (negativeDenom) {
+                numerator.negate();
+                currentDepth = numerator.process(currentDepth);
+            }
+            
+            if (!noWhole) {
+                BigInteger addToNumerator = whole.value().multiply(denominator.value());
+                numerator.reset( numerator.value().add(addToNumerator) );
+                currentDepth = numerator.process(currentDepth);
+            }
+        }
+        
+        /**
+         * simplifies the numerator and denominator to lowest form, if at least one of them is large enough
+         * to be a BigInteger
+         */
+        @RequiresNonNull({"numerator", "denominator"})
+        private void reduceFromBI() {
+            assert (numerator != null) && (denominator != null);
+            BigInteger gcf = numerator.value().gcd(denominator.value());
+            if (!BigMathObjectUtils.isOne(gcf)) {
+                numerator.reset( numerator.value().divide(gcf) );
+                denominator.reset( denominator.value().divide(gcf) );
+                
+                currentDepth = NarrowTo.getPrimNarrow(numerator).getAndCompPrimNarrow(denominator);
+            }
+        }
+        
+        /**
+         * simplifies the numerator and denominator to lowest form, if both of them can be represented as longs
+         * or smaller
+         */
+        @RequiresNonNull({"numerator", "denominator"})
+        private void reduceFromPrim() {
+            assert (numerator != null) && (denominator != null);
+            long gcf = PrimMathUtils.gcf(numerator.primValue(), denominator.primValue());
+            if (gcf != 1) {
+                numerator.reset(numerator.primValue() / gcf);
+                denominator.reset(denominator.primValue() / gcf);
+                
+                currentDepth = NarrowTo.getPrimNarrow(numerator).getAndCompPrimNarrow(denominator);
+            }
         }
     }
 }

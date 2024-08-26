@@ -15,13 +15,13 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException;
 import org.cb2384.exactalgebra.objects.numbers.rational.AbstractRational;
 import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
-import org.cb2384.exactalgebra.util.MiscUtils.DisallowedNarrowingException;
 import org.cb2384.exactalgebra.util.PrimMathUtils;
-import org.cb2384.exactalgebra.util.Sigmagnum;
+import org.cb2384.exactalgebra.objects.Sigmagnum;
 import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 import org.cb2384.exactalgebra.util.corutils.functional.ObjectThenIntToObjectFunction;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
