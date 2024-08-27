@@ -88,8 +88,9 @@ public abstract class AbstractAlgebraNumber
             CACHE[1][0] = new CacheInteger(0);
             for (short i = -1; i <= 1; i++) {
                 short iOld = i++;
-                for (short j = CACHE_DEPTH; j > 0;) {
-                    CACHE[i][j] = new CacheInteger(iOld * j--);
+                for (short j = 0; j < CACHE_DEPTH; j++) {
+                    int value = iOld * (j + 1);
+                    CACHE[i][j] = new CacheInteger(value);
                 }
             }
         }
@@ -518,13 +519,15 @@ public abstract class AbstractAlgebraNumber
         N res = raiser.apply(base, expQuoRemain[1].intValue());
         
         BigInteger expQuo = expQuoRemain[0];
-        N baseToMaxInt = raiser.apply(base, Integer.MAX_VALUE);
+        if (BigMathObjectUtils.isZero(expQuo)) {
+            return res;
+        }
         
+        N baseToMaxInt = raiser.apply(base, Integer.MAX_VALUE);
         if (BigMathObjectUtils.canBeInt(expQuo, null)) {
             N baseToQuo = raiser.apply(baseToMaxInt, expQuo.intValue());
             return (N) res.product(baseToQuo);
         }
-        
         return (N) res.product( recurRaiser(baseToMaxInt, expQuo, raiser) );
     }
     
@@ -548,6 +551,7 @@ public abstract class AbstractAlgebraNumber
             boolean isExponent
     ) {
         assert Integer.signum(exponentSignum) == exponentSignum;
+        Signum signum = signum();
         if (isZero()) {
             switch (exponentSignum) {
                 case -1 -> throw new ArithmeticException("0 to negative exponent");
@@ -556,7 +560,7 @@ public abstract class AbstractAlgebraNumber
         }
         
         if ((exponentSignum == -1) && !canBeNegative) {
-            throw new IllegalArgumentException(
+            throw new ArithmeticException(
                     "Disallowed negative " + (isExponent ? "exponent" : "index"));
         }
     }

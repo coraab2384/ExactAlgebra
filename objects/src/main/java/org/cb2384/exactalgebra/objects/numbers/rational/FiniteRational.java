@@ -359,7 +359,7 @@ public class FiniteRational
     @Override
     @SideEffectFree
     public Rational inverted() {
-        return fromLongBuilder(denominatorLongSigned(), numeratorLongUnsigned(), false);
+        return RationalFactory.fromLongs(denominatorLongSigned(), numeratorLongUnsigned());
     }
     
     @SideEffectFree
@@ -481,7 +481,7 @@ public class FiniteRational
             case DEFAULT -> fromLongBuilder(newNum, newDen, strict);
             case FALSE -> fromLongBuilder(newNum / newDen, 1, strict);
             case TRUE -> {
-                Rational tempQuo = fromLongs(newNum / newDen, 1);
+                Rational tempQuo = RationalFactory.fromLongs(newNum / newDen, 1);
                 Rational ans = difference(tempQuo);
                 
                 if (strict) {

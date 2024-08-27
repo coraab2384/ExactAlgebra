@@ -401,7 +401,7 @@ public final class PrimMathUtils {
     ) {
         return (b == 0)
                 ? a
-                : recurEuclidNegGCF(b, -(a % b));
+                : recurEuclidNegGCF(b, a % b);
     }
     
     /**

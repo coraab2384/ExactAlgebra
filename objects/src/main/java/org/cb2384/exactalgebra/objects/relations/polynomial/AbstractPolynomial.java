@@ -267,7 +267,7 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
     @Override
     @Pure
     public int compareTo(
-            Polynomial<? extends AlgebraNumber> that
+            Polynomial<?> that
     ) {
         int thatLength = that.length();
         int lengthComp = length() - thatLength;
@@ -279,7 +279,7 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
     @Override
     @Pure
     public Signum compare(
-            Polynomial<? extends AlgebraNumber> that
+            Polynomial<?> that
     ) {
         Signum compResult = compareDeg(that);
         return (compResult != Signum.ZERO)
@@ -306,7 +306,7 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
     @Override
     @Pure
     public Signum compareDeg(
-            Polynomial<? extends AlgebraNumber> that
+            Polynomial<?> that
     ) {
         return Signum.valueOf(length() - that.length());
     }
@@ -382,16 +382,16 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
     
     @Override
     @SideEffectFree
-    public Polynomial<? extends AlgebraNumber> sum(
-            Polynomial<? extends AlgebraNumber> augend
+    public Polynomial<?> sum(
+            Polynomial<?> augend
     ) {
         return arithRes(augend, false, AlgebraNumber::sum);
     }
     
     @Override
     @SideEffectFree
-    public Polynomial<? extends AlgebraNumber> difference(
-            Polynomial<? extends AlgebraNumber> subtrahend
+    public Polynomial<?> difference(
+            Polynomial<?> subtrahend
     ) {
         return arithRes(subtrahend, true, AlgebraNumber::difference);
     }
@@ -481,7 +481,7 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
     
     @Override
     @SideEffectFree
-    public Polynomial<? extends AlgebraNumber> scaled(
+    public Polynomial<?> scaled(
             AlgebraNumber scalar
     ) {
         return scalar(scalar, false, n -> n.product(scalar));
@@ -518,8 +518,8 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
     
     @Override
     @SideEffectFree
-    public Polynomial<? extends AlgebraNumber> product(
-            Polynomial<? extends AlgebraNumber> multiplicand
+    public Polynomial<?> product(
+            Polynomial<?> multiplicand
     ) {
         return mult(multiplicand);
     }
@@ -572,16 +572,16 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
     
     @Override
     @SideEffectFree
-    public Polynomial<? extends AlgebraNumber> quotientZ(
-            Polynomial<? extends AlgebraNumber> divisor
+    public Polynomial<?> quotientZ(
+            Polynomial<?> divisor
     ) {
         return divRouter(divisor, false).value();
     }
     
     @Override
     @SideEffectFree
-    public Polynomial<? extends AlgebraNumber> remainder(
-            Polynomial<? extends AlgebraNumber> divisor
+    public Polynomial<?> remainder(
+            Polynomial<?> divisor
     ) {
         return divRouter(divisor, true).remainder();
     }

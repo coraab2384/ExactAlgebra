@@ -19,8 +19,8 @@ dependencies {
     // https://mvnrepository.com/artifact/org.checkerframework/jdk8
     compileOnly group: 'org.checkerframework', name: 'jdk8', version: '3.3.0'
 
-    compileOnly project(':util')
-    compileOnly project(':external')
+    implementation project(':util')
+    implementation project(':external')
 }
 
 test {

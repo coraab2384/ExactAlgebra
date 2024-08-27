@@ -8,8 +8,6 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.LongFunction;
 import java.util.function.LongToIntFunction;
 
 import org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException;
@@ -305,34 +303,14 @@ public sealed class FiniteInteger
                 : this;
     }
     
-    @SideEffectFree
-    private static AlgebraInteger rawLongOpHandler(
-            AlgebraInteger that,
-            LongFunction<AlgebraInteger> smallOp,
-            Function<AlgebraInteger, AlgebraInteger> bigOp
-    ) {
-        return (that instanceof FiniteInteger thatPI)
-                ? smallOp.apply(thatPI.value)
-                : bigOp.apply(that);
-    }
-    
-    @SideEffectFree
-    private static AlgebraInteger biOpHandler(
-            AlgebraInteger that,
-            Function<FiniteInteger, AlgebraInteger> smallOp,
-            Function<AlgebraInteger, AlgebraInteger> bigOp
-    ) {
-        return (that instanceof FiniteInteger thatPI)
-                ? smallOp.apply(thatPI)
-                : bigOp.apply(that);
-    }
-    
     @Override
     @SideEffectFree
     public AlgebraInteger gcf(
             AlgebraInteger that
     ) {
-        return rawLongOpHandler(that, that::gcf, super::gcf);
+        return (that instanceof FiniteInteger thatFI)
+                ? gcf(thatFI.value)
+                : super.gcf(that);
     }
     
     @Override
@@ -348,7 +326,9 @@ public sealed class FiniteInteger
     public AlgebraInteger lcm(
             AlgebraInteger that
     ) {
-        return rawLongOpHandler(that, that::lcm, super::lcm);
+        return (that instanceof FiniteInteger thatFI)
+                ? lcm(thatFI.value)
+                : super.lcm(that);
     }
     
     @Override
@@ -461,7 +441,9 @@ public sealed class FiniteInteger
     public FiniteInteger quotientZ(
             AlgebraInteger divisor
     ) {
-        return (FiniteInteger) biOpHandler(divisor, this::quotientZ, super::quotientZ);
+        return (divisor instanceof FiniteInteger divisorFR)
+                ? quotientZ(divisorFR)
+                : (FiniteInteger) super.quotientZ(divisor);
     }
     
     @SideEffectFree
@@ -476,7 +458,9 @@ public sealed class FiniteInteger
     public FiniteInteger remainder(
             AlgebraInteger divisor
     ) {
-        return (FiniteInteger) biOpHandler(divisor, this::remainder, super::remainder);
+        return (divisor instanceof FiniteInteger divisorFI)
+                ? remainder(divisorFI)
+                : (FiniteInteger) super.remainder(divisor);
     }
     
     @SideEffectFree
@@ -498,7 +482,9 @@ public sealed class FiniteInteger
     public FiniteInteger modulo(
             AlgebraInteger modulus
     ) {
-        return (FiniteInteger) biOpHandler(modulus, this::modulo, super::modulo);
+        return (modulus instanceof FiniteInteger modulusFI)
+                ? modulo(modulusFI)
+                : (FiniteInteger) super.modulo(modulus);
     }
     
     @Override

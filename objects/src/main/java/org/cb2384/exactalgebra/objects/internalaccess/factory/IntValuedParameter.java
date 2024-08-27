@@ -242,12 +242,9 @@ public final class IntValuedParameter
     @Override
     public void negate() {
         value = value.negate();
-        if (isPrim()) {
-            if (primValue != Long.MIN_VALUE) {
-                primValue = -primValue;
-            } else {
-                isPrim = Ternary.FALSE;
-            }
+        switch (isPrim) {
+            case TRUE -> primValue = -primValue;
+            case DEFAULT -> isPrim();
         }
     }
     

@@ -256,7 +256,7 @@ public final class PolyRat
     }
     
     @SideEffectFree
-    private static Polynomial<? extends AlgebraNumber> biPolyOp(
+    private static Polynomial<?> biPolyOp(
             Polynomial<? extends AlgebraNumber> that,
             Function<PolyRat, PolyRat> smallOp,
             Function<Polynomial<? extends AlgebraNumber>, ? extends Polynomial<? extends AlgebraNumber>> bigOp
@@ -269,7 +269,7 @@ public final class PolyRat
     @Override
     @Pure
     public int compareTo(
-            Polynomial<? extends AlgebraNumber> that
+            Polynomial<?> that
     ) {
         if (that instanceof PolyRat TPR) {
             return pX.compareTo(TPR.pX);
@@ -425,7 +425,7 @@ public final class PolyRat
     @Override
     @SideEffectFree
     public FunctionRemainderPair<? extends Polynomial<?>, ? extends Polynomial<?>> quotientZWithRemainder(
-            Polynomial<? extends AlgebraNumber> divisor
+            Polynomial<?> divisor
     ) {
         return (divisor instanceof PolyRat divisorPR)
                 ? quotientZWithRemainder(divisorPR)
@@ -456,8 +456,8 @@ public final class PolyRat
     
     @Override
     @SideEffectFree
-    public Polynomial<? extends AlgebraNumber> remainder(
-            Polynomial<? extends AlgebraNumber> divisor
+    public Polynomial<?> remainder(
+            Polynomial<?> divisor
     ) {
         return biPolyOp(divisor, this::remainder, super::remainder);
     }

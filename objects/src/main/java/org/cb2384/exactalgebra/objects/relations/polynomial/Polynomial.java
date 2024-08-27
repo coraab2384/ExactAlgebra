@@ -75,18 +75,18 @@ public interface Polynomial<N extends AlgebraNumber>
     @Override
     @Pure
     default boolean equiv(
-            Polynomial<? extends AlgebraNumber> that
+            Polynomial<?> that
     ) {
         return compareTo(that) == 0;
     }
     
     @Pure
-    Signum compareDeg(Polynomial<? extends AlgebraNumber> that);
+    Signum compareDeg(Polynomial<?> that);
     
     @Override
     @Pure
-    default Polynomial<? extends AlgebraNumber> max(
-            Polynomial<? extends AlgebraNumber> that
+    default Polynomial<?> max(
+            Polynomial<?> that
     ) {
         return (compareTo(that) < 0)
                 ? that
@@ -95,8 +95,8 @@ public interface Polynomial<N extends AlgebraNumber>
     
     @Override
     @Pure
-    default Polynomial<? extends AlgebraNumber> min(
-            Polynomial<? extends AlgebraNumber> that
+    default Polynomial<?> min(
+            Polynomial<?> that
     ) {
         return (compareTo(that) < 0)
                 ? this
