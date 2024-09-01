@@ -33,7 +33,7 @@ public final class ArbitraryInteger
      * @param   value   the actual value that this will have
      */
     @SideEffectFree
-    public ArbitraryInteger(
+    ArbitraryInteger(
             BigInteger value
     ) {
         this.value = value;
@@ -46,10 +46,22 @@ public final class ArbitraryInteger
      * @param   value   the actual value that this will have
      */
     @SideEffectFree
-    public ArbitraryInteger(
+    ArbitraryInteger(
             long value
     ) {
         this.value = BigInteger.valueOf(value);
+    }
+    
+    public static ArbitraryInteger valueOfStrict(
+            BigInteger value
+    ) {
+        return new ArbitraryInteger(value);
+    }
+    
+    public static ArbitraryInteger valueOfStrict(
+            long value
+    ) {
+        return new ArbitraryInteger(value);
     }
     
     @Override

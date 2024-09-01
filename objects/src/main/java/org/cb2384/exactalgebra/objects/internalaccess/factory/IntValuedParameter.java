@@ -20,7 +20,9 @@ import org.checkerframework.dataflow.qual.*;
  * <p>A parameter for a factory; a mutable class built around {@link BigInteger}, though which also tracks
  * a {@code long} primitive value if the value can in fact be represented as a long.</p>
  *
- * <p>Throws: {@link NullPointerException} &ndash; on any {@code null} input</p>
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} input</p>
+ *
+ * @author  Corinne Buxton
  */
 public final class IntValuedParameter
         implements ComparableSwitchSignum<IntValuedParameter>,
@@ -66,12 +68,18 @@ public final class IntValuedParameter
         reset(value);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isZero() {
         return BigMathObjectUtils.isZero(value);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isOne() {
@@ -89,6 +97,9 @@ public final class IntValuedParameter
         return value.signum() == -1;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equiv(
             Parameter<?, AlgebraNumber, BigInteger> that
@@ -96,6 +107,9 @@ public final class IntValuedParameter
         return value.equals(that.value());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int compareTo(
@@ -104,6 +118,9 @@ public final class IntValuedParameter
         return value.compareTo(o.value);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean equals(
@@ -112,18 +129,27 @@ public final class IntValuedParameter
         return (obj instanceof IntValuedParameter objIVP) && value.equals(objIVP.value);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int hashCode() {
         return ~value.hashCode();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String toString() {
         return toString(10);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String toString(
@@ -237,7 +263,7 @@ public final class IntValuedParameter
     }
     
     /**
-     * Negates the value of this parameter
+     * {@inheritDoc}
      */
     @Override
     public void negate() {
@@ -262,6 +288,6 @@ public final class IntValuedParameter
         assert value != null;
         return (isPrim() && (primValue != Long.MIN_VALUE))
                 ? CacheInteger.valueOf(primValue, value)
-                : new ArbitraryInteger(value);
+                : ArbitraryInteger.valueOfStrict(value);
     }
 }

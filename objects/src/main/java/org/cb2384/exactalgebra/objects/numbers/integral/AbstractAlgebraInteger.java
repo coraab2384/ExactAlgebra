@@ -31,6 +31,14 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>Skeletal implementations for many of the methods in {@link AlgebraInteger}</p>
+ *
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} argument,
+ * unless otherwise specified.</p>
+ *
+ * @author  Corinne Buxton
+ */
 public abstract class AbstractAlgebraInteger
         extends AbstractRational
         implements AlgebraInteger {
@@ -38,35 +46,62 @@ public abstract class AbstractAlgebraInteger
     static final ObjectThenIntToObjectFunction<Rational, Rational> RAT_RAISER
             = (rational, integer) -> ((AlgebraInteger) rational).raisedZ(integer);
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public final @This AlgebraInteger numeratorAI() {
         return this;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public final AlgebraInteger denominatorAI() {
-        return Cache.get(1);
+        return AlgebraInteger.super.denominatorAI();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public final @This AlgebraInteger wholeAI() {
         return this;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
-    public BigInteger wholeBI() {
+    public final BigInteger numeratorBI() {
         return toBigInteger();
     }
     
     /**
-     * Normally would round this to an integer, but since this
-     * already is an integer, simply returns this.
-     *
-     * @return  this
+     * {@inheritDoc}
+     */
+    @Override
+    @Pure
+    public final BigInteger denominatorBI() {
+        return BigInteger.ONE;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    public final BigInteger wholeBI() {
+        return toBigInteger();
+    }
+    
+    /**
+     * {@inheritDoc}
      */
     @Override
     @Pure
@@ -75,13 +110,7 @@ public abstract class AbstractAlgebraInteger
     }
     
     /**
-     * Normally would round this to an integer according to the given rounding, but since this
-     * already is an integer, simply returns this.
-     *
-     * @param   roundingMode    the rounding mode to use; is irrelevant since this is already
-     *                          an integral type
-     *
-     * @return  this
+     * {@inheritDoc}
      */
     @Override
     @Pure
@@ -92,9 +121,7 @@ public abstract class AbstractAlgebraInteger
     }
     
     /**
-     * Returns this integral value represented as a {@link BigDecimal}.
-     *
-     * @return  this, but as a {@link BigDecimal}
+     * {@inheritDoc}
      */
     @Override
     @SideEffectFree
@@ -103,19 +130,7 @@ public abstract class AbstractAlgebraInteger
     }
     
     /**
-     * Returns a {@link BigDecimal} representation of this value.
-     * If {@code precision} is specified, and is smaller than
-     * the length of the current precision, then the precision of the returned value
-     * might be less; that is also the only time that the {@link RoundingMode} argument is actually
-     * used.
-     *
-     * @param   precision   the precision to use; is capped at {@link #MAX_PRECISION} and if {@code null}
-     *                      defaults to {@link #DEFAULT_PRECISION}
-     *
-     * @param   roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
-     *                          defaults to {@link #DEFAULT_ROUNDING}
-     *
-     * @return  {@link BigDecimal} representing this value, with the indicated precision
+     * {@inheritDoc}
      */
     @Override
     @SideEffectFree
@@ -123,66 +138,89 @@ public abstract class AbstractAlgebraInteger
             @Nullable Integer precision,
             @Nullable RoundingMode roundingMode
     ) {
-        MathContext context = new MathContext(
-                (precision != null) ? Math.max(precision, MAX_PRECISION) : DEFAULT_PRECISION,
-                Objects.requireNonNullElse(roundingMode, DEFAULT_ROUNDING)
-        );
-        
-        return toBigDecimal(context);
+        return AlgebraInteger.super.toBigDecimal(precision, roundingMode);
     }
     
     /**
-     * Returns a {@link BigDecimal} representation of this value.
-     * If {@code precision} is specified, and is smaller than
-     * the length of the current precision, then the precision of the returned value
-     * might be less; that is also the only time that the {@link RoundingMode} argument is actually
-     * used.
-     *
-     * @param   mathContext the {@link MathContext} to use; this mainly just determines if any precision
-     *                      should be lost
-     *
-     * @return  {@link BigDecimal} representing this value, with the indicated precision
+     * {@inheritDoc}
      */
     @Override
     @SideEffectFree
     public BigDecimal toBigDecimal(
             @Nullable MathContext mathContext
     ) {
-        BigDecimal res = new BigDecimal(toBigInteger());
-        return NullnessUtils.returnDefaultIfNull(mathContext, res::round, res);
+        return AlgebraInteger.super.toBigDecimal(mathContext);
     }
     
     /**
-     * Returns a {@link BigInteger} representing this value.
-     *
-     * @param   roundingMode    the rounding mode to use; is irrelevant since this is already
-     *                          an integral type
-     *
-     * @return  this value as a {@link BigInteger}
+     * {@inheritDoc}
      */
     @Override
     @SideEffectFree
-    public BigInteger toBigInteger(
+    public final BigInteger toBigInteger(
             @Nullable RoundingMode roundingMode
     ) {
         return toBigInteger();
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply calls {@link #toBigInteger()}{@link
+     *              BigInteger#toString(int) .toString(}{@code radix}{@link BigInteger#toString(int) )}
+     */
     @Override
+    @SideEffectFree
     public String toString(int radix) {
         return toBigInteger().toString(radix);
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simpy calls {@link #toBigInteger()}{@link BigInteger#longValue()
+     *              .longValue()}
+     */
     @Override
     @Pure
     public long longValue() {
         return toBigInteger().longValue();
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simpy calls {@link #toBigInteger()}{@link BigInteger#intValue()
+     *              .intValue()}
+     */
     @Override
     @Pure
     public int intValue() {
         return toBigInteger().intValue();
+    }
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simpy calls {@link #toBigInteger()}{@link BigInteger#shortValue()
+     *              .shortValue()}
+     */
+    @Override
+    @Pure
+    public short shortValue() {
+        return toBigInteger().shortValue();
+    }
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simpy calls {@link #toBigInteger()}{@link BigInteger#byteValue()
+     *              .byteValue()}
+     */
+    @Override
+    @Pure
+    public byte byteValue() {
+        return toBigInteger().byteValue();
     }
     
     /**
@@ -209,6 +247,17 @@ public abstract class AbstractAlgebraInteger
         return toBigInteger().floatValue();
     }
     
+    /**
+     * tries the given function that would return the exact value, and if it does not work,
+     * throws an exception.
+     *
+     * @param primFunc      The function to try narrowing this with
+     * @param targetType    The target class name, for the exception message
+     *
+     * @return  the narrowed value, if narrowing loses no information
+     *
+     * @throws DisallowedNarrowingException if narrowing would lose information
+     */
     @Pure
     final long getExactVal(
             ToLongFunction<BigInteger> primFunc,
@@ -224,30 +273,45 @@ public abstract class AbstractAlgebraInteger
         }
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public long longValueExact() {
         return getExactVal(BigInteger::longValueExact, long.class);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int intValueExact() {
         return (int) getExactVal(BigInteger::intValueExact, int.class);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public short shortValueExact() {
         return (short) getExactVal(BigInteger::shortValueExact, short.class);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public byte byteValueExact() {
         return (byte) getExactVal(BigInteger::byteValueExact, byte.class);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public char charValueExact() {
@@ -266,12 +330,18 @@ public abstract class AbstractAlgebraInteger
         throw newDNE;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int hashCode() {
-        return 0x55555555 ^ toBigInteger().hashCode();
+        return ~toBigInteger().hashCode();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean equals(
@@ -280,22 +350,31 @@ public abstract class AbstractAlgebraInteger
         return (obj instanceof AlgebraInteger oAI) && (hashCode() == oAI.hashCode()) && equiv(oAI);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger negated() {
         return IntegerFactory.fromBigInteger( toBigInteger().negate() );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger max(
             long that
     ) {
         return secondIsGreater(toBigInteger(), that)
-                ? FiniteInteger.valueOf(that)
+                ? FiniteInteger.valueOfStrict(that)
                 : this;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger max(
@@ -306,6 +385,9 @@ public abstract class AbstractAlgebraInteger
                 : this;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger min(
@@ -313,7 +395,7 @@ public abstract class AbstractAlgebraInteger
     ) {
         return secondIsGreater(toBigInteger(), that)
                 ? this
-                : FiniteInteger.valueOf(that);
+                : FiniteInteger.valueOfStrict(that);
     }
     
     /**
@@ -335,6 +417,9 @@ public abstract class AbstractAlgebraInteger
                 : BigMathObjectUtils.isNegative(first);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger min(
@@ -345,6 +430,18 @@ public abstract class AbstractAlgebraInteger
                 : IntegerFactory.fromBigInteger(that);
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    public AlgebraInteger gcf(AlgebraInteger that) {
+        return getGCF(that.toBigInteger());
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger gcf(
@@ -353,6 +450,9 @@ public abstract class AbstractAlgebraInteger
         return getGCF(BigInteger.valueOf(that));
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger gcf(
@@ -361,6 +461,15 @@ public abstract class AbstractAlgebraInteger
         return getGCF(that);
     }
     
+    /**
+     * Finds the gcf of this and {@code that}
+     *
+     * @param that  the value to find the gcf of this with
+     *
+     * @return  the gcf
+     *
+     * @throws ArithmeticException  if both this and {@code that} are 0
+     */
     @SideEffectFree
     protected final AlgebraInteger getGCF(
             BigInteger that
@@ -371,6 +480,18 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( toBigInteger().gcd(that) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    public AlgebraInteger lcm(AlgebraInteger that) {
+        return lcm(that.toBigInteger());
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger lcm(
@@ -379,6 +500,9 @@ public abstract class AbstractAlgebraInteger
         return lcm(BigInteger.valueOf(that));
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger lcm(
@@ -387,6 +511,9 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( BigMathObjectUtils.lcm(toBigInteger(), that) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean canDivideBy(
@@ -395,6 +522,9 @@ public abstract class AbstractAlgebraInteger
         return BigMathObjectUtils.isDivisible(toBigInteger(), BigInteger.valueOf(divisor));
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean canDivideBy(
@@ -403,6 +533,9 @@ public abstract class AbstractAlgebraInteger
         return BigMathObjectUtils.isDivisible(toBigInteger(), divisor);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isPrime() {
@@ -410,6 +543,13 @@ public abstract class AbstractAlgebraInteger
         return (thisBI.signum() == 1) && isPrime(thisBI);
     }
     
+    /**
+     * Actual implementation of {@link #isPrime()}, working through BigIntegers
+     *
+     * @param value the value to check for primacy
+     *
+     * @return  {@code true} if {@code value} is prime, otherwise {@code false}
+     */
     @Pure
     static boolean isPrime(
             BigInteger value
@@ -436,30 +576,45 @@ public abstract class AbstractAlgebraInteger
         return true;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isOne() {
         return toBigInteger().equals(BigInteger.ONE);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isWhole() {
         return true;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public Signum signum() {
         return Signum.valueOf(toBigInteger());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public Sigmagnum sigmagnum() {
         return Sigmagnum.valueOf(toBigInteger());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int compareTo(
@@ -468,6 +623,9 @@ public abstract class AbstractAlgebraInteger
         return toBigInteger().compareTo(that.toBigInteger());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger sum(
@@ -476,6 +634,9 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( toBigInteger().add(augend.toBigInteger()) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger difference(
@@ -484,6 +645,9 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( toBigInteger().subtract(subtrahend.toBigInteger()) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger product(
@@ -492,6 +656,9 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( toBigInteger().multiply(multiplicand.toBigInteger()) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> quotientZWithRemainder(
@@ -502,6 +669,9 @@ public abstract class AbstractAlgebraInteger
                 IntegerFactory.fromBigInteger(res[1]));
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger quotientZ(
@@ -510,6 +680,9 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( toBigInteger().divide(divisor.toBigInteger()) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger remainder(
@@ -518,6 +691,9 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( toBigInteger().remainder(divisor.toBigInteger()) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger modulo(
@@ -526,6 +702,9 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( toBigInteger().mod(modulus.toBigInteger()) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger modInverse(
@@ -534,6 +713,9 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( toBigInteger().modInverse(modulus.toBigInteger()) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational raised(
@@ -542,6 +724,9 @@ public abstract class AbstractAlgebraInteger
         return intRaiser(exponent, RAT_RAISER);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger raisedZ(
@@ -550,6 +735,9 @@ public abstract class AbstractAlgebraInteger
         return IntegerFactory.fromBigInteger( toBigInteger().pow(exponent) );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational raised(
@@ -558,6 +746,9 @@ public abstract class AbstractAlgebraInteger
         return longRaiser(exponent.toBigInteger(), RAT_RAISER, true);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger raisedZ(
@@ -566,6 +757,9 @@ public abstract class AbstractAlgebraInteger
         return longRaiser(exponent.toBigInteger(), AlgebraInteger::raisedZ, false);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> rootZWithRemainder(
@@ -575,6 +769,9 @@ public abstract class AbstractAlgebraInteger
         return new NumberRemainderPair<>(this, floor, floor.raisedZ(index));
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> rootZWithRemainder(
@@ -584,6 +781,9 @@ public abstract class AbstractAlgebraInteger
         return new NumberRemainderPair<>(this, floor, floor.raisedZ(index));
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public List<? extends AlgebraInteger> factors() {
@@ -626,6 +826,14 @@ public abstract class AbstractAlgebraInteger
                 .collect(Collectors.toCollection(ArrayList::new));
     }
     
+    /**
+     * Factoring implementation for when the value can be represented as a primitive ({@code long}).
+     * {@code value} must be positive
+     *
+     * @param positiveValue the positive value to factor
+     *
+     * @return  a {@link List} of factors; the list is mutable
+     */
     @SideEffectFree
     static List<FiniteInteger> primitiveFactorer(
             @Positive long positiveValue
@@ -636,14 +844,16 @@ public abstract class AbstractAlgebraInteger
         
         if (positiveValue <= 8) {
             return new ArrayList<>(switch ((int) positiveValue) {
-                case 1 -> List.of(Cache.get(1));
-                case 2 -> List.of(Cache.get(1), Cache.get(2));
-                case 3 -> List.of(Cache.get(1), Cache.get(3));
-                case 4 -> List.of(Cache.get(1), Cache.get(2), Cache.get(4));
-                case 5 -> List.of(Cache.get(1), Cache.get(5));
-                case 6 -> List.of(Cache.get(1), Cache.get(2), Cache.get(3), Cache.get(6));
-                case 7 -> List.of(Cache.get(1), Cache.get(7));
-                case 8 -> List.of(Cache.get(1), Cache.get(2), Cache.get(4), Cache.get(8));
+                case 1 -> List.of(getFromCache(1));
+                case 2 -> List.of(getFromCache(1), getFromCache(2));
+                case 3 -> List.of(getFromCache(1), getFromCache(3));
+                case 4 -> List.of(getFromCache(1), getFromCache(2), getFromCache(4));
+                case 5 -> List.of(getFromCache(1), getFromCache(5));
+                case 6 -> List.of(getFromCache(1), getFromCache(2),
+                        getFromCache(3), getFromCache(6));
+                case 7 -> List.of(getFromCache(1), getFromCache(7));
+                case 8 -> List.of(getFromCache(1), getFromCache(2),
+                        getFromCache(4), getFromCache(8));
                 default -> throw new RuntimeException("shouldn't be reachable");
             });
         }
@@ -673,10 +883,13 @@ public abstract class AbstractAlgebraInteger
                 .collect(Collectors.toCollection(ArrayList::new));
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public List<? extends AlgebraInteger> primeFactorization() {
-        ArrayList<AlgebraInteger> factorList = new ArrayList<>();
+        List<AlgebraInteger> factorList = new ArrayList<>();
         if (signum() == Signum.POSITIVE) {
             BigInteger currVal = toBigInteger();
             BigInteger factor = BigInteger.TWO;

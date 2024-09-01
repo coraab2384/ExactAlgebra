@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.cb2384.exactalgebra.objects.AlgebraicRing;
+import org.cb2384.exactalgebra.objects.internalaccess.CacheInteger;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
 import org.cb2384.exactalgebra.objects.numbers.rational.RationalFactory;
@@ -18,39 +19,81 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>Integer values. The implementations of this class are wrappers or adapters for integer-valued-types
+ * or arbitrary integer types like {@link BigInteger}. This interface is an extension of {@link Rational},
+ * but Rational-specific seeming functions have default implementations here.</p>
+ *
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} argument,
+ * unless otherwise specified.</p>
+ *
+ * @author  Corinne Buxton
+ */
 public interface AlgebraInteger
         extends AlgebraicRing<AlgebraInteger, AlgebraNumber>, Rational {
     
+    /**
+     * As this is an {@link AlgebraInteger} and therefore a whole value, its numerator is itself.
+     *
+     * @return  this, as it is its own numerator due to being whole
+     */
     @Override
     @Pure
     default @This AlgebraInteger numeratorAI() {
         return this;
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} and therefore a whole value, its denominator is 1
+     *
+     * @return  1 (as a {@link FiniteInteger}), as it is its own numerator due to being whole
+     */
     @Override
     @Pure
     default AlgebraInteger denominatorAI() {
-        return FiniteInteger.valueOf(1);
+        return CacheInteger.CACHE.get(1).getFirst();
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} it is therefore its own whole value
+     *
+     * @return  this, as it is its own whole value
+     */
     @Override
     @Pure
     default @This AlgebraInteger wholeAI() {
         return this;
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} and therefore a whole value, its numerator is itself.
+     * Thus, the numerator as a {@link BigInteger} is the same as {@link #toBigInteger()}.
+     *
+     * @return  this as a BigInteger, as it is its own numerator due to being whole
+     */
     @Override
     @SideEffectFree
     default BigInteger numeratorBI() {
         return toBigInteger();
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} and therefore a whole value, its denominator is 1
+     *
+     * @return  {@link BigInteger#ONE}
+     */
     @Override
     @Pure
     default BigInteger denominatorBI() {
         return BigInteger.ONE;
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} it is therefore its own whole value. Thus, it as a {@link BigInteger}
+     * is the same as simply {@link #toBigInteger()}.
+     *
+     * @return  this as a BigInteger, as it is its own whole value
+     */
     @Override
     @SideEffectFree
     default BigInteger wholeBI() {
@@ -212,7 +255,8 @@ public interface AlgebraInteger
     BigInteger toBigInteger();
     
     /**
-     * Returns a {@link BigInteger} representing this value.
+     * Returns a {@link BigInteger} representing this value. Since AlgebraIntegers are integer types,
+     * this result shall be the same as that from {@link #toBigInteger()}.
      *
      * @param   roundingMode    the rounding mode to use; is irrelevant since this is already
      *                          an integral type
@@ -227,63 +271,154 @@ public interface AlgebraInteger
         return toBigInteger();
     }
     
+    /**
+     * returns a {@code long} representation of this
+     *
+     * @return  this as a {@code long}
+     */
+    @Pure
     long longValue();
     
+    /**
+     * Returns a {@code int} representation of this.
+     *
+     * @implNote    The default implementation simply calls <code>(int)&nbsp;</code>{@link #longValue()}.
+     *
+     * @return  this as a {@code int}
+     */
+    @Pure
     default int intValue() {
         return (int) longValue();
     }
     
+    /**
+     * Returns a {@code short} representation of this.
+     *
+     * @implNote    The default implementation simply calls <code>(short)&nbsp;</code>{@link #longValue()}.
+     *
+     * @return  this as a {@code short}
+     */
+    @Pure
     default short shortValue() {
         return (short) longValue();
     }
     
+    /**
+     * Returns a {@code long} representation of this.
+     *
+     * @implNote    The default implementation simply calls <code>(byte)&nbsp;</code>{@link #longValue()}.
+     *
+     * @return  this as a {@code long}
+     */
+    @Pure
     default byte byteValue() {
         return (byte) longValue();
     }
     
     /**
-     * {@inheritDoc}
+     * Yields this as a {@code long}, but throwing an exception if information would be lost
      *
-     * @implNote    This default implementation simply calls {@link #toBigInteger()}{@link
-     *              BigInteger#floatValue() .floatValue()}.
+     * @return  a {@code long} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
      */
-    @Override
-    @Pure
-    default float floatValue() {
-        return toBigInteger().floatValue();
-    }
-    
     long longValueExact();
     
+    /**
+     * Yields this as a {@code int}, but throwing an exception if information would be lost
+     *
+     * @return  a {@code int} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
+     */
     int intValueExact();
     
+    /**
+     * Yields this as a {@code short}, but throwing an exception if information would be lost
+     *
+     * @return  a {@code short} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
+     */
     short shortValueExact();
     
+    /**
+     * Yields this as a {@code byte}, but throwing an exception if information would be lost
+     *
+     * @return  a {@code byte} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
+     */
     byte byteValueExact();
     
+    /**
+     * Yields this as a {@code char}, but throwing an exception if information would be lost
+     *
+     * @return  a {@code char} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
+     */
     char charValueExact();
     
+    /**
+     * As an integer type, all AlgebraIntegers are whole
+     *
+     * @return  {@code true}
+     */
     @Override
     @Pure
     default boolean isWhole() {
         return true;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     AlgebraInteger negated();
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    The default implementation simply calls {@link #isNegative()}<code> ? </code>{@link
+     *              #negated()}<code> : this</code>
+     */
     @Override
     @SideEffectFree
     default AlgebraInteger magnitude() {
-        return (AlgebraInteger) Rational.super.magnitude();
+        return isNegative() ? negated() : this;
     }
+    
+    /**
+     * <p>The contract regarding {@link #equals} suggests that any two values in the same "Rank" (such as
+     * any two AlgebraIntegers) should be equal if they represent the same value.
+     * Since {@link Object#equals} also has a contractual obligation with {@link Object#hashCode()},
+     * The hashcodes of all Rationals should be standardized.</p>
+     *
+     * <p>However, an interface may not override a function from {@link Object},
+     * so it cannot be specified through the interface. It should be the bitwise negation operation ({@code ~})
+     * of hashcode of the {@link BigInteger} representation of this value.</p>
+     *
+     * @implSpec    The result shall be equivalent to that returned by {@code ~ }{@link
+     *              #toBigInteger()}{@link BigInteger#hashCode() .hashCode()}.
+     *
+     * @return  a hashcode for this Rational
+     */
+    @Override
+    @Pure
+    int hashCode();
     
     /**
      * {@inheritDoc}
      *
      * @implNote    This default implementation simply calls {@code (}{@link #compareTo compareTo(}{@code
-     *              that}{@link #compareTo )&nbsp}{@code < 0) ? that : this}.
+     *              that}{@link #compareTo )&nbsp;}{@code < 0) ? that : this}.
      */
     @Override
     @Pure
@@ -347,29 +482,75 @@ public interface AlgebraInteger
     @SideEffectFree
     AlgebraInteger min(BigInteger that);
     
+    /**
+     * Finds the greatest common factor of this and {@code that}..
+     *
+     * @param that  the value to find the gcf with
+     *
+     * @return  the gcf
+     *
+     * @throws ArithmeticException  if both this and {@code that} are 0
+     */
     @SideEffectFree
-    default AlgebraInteger gcf(
-            AlgebraInteger that
-    ) {
-        return gcf(that.toBigInteger());
-    }
+    AlgebraInteger gcf(AlgebraInteger that);
     
+    /**
+     * Finds the greatest common factor of this and {@code that}..
+     *
+     * @param that  the value to find the gcf with
+     *
+     * @return  the gcf
+     *
+     * @throws ArithmeticException  if both this and {@code that} are 0
+     */
     @SideEffectFree
     AlgebraInteger gcf(long that);
     
+    /**
+     * Finds the greatest common factor of this and {@code that}..
+     *
+     * @param that  the value to find the gcf with
+     *
+     * @return  the gcf
+     *
+     * @throws ArithmeticException  if both this and {@code that} are 0
+     */
     @SideEffectFree
     AlgebraInteger gcf(BigInteger that);
     
+    /**
+     * Finds the least common multiple of this and {@code that}.
+     *
+     * @param that  the value to find the lcm with
+     *
+     * @return  the lcm
+     *
+     * @throws ArithmeticException  if either this or {@code that} are 0
+     */
     @SideEffectFree
-    default AlgebraInteger lcm(
-            AlgebraInteger that
-    ) {
-        return lcm(that.toBigInteger());
-    }
+    AlgebraInteger lcm(AlgebraInteger that);
     
+    /**
+     * Finds the least common multiple of this and {@code that}.
+     *
+     * @param that  the value to find the lcm with
+     *
+     * @return  the lcm
+     *
+     * @throws ArithmeticException  if either this or {@code that} are 0
+     */
     @SideEffectFree
     AlgebraInteger lcm(long that);
     
+    /**
+     * Finds the least common multiple of this and {@code that}.
+     *
+     * @param that  the value to find the lcm with
+     *
+     * @return  the lcm
+     *
+     * @throws ArithmeticException  if either this or {@code that} are 0
+     */
     @SideEffectFree
     AlgebraInteger lcm(BigInteger that);
     
@@ -411,6 +592,30 @@ public interface AlgebraInteger
         return canDivideBy(divisor.toBigInteger());
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger sum(AlgebraInteger augend);
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraNumber difference(AlgebraNumber subtrahend);
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger product(AlgebraInteger multiplicand);
+    
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     default NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> quotientZWithRemainder(
@@ -418,6 +623,13 @@ public interface AlgebraInteger
     ) {
         return new NumberRemainderPair<>(quotientZ(divisor), remainder(divisor));
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger remainder(AlgebraInteger divisor);
     
     /**
      * Finds the modulo of this by {@code modulus}, similar to {@code %}. However, in line with other languages,
@@ -446,11 +658,28 @@ public interface AlgebraInteger
     @SideEffectFree
     AlgebraInteger modInverse(AlgebraInteger modulus);
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     default AlgebraInteger squared() {
-        return (AlgebraInteger) Rational.super.squared();
+        return product(this);
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger raisedZ(int exponent);
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger raisedZ(AlgebraInteger exponent);
     
     /**
      * Finds the square root of this, always rounded down to an

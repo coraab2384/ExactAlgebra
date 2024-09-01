@@ -6,7 +6,7 @@ import java.math.BigInteger;
 
 import org.checkerframework.dataflow.qual.*;
 
-public class ArbitraryRational
+public final class ArbitraryRational
         extends AbstractRational
         implements Serializable {
     
@@ -28,7 +28,23 @@ public class ArbitraryRational
     }
     
     @SideEffectFree
-    public static ArbitraryRational fromBigIntegers(
+    public static Rational fromBigIntegers(
+            BigInteger numerator,
+            BigInteger denominator
+    ) {
+        return RationalFactory.fromBigIntegers(numerator, denominator);
+    }
+    
+    @SideEffectFree
+    public static Rational fromLongs(
+            long numerator,
+            long denominator
+    ) {
+        return RationalFactory.fromLongs(numerator, denominator);
+    }
+    
+    @SideEffectFree
+    public static ArbitraryRational fromBigIntegersStrict(
             BigInteger numerator,
             BigInteger denominator
     ) {
@@ -49,11 +65,11 @@ public class ArbitraryRational
     }
     
     @SideEffectFree
-    public static ArbitraryRational fromPrims(
+    public static ArbitraryRational fromLongsStrict(
             long numerator,
             long denominator
     ) {
-        return fromBigIntegers(BigInteger.valueOf(numerator), BigInteger.valueOf(denominator));
+        return fromBigIntegersStrict(BigInteger.valueOf(numerator), BigInteger.valueOf(denominator));
     }
     
     @Override

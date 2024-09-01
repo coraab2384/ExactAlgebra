@@ -4,7 +4,16 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.IntConsumer;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.numericalmethod.suanshu.Constant;
 import com.numericalmethod.suanshu.number.big.BigDecimalUtils;
@@ -17,6 +26,7 @@ import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
 import org.cb2384.exactalgebra.objects.numbers.rational.RationalFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
+import org.cb2384.exactalgebra.util.corutils.StringUtils;
 import org.cb2384.exactalgebra.util.corutils.functional.ObjectThenIntToObjectFunction;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
@@ -56,70 +66,33 @@ public abstract class AbstractAlgebraNumber
     protected static final String DIV_0_EXC_MSG = "Cannot have denominator of 0";
     
     /**
-     * Cache for common values (from {@link #CACHE_DEPTH} to {@code -}{@link #CACHE_DEPTH}, integers)
+     * Retrieves a value from the cache
+     *
+     * @param value   the actual value of the integer-type to retrieve
+     *
+     * @return  the corresponding {@link AlgebraInteger}
      */
-    protected static final class Cache {
-        /**
-         * actual cache; non-final to prevent class-loading deadlock, but is treated similarly to a lazily-built
-         * singleton.
-         */
-        private static FiniteInteger[][] CACHE;
-        
-        /**
-         * This should never be called
-         *
-         * @throws  IllegalAccessException    always
-         */
-        private Cache() throws IllegalAccessException {
-            throw new IllegalAccessException("This should never be called‽");
-        }
-        
-        /**
-         * Builds the cache; to be run only when the current cache is null
-         */
-        private static void buildCache() {
-            
-            CACHE = new FiniteInteger[][]{
-                    new FiniteInteger[CACHE_DEPTH],
-                    new FiniteInteger[1],
-                    new FiniteInteger[CACHE_DEPTH]
-            };
-            
-            CACHE[1][0] = new CacheInteger(0);
-            for (short i = -1; i <= 1; i++) {
-                short iOld = i++;
-                for (short j = 0; j < CACHE_DEPTH; j++) {
-                    int value = iOld * (j + 1);
-                    CACHE[i][j] = new CacheInteger(value);
-                }
-            }
-        }
-        
-        /**
-         * Retrieves a value from the cache
-         *
-         * @param   value   the actual value of the integer-type to retrieve
-         *
-         * @return  the corresponding {@link AlgebraInteger}
-         */
-        public static FiniteInteger get(
-                @IntRange(from = -CACHE_DEPTH, to = CACHE_DEPTH) int value
-        ) {
-            if (CACHE == null) {
-                buildCache();
-            }
-            
-            int firstIndex = Integer.signum(value) + 1;
-            int secondIndex = switch (firstIndex) {
-                case 0 -> -value - 1;
-                case 2 -> value - 1;
-                default -> 0;
-            };
-            return CACHE[firstIndex][secondIndex];
-        }
+    protected static FiniteInteger getFromCache(
+            @IntRange(from = -CACHE_DEPTH, to = CACHE_DEPTH) int value
+    ) {
+        int firstIndex = Integer.signum(value) + 1;
+        int secondIndex = switch (firstIndex) {
+            case 0 -> -value - 1;
+            case 1 -> 0;
+            case 2 -> value - 1;
+            default -> throw new IllegalStateException();
+        };
+        return CacheInteger.CACHE.get(firstIndex).get(secondIndex);
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies upon {@link #toBigInteger(RoundingMode)} for the actual
+     *              rounding, and just presents its result as an AlgebraInteger instead
+     */
     @Override
+    @SideEffectFree
     public AlgebraInteger roundZ(
             RoundingMode roundingMode
     ) {
@@ -129,10 +102,9 @@ public abstract class AbstractAlgebraNumber
     /**
      * {@inheritDoc}
      *
-     * @implNote    The default implementation uses the default context (which is itself composed from
+     * @implNote    This skeletal implementation uses the default context (which is itself composed from
      *              {@link MathContext#MathContext(int, RoundingMode)} using {@link #DEFAULT_PRECISION} and
-     *              {@link #DEFAULT_ROUNDING}), calling {@link #roundQ(MathContext) roundQ(}{@link
-     *              AbstractAlgebraInteger#DEFAULT_CONTEXT}{@link #roundQ(MathContext) )}.
+     *              {@link #DEFAULT_ROUNDING}).
      */
     @Override
     @SideEffectFree
@@ -158,11 +130,11 @@ public abstract class AbstractAlgebraNumber
     }
     
     /**
-     * For {@link #toBigDecimal(MathContext)} and {@link #roundQ(MathContext)}.
+     * For {@link #toBigDecimal(MathContext)} and {@link #roundQ(MathContext)}, creates the context from
+     * two {@code null}able arguments.
      *
-     * @param   precision   the precision
-     *
-     * @param   roundingMode    the rounding mode
+     * @param precision     the precision
+     * @param roundingMode  the rounding mode
      *
      * @return  the new math context
      */
@@ -172,7 +144,7 @@ public abstract class AbstractAlgebraNumber
             @Nullable RoundingMode roundingMode
     ) {
         return new MathContext(
-                (precision != null) ? Math.max(precision, MAX_PRECISION) : DEFAULT_PRECISION,
+                (precision != null) ? Math.min(precision, MAX_PRECISION) : DEFAULT_PRECISION,
                 Objects.requireNonNullElse(roundingMode, DEFAULT_ROUNDING)
         );
     }
@@ -180,11 +152,11 @@ public abstract class AbstractAlgebraNumber
     /**
      * {@inheritDoc}
      *
-     * @implNote    The default implementation uses the default context (which is itself composed from
+     * @implNote    This skeletal implementation uses the default context (which is itself composed from
      *              {@link MathContext#MathContext(int, RoundingMode)} using {@link #DEFAULT_PRECISION} and
-     *              {@link #DEFAULT_ROUNDING}), calling {@link #roundQ(MathContext) roundQ(}{@link
-     *              AbstractAlgebraNumber#DEFAULT_CONTEXT}{@link #roundQ(MathContext) )}.
+     *              {@link #DEFAULT_ROUNDING}).
      */
+    @Override
     @SideEffectFree
     public BigDecimal toBigDecimal() {
         return toBigDecimal(DEFAULT_CONTEXT);
@@ -208,9 +180,9 @@ public abstract class AbstractAlgebraNumber
     }
     
     /**
-     * Returns a string representation of this {@link AlgebraNumber}.
-     * Equivalent to {@link AlgebraNumber#toString(int) toString(10)}
-     * @return a base-10 string of this
+     * Yield this number in string form, in normal base 10
+     *
+     * @return  a string representing the value of this object
      */
     @Override
     @SideEffectFree
@@ -242,23 +214,32 @@ public abstract class AbstractAlgebraNumber
         return sigmagnum().signum();
     }
     
+    /**
+     * <p>Two AlgebraNumbers are equal if they represent the same value and do so as part of the same "Rank".
+     * A {@link Rational} subclass which is not in fact an {@link AlgebraInteger} subclass thus cannot equal
+     * any {@link AlgebraInteger} subclass, even if both represent the same whole number value.</p>
+     *
+     * <p>Excepting the above and the fact that this permits (though will return {@code false} for) {@code null},
+     * this is equivalent to {@link #equiv} in output for the same input</p>
+     *
+     * @param obj   The object to test for equality
+     *
+     * @return  {@code true} if these values are equal and have the same "Rank" or over-arching
+     *          interface membership; otherwise {@code false}
+     */
     @Override
     @Pure
     public boolean equals(
             @Nullable Object obj
     ) {
-        return switch (obj) {
-            case Rational oRat -> false;
-            case AlgebraNumber oAN -> (hashCode() == oAN.hashCode()) && equiv(oAN);
-            case null, default -> false;
-        };
+        return (obj instanceof AlgebraNumber oAN) && (hashCode() == oAN.hashCode()) && equiv(oAN);
     }
     
     /**
      * {@inheritDoc}
      *
-     * @implNote    This skeletal implementation uses {@link #quotientZ} and subtraction to find the remainder,
-     *              and so {@link #quotientZ} cannot call this method unless overridden.
+     * @implNote    This skeletal implementation uses {@link #quotientZ}, and then subtraction to find
+     *              the remainder, so {@link #quotientZ} cannot call this method unless overridden.
      */
     @Override
     @SideEffectFree
@@ -269,6 +250,12 @@ public abstract class AbstractAlgebraNumber
         return new NumberRemainderPair<>(this, quotient, quotient.product(divisor));
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply takes the normal quotient and rounds it using
+     *              {@link RoundingMode#DOWN}
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger quotientZ(
@@ -277,13 +264,18 @@ public abstract class AbstractAlgebraNumber
         return quotient(divisor).roundZ(RoundingMode.DOWN);
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply takes the normal quotient and rounds it
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger quotientRoundZ(
             AlgebraNumber divisor,
             @Nullable RoundingMode roundingMode
     ) {
-        return quotient(divisor).roundZ( Objects.requireNonNullElse(roundingMode, DEFAULT_ROUNDING) );
+        return quotient(divisor).roundZ(Objects.requireNonNullElse(roundingMode, DEFAULT_ROUNDING));
     }
     
     /**
@@ -317,16 +309,17 @@ public abstract class AbstractAlgebraNumber
     /**
      * Find the modulo result, by means of the remainder.
      *
-     * @param   modulus the modulus; one can also think of this as being similar to a divisor, except that it may
+     * @param modulus   the modulus; one can also think of this as being similar to a divisor, except that it may
      *                  not be negative.
      *
      * @return  {@code this % modulus}, so long as {@code modulus > 0}
      *
-     * @throws  ArithmeticException if {@code modulus <= 0}
+     * @throws ArithmeticException  if {@code modulus <= 0}
+     * @throws ClassCastException   if {@code N} is not closed under {@link #remainder}
      *
-     * @param   <N> the currently-used type of this, {@code modulus}, and the result
+     * @param <N>   the currently-used type of this, {@code modulus}, and the result
      */
-    @SideEffectFree
+    @SideEffectFree @SuppressWarnings("unchecked")
     protected final <N extends AlgebraNumber> N getModulo(
             N modulus
     ) {
@@ -368,23 +361,21 @@ public abstract class AbstractAlgebraNumber
      * uses the absolute value and then inverts the result as a finishing operation; otherwise, the positive value
      * is given to {@code raiser}, whose result is then directly returned.
      *
-     * @param   exponent    the exponent to raise this to the power of
-     *
-     * @param   raiser  the actual way for this to be raised to the positive {@code int} power, which must be
+     * @param exponent  the exponent to raise this to the power of
+     * @param raiser    the actual way for this to be raised to the positive {@code int} power, which must be
      *                  provided
      *
      * @return  this raised to the power of {@code exponent}
      *
-     * @throws  ArithmeticException if {@code exponent <= 0} while this is 0
-     *
-     * @throws  ClassCastException  if {@link N} is not closed under multiplication
+     * @throws ArithmeticException  if {@code exponent <= 0} while this is 0
+     * @throws ClassCastException   if {@code N} is not closed under multiplication
      *                              ({@link AlgebraNumber#product}) or inversion
      *                              ({@link AlgebraNumber#inverted}) or is not a
      *                              superclass of {@link FiniteInteger}
      *
-     * @param   <N> the currently-used class of this, and the class of the result
+     * @param <N>   the currently-used class of this, and the class of the result
      */
-    @SideEffectFree
+    @SideEffectFree @SuppressWarnings("unchecked")
     protected final <N extends AlgebraNumber> N intRaiser(
             int exponent,
             ObjectThenIntToObjectFunction<N, N> raiser
@@ -396,25 +387,22 @@ public abstract class AbstractAlgebraNumber
     /**
      * Executes and finishes {@code base} to the power of {@code exponent}.
      *
-     * @param   base    the base to raise
-     *
-     * @param   exponent    the exponent to raise {@code base} to the power of
-     *
-     * @param   raiser  the actual way for {@code base} to be raised to the positive {@code int} power,
+     * @param base      the base to raise
+     * @param exponent  the exponent to raise {@code base} to the power of
+     * @param raiser    the actual way for {@code base} to be raised to the positive {@code int} power,
      *                  which must be provided
      *
      * @return  {@code base ^ exponent}
      *
-     * @throws  ArithmeticException if {@code exponent <= 0} while this is 0
-     *
-     * @throws  ClassCastException  if {@link N} is not closed under multiplication
+     * @throws ArithmeticException  if {@code exponent <= 0} while this is 0
+     * @throws ClassCastException   if {@code N} is not closed under multiplication
      *                              ({@link AlgebraNumber#product}) or inversion
      *                              ({@link AlgebraNumber#inverted}) or is not a
      *                              superclass of {@link FiniteInteger}
      *
-     * @param   <N> and the class of {@code base} and the result
+     * @param <N>   the class of {@code base} and the result
      */
-    @SideEffectFree
+    @SideEffectFree @SuppressWarnings("unchecked")
     private static <N extends AlgebraNumber> N intRaiser(
             N base,
             int exponent,
@@ -426,7 +414,7 @@ public abstract class AbstractAlgebraNumber
         }
         int exponentAbs = Math.abs(exponent);
         N res = switch(exponentAbs) {
-            case 0 -> (N) Cache.get(1);
+            case 0 -> (N) getFromCache(1);
             case 1 -> base;
             case 2 -> (N) base.squared();
             default -> raiser.apply(base, exponentAbs);
@@ -437,6 +425,12 @@ public abstract class AbstractAlgebraNumber
         return (exponent < 0) ? (N) res.inverted() : res;
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #raised(int)}, and an override of that
+     *              function may also change how this operates.
+     */
     @Override
     @SideEffectFree
     public AlgebraNumber raised(
@@ -451,27 +445,24 @@ public abstract class AbstractAlgebraNumber
      * is given to {@code raiser}, whose result is then directly returned. If the value of {@code exponent} is
      * too large to be an {@code int}, then it is broken up into {@code int}-sized parts.
      *
-     * @param   exponent    the exponent to raise this to the power of
-     *
-     * @param   raiser  the actual way for this to be raised to the positive {@code int} power, which must be
-     *                  provided
-     *
-     * @param   canBeNegative   for checking the arguments, a flag to show that negative exponents should not
-     *                          be allowed (such as in the case of {@link AlgebraInteger#raisedZ})
+     * @param exponent      the exponent to raise this to the power of
+     * @param raiser        the actual way for this to be raised to the positive {@code int} power, which must be
+     *                      provided
+     * @param canBeNegative for checking the arguments, a flag to show that negative exponents should not
+     *                      be allowed (such as in the case of {@link AlgebraInteger#raisedZ})
      *
      * @return  this raised to the power of {@code exponent}
      *
-     * @throws  ArithmeticException if {@code exponent <= 0} while this is 0, or if
+     * @throws ArithmeticException  if {@code exponent <= 0} while this is 0, or if
      *                              {@code exponent < 0} while {@code canBeNegative == false}
-     *
-     * @throws  ClassCastException  if {@link N} is not closed under multiplication
+     * @throws ClassCastException   if {@code N} is not closed under multiplication
      *                              ({@link AlgebraNumber#product}) or inversion
      *                              ({@link AlgebraNumber#inverted}) or is not a
      *                              superclass of {@link FiniteInteger}
      *
-     * @param   <N> the currently-used class of this, and the class of the result
+     * @param <N>   the currently-used class of this, and the class of the result
      */
-    @SideEffectFree
+    @SideEffectFree @SuppressWarnings("unchecked")
     protected final <N extends AlgebraNumber> N longRaiser(
             BigInteger exponent,
             ObjectThenIntToObjectFunction<N, N> raiser,
@@ -495,21 +486,19 @@ public abstract class AbstractAlgebraNumber
      * too large to be an {@code int}, then it is broken up into {@code int}-sized parts which are
      * raised recursively.
      *
-     * @param   base    the base to raise
-     *
-     * @param   exponent    the positive exponent to raise this to the power of
-     *
-     * @param   raiser  the actual way for this to be raised to the positive {@code int} power, which must be
+     * @param base      the base to raise
+     * @param exponent  the positive exponent to raise this to the power of
+     * @param raiser    the actual way for this to be raised to the positive {@code int} power, which must be
      *                  provided
      *
      * @return  this raised to the power of {@code exponent}
      *
-     * @throws  ClassCastException  if {@link N} is not closed under multiplication
+     * @throws ClassCastException   if {@link N} is not closed under multiplication
      *                              ({@link AlgebraNumber#product})
      *
-     * @param   <N> the class of {@code base} and the result
+     * @param <N>   the class of {@code base} and the result
      */
-    @SideEffectFree
+    @SideEffectFree @SuppressWarnings("unchecked")
     private static <N extends AlgebraNumber> N recurRaiser(
             N base,
             BigInteger exponent,
@@ -534,14 +523,12 @@ public abstract class AbstractAlgebraNumber
     /**
      * Checks that the index or exponent will not result in an exception, or throws said exception.
      *
-     * @param   exponentSignum  the signum of the exponent or index to check; must be in {@code [-1, 1]} ({@code 1},
+     * @param exponentSignum    the signum of the exponent or index to check; must be in {@code [-1, 1]} ({@code 1},
      *                          {@code 0}, or {@code -1})
+     * @param canBeNegative     indicates whether negatives should throw an exception
+     * @param isExponent        for the exception message, indicates whether to call it an exponent or index
      *
-     * @param   canBeNegative   indicates whether negatives should throw an exception
-     *
-     * @param   isExponent  for the exception message, indicates whether to call it an exponent or index
-     *
-     * @throws  ArithmeticException if {@code exponent <= 0} while this is 0, or if
+     * @throws ArithmeticException  if {@code exponent <= 0} while this is 0, or if
      *                              {@code exponent < 0} while {@code canBeNegative == false}
      */
     @Pure
@@ -551,7 +538,6 @@ public abstract class AbstractAlgebraNumber
             boolean isExponent
     ) {
         assert Integer.signum(exponentSignum) == exponentSignum;
-        Signum signum = signum();
         if (isZero()) {
             switch (exponentSignum) {
                 case -1 -> throw new ArithmeticException("0 to negative exponent");
@@ -565,21 +551,21 @@ public abstract class AbstractAlgebraNumber
         }
     }
     
-    @Override
-    @SideEffectFree
-    public AlgebraNumber root(
-            int index
-    ) {
-        return rootRoundQ(index, MAX_PREC_CONTEXT);
-    }
-    
-    @Override
-    @SideEffectFree
-    public AlgebraNumber root(
-            AlgebraInteger index
-    ) {
-        return rootRoundQ(index, MAX_PREC_CONTEXT);
-    }
+//    @Override
+//    @SideEffectFree
+//    public AlgebraNumber root(
+//            int index
+//    ) {
+//        return rootRoundQ(index, MAX_PREC_CONTEXT);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public AlgebraNumber root(
+//            AlgebraInteger index
+//    ) {
+//        return rootRoundQ(index, MAX_PREC_CONTEXT);
+//    }
     
     @Override
     @SideEffectFree
@@ -599,25 +585,25 @@ public abstract class AbstractAlgebraNumber
         return new NumberRemainderPair<>(this, floor, floor.raised(index));
     }
     
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> rootQWithRemainder(
-            int index,
-            @Nullable Integer precision
-    ) {
-        Rational floor = rootRoundQ(index, getContextFrom(precision, RoundingMode.DOWN));
-        return new NumberRemainderPair<>(this, floor, floor.raised(index));
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> rootQWithRemainder(
-            AlgebraInteger index,
-            @Nullable Integer precision
-    ) {
-        Rational floor = rootRoundQ(index, getContextFrom(precision, RoundingMode.DOWN));
-        return new NumberRemainderPair<>(this, floor, floor.raised(index));
-    }
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> rootQWithRemainder(
+//            int index,
+//            @Nullable Integer precision
+//    ) {
+//        Rational floor = rootRoundQ(index, getContextFrom(precision, RoundingMode.DOWN));
+//        return new NumberRemainderPair<>(this, floor, floor.raised(index));
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> rootQWithRemainder(
+//            AlgebraInteger index,
+//            @Nullable Integer precision
+//    ) {
+//        Rational floor = rootRoundQ(index, getContextFrom(precision, RoundingMode.DOWN));
+//        return new NumberRemainderPair<>(this, floor, floor.raised(index));
+//    }
     
     @Override
     @SideEffectFree
@@ -625,6 +611,10 @@ public abstract class AbstractAlgebraNumber
             int index,
             @Nullable RoundingMode roundingMode
     ) {
+        // If negative with even index
+        if (isNegative() && ((index & 1) != 1)) {
+            throw new ArithmeticException("Negative value with an even radical index!");
+        }
         BigDecimal resBD = rootRound(index, getInitContextZ(roundingMode), null);
         return IntegerFactory.fromBigInteger(resBD.toBigInteger());
     }
@@ -635,49 +625,59 @@ public abstract class AbstractAlgebraNumber
             AlgebraInteger index,
             @Nullable RoundingMode roundingMode
     ) {
+        // If negative with even index
+        if (isNegative() && index.canDivideBy(2)) {
+            throw new ArithmeticException("Negative value with an even radical index!");
+        }
         BigDecimal resBD = rootRound(index, getInitContextZ(roundingMode), null);
         return IntegerFactory.fromBigInteger(resBD.toBigInteger());
     }
     
-    @Override
-    @SideEffectFree
-    public Rational rootRoundQ(
-            int index,
-            @Nullable MathContext mathContext
-    ) {
-        MathContext ratContext = getRatContext(mathContext);
-        return RationalFactory.fromBigDecimal(rootRound(
-                index,
-                getInitContextQ(ratContext),
-                ratContext
-        ));
-    }
-    
-    @Override
-    @SideEffectFree
-    public Rational rootRoundQ(
-            AlgebraInteger index,
-            @Nullable MathContext mathContext
-    ) {
-        MathContext ratContext = getRatContext(mathContext);
-        return RationalFactory.fromBigDecimal(rootRound(
-                index,
-                getInitContextQ(ratContext),
-                ratContext
-        ));
-    }
+//    @Override
+//    @SideEffectFree
+//    public Rational rootRoundQ(
+//            int index,
+//            @Nullable MathContext mathContext
+//    ) {
+//        // If negative with even index
+//        if (isNegative() && ((index & 1) != 1)) {
+//            throw new ArithmeticException("Negative value with an even radical index!");
+//        }
+//        MathContext ratContext = getRatContext(mathContext);
+//        return RationalFactory.fromBigDecimal(rootRound(
+//                index,
+//                getInitContextQ(ratContext),
+//                ratContext
+//        ));
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public Rational rootRoundQ(
+//            AlgebraInteger index,
+//            @Nullable MathContext mathContext
+//    ) {
+//        // If negative with even index
+//        if (isNegative() && index.canDivideBy(2)) {
+//            throw new ArithmeticException("Negative value with an even radical index!");
+//        }
+//        MathContext ratContext = getRatContext(mathContext);
+//        return RationalFactory.fromBigDecimal(rootRound(
+//                index,
+//                getInitContextQ(ratContext),
+//                ratContext
+//        ));
+//    }
     
     /**
      * Takes the {@code index}<sup>th</sup> root of this, as a {@link BigDecimal}.
      * Both contexts should have the same {@link RoundingMode}, but the precision of {@code initContext}
      * should be larger, to keep precision-based errors minimal for the value with the final context.
      *
-     * @param   index   the index of the root
-     *
-     * @param   initContext the initialization context to use for turning the receiver and arguments
-     *                      into {@link BigDecimal}s; this also dictates the {@link RoundingMode}
-     *
-     * @param   rationalContext the context to provide the value in; if it is {@code null}, then the value will
+     * @param index             the index of the root
+     * @param initContext       the initialization context to use for turning the receiver and arguments
+     *                          into {@link BigDecimal}s; this also dictates the {@link RoundingMode}
+     * @param rationalContext   the context to provide the value in; if it is {@code null}, then the value will
      *                          be provided as a {@link BigDecimal} that has a scale of {@code 0}, and is therefore
      *                          ready to be turned into a {@link BigInteger} without loss of precision
      *
@@ -690,22 +690,23 @@ public abstract class AbstractAlgebraNumber
             @Nullable MathContext rationalContext
     ) {
         int firstPrec = initContext.getPrecision();
+        boolean isNegative = isNegative();
+        BigDecimal thisBD = toBigDecimal(initContext);
         BigDecimal resBD = BigDecimalUtils.pow(
-                toBigDecimal(initContext),
+                isNegative ? thisBD.negate() : thisBD,
                 rootIndexToPower(BigInteger.valueOf(index), initContext),
                 firstPrec
         );
         assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
-        return finalProcessForRoundedRealOp(resBD,
+        return finalProcessForRoundedRealOp(isNegative ? resBD.negate() : resBD,
                 initContext, rationalContext);
     }
     
     /**
      * Since the root operation is actually a power, need to turn the root index into a BigDecimal
      *
-     * @param index the index to transform
-     *
-     * @param   initContext the initialization context for the resulting BigDecimal
+     * @param index         the index to transform
+     * @param initContext   the initialization context for the resulting BigDecimal
      *
      * @return  {@code 1 / index}, as a BigDecimal with the given context
      */
@@ -722,12 +723,10 @@ public abstract class AbstractAlgebraNumber
      * Both contexts should have the same {@link RoundingMode}, but the precision of {@code initContext}
      * should be larger, to keep precision-based errors minimal for the value with the final context.
      *
-     * @param   index   the index of the root
-     *
-     * @param   initContext the initialization context to use for turning the receiver and arguments
-     *                      into {@link BigDecimal}s; this also dictates the {@link RoundingMode}
-     *
-     * @param   rationalContext the context to provide the value in; if it is {@code null}, then the value will
+     * @param index             the index of the root
+     * @param initContext       the initialization context to use for turning the receiver and arguments
+     *                          into {@link BigDecimal}s; this also dictates the {@link RoundingMode}
+     * @param rationalContext   the context to provide the value in; if it is {@code null}, then the value will
      *                          be provided as a {@link BigDecimal} that has a scale of {@code 0}, and is therefore
      *                          ready to be turned into a {@link BigInteger} without loss of precision
      *
@@ -740,216 +739,227 @@ public abstract class AbstractAlgebraNumber
             @Nullable MathContext rationalContext
     ) {
         int firstPrec = initContext.getPrecision();
+        boolean isNegative = isNegative();
+        BigDecimal thisBD = toBigDecimal(initContext);
         BigDecimal resBD = BigDecimalUtils.pow(
-                toBigDecimal(initContext),
+                isNegative ? thisBD.negate() : thisBD,
                 rootIndexToPower(index.toBigInteger(), initContext),
                 firstPrec
         );
         assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
-        return finalProcessForRoundedRealOp(resBD,
+        return finalProcessForRoundedRealOp(isNegative ? resBD.negate() : resBD,
                 initContext, rationalContext);
     }
     
-    @Override
-    @SideEffectFree
-    public AlgebraNumber exp() {
-        return expRoundQ(MAX_PREC_CONTEXT);
-    }
+//    @Override
+//    @SideEffectFree
+//    public AlgebraNumber exp() {
+//        return expRoundQ(MAX_PREC_CONTEXT);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public AlgebraNumber power(
+//            AlgebraNumber power
+//    ) {
+//        return powerRoundQ(power, MAX_PREC_CONTEXT);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public AlgebraNumber logNatural() {
+//        return lnRoundQ(MAX_PREC_CONTEXT);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public AlgebraNumber logBase(
+//            AlgebraNumber base
+//    ) {
+//        return powerRoundQ(base, MAX_PREC_CONTEXT);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> expZWithRemainder() {
+//        AlgebraInteger floor = expRoundZ(RoundingMode.DOWN);
+//        return new NumberRemainderPair<>(this, floor, floor);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public AlgebraInteger expRoundZ(
+//            @Nullable RoundingMode roundingMode
+//    ) {
+//        BigDecimal resBD = expRound(getInitContextZ(roundingMode), null);
+//        return IntegerFactory.fromBigInteger(resBD.toBigInteger());
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> powerZWithRemainder(
+//            AlgebraNumber power
+//    ) {
+//        AlgebraInteger floor = powerRoundZ(power, RoundingMode.DOWN);
+//        return power.isZero()
+//                ? new NumberRemainderPair<>(floor, Cache.get(0))
+//                : new NumberRemainderPair<>(this, floor, floor.power(power.inverted()));
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public AlgebraInteger powerRoundZ(
+//            AlgebraNumber power,
+//            @Nullable RoundingMode roundingMode
+//    ) {
+//        BigDecimal resBD = powerRound(
+//                power,
+//                getInitContextZ(roundingMode),
+//                null
+//        );
+//        return IntegerFactory.fromBigInteger(resBD.toBigInteger());
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> lnZWithRemainder() {
+//        AlgebraInteger floor = lnRoundZ(RoundingMode.DOWN);
+//        return new NumberRemainderPair<>(this, floor, floor);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public AlgebraInteger lnRoundZ(
+//            @Nullable RoundingMode roundingMode
+//    ) {
+//        BigDecimal resBD = lnRound(getInitContextZ(roundingMode), null);
+//        return IntegerFactory.fromBigInteger(resBD.toBigInteger());
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> logBaseZWithRemainder(
+//            AlgebraNumber base
+//    ) {
+//        AlgebraInteger floor = logBaseRoundZ(base, RoundingMode.DOWN);
+//        return new NumberRemainderPair<>(this, floor, floor);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public AlgebraInteger logBaseRoundZ(
+//            AlgebraNumber base,
+//            @Nullable RoundingMode roundingMode
+//    ) {
+//        BigDecimal resBD = logBaseRound(
+//                base,
+//                getInitContextZ(roundingMode),
+//                null
+//        );
+//        return IntegerFactory.fromBigInteger(resBD.toBigInteger());
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> expQWithRemainder(
+//            @Nullable Integer precision
+//    ) {
+//        Rational floor = expRoundQ(getContextFrom(precision, RoundingMode.DOWN));
+//        return new NumberRemainderPair<>(this, floor, floor);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public Rational expRoundQ(
+//            @Nullable MathContext mathContext
+//    ) {
+//        MathContext ratContext = getRatContext(mathContext);
+//        return RationalFactory.fromBigDecimal(expRound(
+//                getInitContextQ(ratContext),
+//                ratContext
+//        ));
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> powerQWithRemainder(
+//            AlgebraNumber power,
+//            @Nullable Integer precision
+//    ) {
+//        Rational floor = powerRoundQ(power, getContextFrom(precision, RoundingMode.DOWN));
+//        return power.isZero()
+//                ? new NumberRemainderPair<>(floor, Cache.get(0))
+//                : new NumberRemainderPair<>(this, floor, floor.power(power.inverted()));
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public Rational powerRoundQ(
+//            AlgebraNumber power,
+//            @Nullable MathContext mathContext
+//    ) {
+//        MathContext ratContext = getRatContext(mathContext);
+//        return RationalFactory.fromBigDecimal(powerRound(
+//                power,
+//                getInitContextQ(ratContext),
+//                ratContext
+//        ));
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> lnQWithRemainder(
+//            @Nullable Integer precision
+//    ) {
+//        Rational floor = lnRoundQ(getContextFrom(precision, RoundingMode.DOWN));
+//        return new NumberRemainderPair<>(this, floor, floor);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public Rational lnRoundQ(
+//            @Nullable MathContext mathContext
+//    ) {
+//        MathContext ratContext = getRatContext(mathContext);
+//        return RationalFactory.fromBigDecimal(lnRound(
+//                getInitContextQ(ratContext),
+//                ratContext
+//        ));
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> logBaseQWithRemainder(
+//            AlgebraNumber base,
+//            @Nullable Integer precision
+//    ) {
+//        Rational floor = logBaseRoundQ(base, getContextFrom(precision, RoundingMode.DOWN));
+//        return new NumberRemainderPair<>(this, floor, floor);
+//    }
+//
+//    @Override
+//    @SideEffectFree
+//    public Rational logBaseRoundQ(
+//            AlgebraNumber base,
+//            @Nullable MathContext mathContext
+//    ) {
+//        MathContext ratContext = getRatContext(mathContext);
+//        return RationalFactory.fromBigDecimal(logBaseRound(
+//                base,
+//                getInitContextQ(ratContext),
+//                ratContext
+//        ));
+//    }
     
-    @Override
-    @SideEffectFree
-    public AlgebraNumber power(
-            AlgebraNumber power
-    ) {
-        return powerRoundQ(power, MAX_PREC_CONTEXT);
-    }
-    
-    @Override
-    @SideEffectFree
-    public AlgebraNumber logNatural() {
-        return lnRoundQ(MAX_PREC_CONTEXT);
-    }
-    
-    @Override
-    @SideEffectFree
-    public AlgebraNumber logBase(
-            AlgebraNumber base
-    ) {
-        return powerRoundQ(base, MAX_PREC_CONTEXT);
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> expZWithRemainder() {
-        AlgebraInteger floor = expRoundZ(RoundingMode.DOWN);
-        return new NumberRemainderPair<>(this, floor, floor);
-    }
-    
-    @Override
-    @SideEffectFree
-    public AlgebraInteger expRoundZ(
-            @Nullable RoundingMode roundingMode
-    ) {
-        BigDecimal resBD = expRound(getInitContextZ(roundingMode), null);
-        return IntegerFactory.fromBigInteger(resBD.toBigInteger());
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> powerZWithRemainder(
-            AlgebraNumber power
-    ) {
-        AlgebraInteger floor = powerRoundZ(power, RoundingMode.DOWN);
-        return power.isZero()
-                ? new NumberRemainderPair<>(floor, Cache.get(0))
-                : new NumberRemainderPair<>(this, floor, floor.power(power.inverted()));
-    }
-    
-    @Override
-    @SideEffectFree
-    public AlgebraInteger powerRoundZ(
-            AlgebraNumber power,
-            @Nullable RoundingMode roundingMode
-    ) {
-        BigDecimal resBD = powerRound(
-                power,
-                getInitContextZ(roundingMode),
-                null
-        );
-        return IntegerFactory.fromBigInteger(resBD.toBigInteger());
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> lnZWithRemainder() {
-        AlgebraInteger floor = lnRoundZ(RoundingMode.DOWN);
-        return new NumberRemainderPair<>(this, floor, floor);
-    }
-    
-    @Override
-    @SideEffectFree
-    public AlgebraInteger lnRoundZ(
-            @Nullable RoundingMode roundingMode
-    ) {
-        BigDecimal resBD = lnRound(getInitContextZ(roundingMode), null);
-        return IntegerFactory.fromBigInteger(resBD.toBigInteger());
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> logBaseZWithRemainder(
-            AlgebraNumber base
-    ) {
-        AlgebraInteger floor = logBaseRoundZ(base, RoundingMode.DOWN);
-        return new NumberRemainderPair<>(this, floor, floor);
-    }
-    
-    @Override
-    @SideEffectFree
-    public AlgebraInteger logBaseRoundZ(
-            AlgebraNumber base,
-            @Nullable RoundingMode roundingMode
-    ) {
-        BigDecimal resBD = logBaseRound(
-                base,
-                getInitContextZ(roundingMode),
-                null
-        );
-        return IntegerFactory.fromBigInteger(resBD.toBigInteger());
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> expQWithRemainder(
-            @Nullable Integer precision
-    ) {
-        Rational floor = expRoundQ(getContextFrom(precision, RoundingMode.DOWN));
-        return new NumberRemainderPair<>(this, floor, floor);
-    }
-    
-    @Override
-    @SideEffectFree
-    public Rational expRoundQ(
-            @Nullable MathContext mathContext
-    ) {
-        MathContext ratContext = getRatContext(mathContext);
-        return RationalFactory.fromBigDecimal(expRound(
-                getInitContextQ(ratContext),
-                ratContext
-        ));
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> powerQWithRemainder(
-            AlgebraNumber power,
-            @Nullable Integer precision
-    ) {
-        Rational floor = powerRoundQ(power, getContextFrom(precision, RoundingMode.DOWN));
-        return power.isZero()
-                ? new NumberRemainderPair<>(floor, Cache.get(0))
-                : new NumberRemainderPair<>(this, floor, floor.power(power.inverted()));
-    }
-    
-    @Override
-    @SideEffectFree
-    public Rational powerRoundQ(
-            AlgebraNumber power,
-            @Nullable MathContext mathContext
-    ) {
-        MathContext ratContext = getRatContext(mathContext);
-        return RationalFactory.fromBigDecimal(powerRound(
-                power,
-                getInitContextQ(ratContext),
-                ratContext
-        ));
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> lnQWithRemainder(
-            @Nullable Integer precision
-    ) {
-        Rational floor = lnRoundQ(getContextFrom(precision, RoundingMode.DOWN));
-        return new NumberRemainderPair<>(this, floor, floor);
-    }
-    
-    @Override
-    @SideEffectFree
-    public Rational lnRoundQ(
-            @Nullable MathContext mathContext
-    ) {
-        MathContext ratContext = getRatContext(mathContext);
-        return RationalFactory.fromBigDecimal(lnRound(
-                getInitContextQ(ratContext),
-                ratContext
-        ));
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends Rational, ? extends AlgebraNumber> logBaseQWithRemainder(
-            AlgebraNumber base,
-            @Nullable Integer precision
-    ) {
-        Rational floor = logBaseRoundQ(base, getContextFrom(precision, RoundingMode.DOWN));
-        return new NumberRemainderPair<>(this, floor, floor);
-    }
-    
-    @Override
-    @SideEffectFree
-    public Rational logBaseRoundQ(
-            AlgebraNumber base,
-            @Nullable MathContext mathContext
-    ) {
-        MathContext ratContext = getRatContext(mathContext);
-        return RationalFactory.fromBigDecimal(logBaseRound(
-                base,
-                getInitContextQ(ratContext),
-                ratContext
-        ));
-    }
-    
+    /**
+     * Returns the MathContext given by {@link MathContext#MathContext(int, RoundingMode)} with a precision
+     * of {@link #DEFAULT_FIRST_OP_PREC} and the given {@code roundingMode}.
+     *
+     * @param roundingMode  The {@link RoundingMode} for the returned {@link MathContext}; defaults to
+     *                      {@link #DEFAULT_ROUNDING} if {@code null}
+     *
+     * @return  the aforementioned MathContext
+     */
     @SideEffectFree
     protected static MathContext getInitContextZ(
             @Nullable RoundingMode roundingMode
@@ -960,36 +970,55 @@ public abstract class AbstractAlgebraNumber
         );
     }
     
+    /**
+     * Checks the given {@link MathContext} for validity&mdash;for example, lowers the precision if it is too high
+     * &mdash; and fills it in if it is {@code null}
+     *
+     * @param mathContext   the MathContext to check and return or replace; if {@code null}, it will of course
+     *                      be replaced by one using
+     *
+     * @return  the aforementioned MathContext
+     */
     @SideEffectFree
     protected static MathContext getRatContext(
             @Nullable MathContext mathContext
     ) {
-        int precision;
-        RoundingMode roundingMode;
-        
-        if (mathContext != null) {
-            if (mathContext.getPrecision() <= MAX_PRECISION) {
-                return mathContext;
-            }
-            precision = MAX_PRECISION;
-            roundingMode = mathContext.getRoundingMode();
-        } else {
-            precision = DEFAULT_PRECISION;
-            roundingMode = DEFAULT_ROUNDING;
+        if (mathContext == null) {
+            return DEFAULT_CONTEXT;
         }
-        
-        return new MathContext(precision, roundingMode);
+        if (mathContext.getPrecision() <= MAX_PRECISION) {
+            return mathContext;
+        }
+        return new MathContext(MAX_PRECISION, mathContext.getRoundingMode());
     }
     
+    /**
+     * Takes the given {@link MathContext} and increases the precision by {@link #PRECISION_TO_ADD_FOR_FIRST_OP}
+     * (capped at {@link #MAX_PRECISION}) before returning a copy with the changes made.
+     *
+     * @param ratContext    the MathContext to check and return or replace;
+     *
+     * @return  the aforementioned MathContext
+     */
     protected static MathContext getInitContextQ(
             MathContext ratContext
     ) {
         return new MathContext(
-                Math.max(ratContext.getPrecision() + PRECISION_TO_ADD_FOR_FIRST_OP, MAX_PRECISION),
+                Math.min(ratContext.getPrecision() + PRECISION_TO_ADD_FOR_FIRST_OP, MAX_PRECISION),
                 ratContext.getRoundingMode()
         );
     }
     
+    /**
+     * This is the final step in several rounded real operations. It rounds the first argument according to
+     * the third, if present, or the RoundingMode with 0 scale for the first.
+     *
+     * @param answer            the answer to round
+     * @param initContext       the initial context, used to pull a RoundingMode really
+     * @param rationalContext   the context for a rational op
+     *
+     * @return  the rounded answer
+     */
     @SideEffectFree
     private static BigDecimal finalProcessForRoundedRealOp(
             BigDecimal answer,
@@ -1001,71 +1030,71 @@ public abstract class AbstractAlgebraNumber
                 : answer.setScale(0, initContext.getRoundingMode());
     }
     
-    @SideEffectFree
-    protected final BigDecimal expRound(
-            MathContext initContext,
-            @Nullable MathContext rationalContext
-    ) {
-        int firstPrec = initContext.getPrecision();
-        BigDecimal resBD = BigDecimalUtils.exp(
-                toBigDecimal(initContext),
-                firstPrec
-        );
-        assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
-        return finalProcessForRoundedRealOp(resBD,
-                initContext, rationalContext);
-    }
-    
-    @SideEffectFree
-    protected final BigDecimal powerRound(
-            AlgebraNumber power,
-            MathContext initContext,
-            @Nullable MathContext rationalContext
-    ) {
-        int firstPrec = initContext.getPrecision();
-        BigDecimal resBD = BigDecimalUtils.pow(
-                toBigDecimal(initContext),
-                power.toBigDecimal(initContext),
-                firstPrec
-        );
-        assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
-        return finalProcessForRoundedRealOp(resBD,
-                initContext, rationalContext);
-    }
-    
-    @SideEffectFree
-    protected final BigDecimal lnRound(
-            MathContext initContext,
-            @Nullable MathContext rationalContext
-    ) {
-        int firstPrec = initContext.getPrecision();
-        BigDecimal resBD = BigDecimalUtils.log(
-                toBigDecimal(initContext),
-                firstPrec
-        );
-        assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
-        return finalProcessForRoundedRealOp(resBD,
-                initContext, rationalContext);
-    }
-    
-    @SideEffectFree
-    protected final BigDecimal logBaseRound(
-            AlgebraNumber base,
-            MathContext initContext,
-            @Nullable MathContext rationalContext
-    ) {
-        int firstPrec = initContext.getPrecision();
-        BigDecimal topBD = BigDecimalUtils.log(
-                toBigDecimal(initContext),
-                firstPrec
-        );
-        BigDecimal botBD = BigDecimalUtils.log(
-                base.toBigDecimal(initContext),
-                firstPrec
-        );
-        assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
-        return (rationalContext != null)
-                ? topBD.divide(botBD, rationalContext)
-                : topBD.divide(botBD, 0, initContext.getRoundingMode());
-    }
+//    @SideEffectFree
+//    protected final BigDecimal expRound(
+//            MathContext initContext,
+//            @Nullable MathContext rationalContext
+//    ) {
+//        int firstPrec = initContext.getPrecision();
+//        BigDecimal resBD = BigDecimalUtils.exp(
+//                toBigDecimal(initContext),
+//                firstPrec
+//        );
+//        assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
+//        return finalProcessForRoundedRealOp(resBD,
+//                initContext, rationalContext);
+//    }
+//
+//    @SideEffectFree
+//    protected final BigDecimal powerRound(
+//            AlgebraNumber power,
+//            MathContext initContext,
+//            @Nullable MathContext rationalContext
+//    ) {
+//        int firstPrec = initContext.getPrecision();
+//        BigDecimal resBD = BigDecimalUtils.pow(
+//                toBigDecimal(initContext),
+//                power.toBigDecimal(initContext),
+//                firstPrec
+//        );
+//        assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
+//        return finalProcessForRoundedRealOp(resBD,
+//                initContext, rationalContext);
+//    }
+//
+//    @SideEffectFree
+//    protected final BigDecimal lnRound(
+//            MathContext initContext,
+//            @Nullable MathContext rationalContext
+//    ) {
+//        int firstPrec = initContext.getPrecision();
+//        BigDecimal resBD = BigDecimalUtils.log(
+//                toBigDecimal(initContext),
+//                firstPrec
+//        );
+//        assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
+//        return finalProcessForRoundedRealOp(resBD,
+//                initContext, rationalContext);
+//    }
+//
+//    @SideEffectFree
+//    protected final BigDecimal logBaseRound(
+//            AlgebraNumber base,
+//            MathContext initContext,
+//            @Nullable MathContext rationalContext
+//    ) {
+//        int firstPrec = initContext.getPrecision();
+//        BigDecimal topBD = BigDecimalUtils.log(
+//                toBigDecimal(initContext),
+//                firstPrec
+//        );
+//        BigDecimal botBD = BigDecimalUtils.log(
+//                base.toBigDecimal(initContext),
+//                firstPrec
+//        );
+//        assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
+//        return (rationalContext != null)
+//                ? topBD.divide(botBD, rationalContext)
+//                : topBD.divide(botBD, 0, initContext.getRoundingMode());
+//    }
 }

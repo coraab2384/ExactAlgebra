@@ -1,13 +1,12 @@
 package org.cb2384.exactalgebra.objects.numbers.rational;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.BinaryOperator;
 
 import org.cb2384.exactalgebra.objects.numbers.AbstractAlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
@@ -18,42 +17,88 @@ import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
 import org.cb2384.exactalgebra.objects.Sigmagnum;
 import org.cb2384.exactalgebra.util.corutils.functional.ObjectThenIntToObjectFunction;
+import org.cb2384.exactalgebra.util.corutils.functional.TriFunction;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>Skeletal implementations for many parts of the {@link Rational} interface, to make implementation easier.</p>
+ *
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} argument,
+ * unless otherwise specified.</p>
+ *
+ * @author  Corinne Buxton
+ */
 public abstract class AbstractRational
         extends AbstractAlgebraNumber
-        implements Rational, Serializable {
+        implements Rational {
     
-    private static final int PRECISION_TO_ADD_FOR_FIRST_OP = Math.min(Long.SIZE - DEFAULT_PRECISION, 2);
-    
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation creates an AlgebraInteger from {@link #numeratorBI()}.
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger numeratorAI() {
         return IntegerFactory.fromBigInteger(numeratorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation creates an AlgebraInteger from {@link #denominatorBI()}.
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger denominatorAI() {
         return IntegerFactory.fromBigInteger(denominatorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation creates an AlgebraInteger from {@link #wholeBI()}.
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger wholeAI() {
         return IntegerFactory.fromBigInteger(wholeBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    public abstract BigInteger numeratorBI();
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    public abstract BigInteger denominatorBI();
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation takes the truncated quotient {@link #numeratorBI()}{@link
+     *              BigInteger#divide(BigInteger) .divide(}{@link #denominatorBI()}{@link
+     *              BigInteger#divide(BigInteger) );}
+     */
     @Override
     @SideEffectFree
     public BigInteger wholeBI() {
         return numeratorBI().divide(denominatorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public @This Rational roundQ() {
@@ -116,26 +161,31 @@ public abstract class AbstractRational
         return RationalFactory.fromBigDecimal(toBigDecimal(mathContext));
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public BigDecimal toBigDecimal(
             MathContext mathContext
     ) {
-        return getBigMathObject(
-                x -> new BigDecimal(x, mathContext),
-                (x, y) -> x.divide(y, mathContext)
-        );
+        return isWhole()
+                ? new BigDecimal(numeratorBI(), mathContext)
+                : getBMOIfNotWhole(BigDecimal::divide, mathContext);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public BigInteger toBigInteger(
             RoundingMode roundingMode
     ) {
-        return getBigMathObject(
-                Function.identity(),
-                (x, y) -> x.divide(y, 0, roundingMode).toBigInteger()
-        );
+        return isWhole()
+                ? numeratorBI()
+                : getBMOIfNotWhole( (num, den, rounder)
+                        -> num.divide(den, 0, rounder).toBigInteger(), roundingMode );
     }
     
     /**
@@ -143,41 +193,49 @@ public abstract class AbstractRational
      * If this is whole, returns its value according to the first function, otherwise
      * according to the second function.
      *
-     * @param   methodIfWhole   the function to use if this is whole
+     * @param op            a function that takes the {@link BigDecimal} interpretations
+     *                      of the numerator and denominator as well as a context argument
+     *                      and gets the value to return from those
+     * @param contextArg    the third argument, intended to be a {@link MathContext} or a {@link RoundingMode}
+     *                      but really it's whatever makes the function work, including possibly even {@code null}
      *
-     * @param   opIfElse    a function that takes the {@link BigDecimal} interpretations
-     *                      of the numerator and denominator and gets the value to return from those
+     * @return  a big math object according to the provided function
      *
-     * @return  a big math object according to the provided functions
-     *
-     * @param   <N> the type of big math object, {@link BigInteger} or {@link BigDecimal}
+     * @param <I>   the type of the context or rounding argument, intended to be
+     *              {@link MathContext} or a {@link RoundingMode}
+     * @param <O>   the type of big math object, {@link BigInteger} or {@link BigDecimal}
      */
     @SideEffectFree
-    <N extends Number> N getBigMathObject(
-            Function<BigInteger, N> methodIfWhole,
-            BiFunction<BigDecimal, BigDecimal, N> opIfElse
+    private <I, O> O getBMOIfNotWhole(
+            TriFunction<BigDecimal, BigDecimal, @PolyNull I, O> op,
+            @PolyNull I contextArg
     ) {
-        if (isWhole()) {
-            return methodIfWhole.apply(numeratorBI());
-        }
-        
         BigDecimal numBD = new BigDecimal(numeratorBI());
         BigDecimal denBD = new BigDecimal(denominatorBI());
-        return opIfElse.apply(numBD, denBD);
+        return op.apply(numBD, denBD, contextArg);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public double doubleValue() {
         return toBigDecimal().doubleValue();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public float floatValue() {
         return toBigDecimal().floatValue();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String toString(
@@ -189,6 +247,9 @@ public abstract class AbstractRational
                 numS + "/" + denominatorAI().toString(radix);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String asMixedNumber(
@@ -200,42 +261,59 @@ public abstract class AbstractRational
         if (isWhole()) {
             return wholeS;
         }
-        //else
-        Rational part = difference(new ArbitraryInteger(whole.toBigInteger()));
+        Rational part = difference(ArbitraryInteger.valueOfStrict(whole.toBigInteger()));
         String sepString = isNegative() ? "-(" : "+(";
         return wholeS + sepString + part.toString(radixPrim) + ")";
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isZero() {
         return BigMathObjectUtils.isZero(numeratorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isOne() {
         return BigMathObjectUtils.isOne(numeratorBI()) && BigMathObjectUtils.isOne(denominatorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isNegative() {
         return BigMathObjectUtils.isNegative(numeratorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isWhole() {
         return BigMathObjectUtils.isOne(denominatorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public Signum signum() {
         return Signum.valueOf(numeratorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public Sigmagnum sigmagnum() {
@@ -244,20 +322,24 @@ public abstract class AbstractRational
         }
         
         if (isNegative()) {
-            return switch (compare(Cache.get(1))) {
+            return switch (compare(getFromCache(1))) {
                 case POSITIVE -> Sigmagnum.POSITIVE_SUP_ONE;
                 case ZERO -> Sigmagnum.POSITIVE_ONE;
                 case NEGATIVE -> Sigmagnum.POSITIVE_SUB_ONE;
             };
         }
         
-        return switch (compare(Cache.get(-1))) {
+        return switch (compare(getFromCache(-1))) {
             case POSITIVE -> Sigmagnum.NEGATIVE_SUP_MINUS_ONE;
             case ZERO -> Sigmagnum.NEGATIVE_ONE;
             case NEGATIVE -> Sigmagnum.NEGATIVE_SUB_MINUS_ONE;
         };
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @Pure
     public boolean equiv(
             Rational that
@@ -265,6 +347,10 @@ public abstract class AbstractRational
         return numeratorBI().equals(that.numeratorBI()) && denominatorBI().equals(that.denominatorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @Pure
     public int compareTo(
             AlgebraInteger that
@@ -277,6 +363,10 @@ public abstract class AbstractRational
         return thisNum.compareTo(thatNum);
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @Pure
     public int compareTo(
             Rational that
@@ -293,24 +383,33 @@ public abstract class AbstractRational
         return thisNum.compareTo(thatNum);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int compareTo(
-            AlgebraNumber that
+            AlgebraNumber o
     ) {
-        return switch (that) {
-            case AlgebraInteger thatAI -> compareTo(thatAI);
-            case Rational thatR -> compareTo(thatR);
-            default -> -that.compareTo(this);
+        return switch (o) {
+            case AlgebraInteger oAI -> compareTo(oAI);
+            case Rational oR -> compareTo(oR);
+            default -> -o.compareTo(this);
         };
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int hashCode() {
-        return ~(0xAAAAAAAA - numeratorBI().hashCode()) ^ (0x55555555 * denominatorBI().hashCode());
+        return numeratorBI().hashCode() ^ denominatorBI().hashCode();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean equals(
@@ -323,23 +422,39 @@ public abstract class AbstractRational
         };
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational negated() {
         return RationalFactory.fromBigIntegers(numeratorBI().negate(), denominatorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational inverted() {
         return RationalFactory.fromBigIntegers(denominatorBI(), numeratorBI());
     }
     
+    /**
+     * Takes three functions and switches to the correct one based on the class of that
+     *
+     * @param that      the value to do the operation on this with
+     * @param opIfAI    operation to use if that is an AlgebraInteger
+     * @param opIfRat   operation to use if that is Rational
+     * @param opElse    operation to use if neither; it is reversed so as to make that the reciever
+     *
+     * @return  the result of the relevant operation
+     */
     @SideEffectFree
     private AlgebraNumber biOpHandler(
             AlgebraNumber that,
             BiFunction<AbstractRational, AlgebraInteger, Rational> opIfAI,
-            BiFunction<Rational, Rational, Rational> opIfRat,
+            BinaryOperator<Rational> opIfRat,
             BiFunction<AlgebraNumber, Rational, AlgebraNumber> opElse
     ) {
         return switch (that) {
@@ -349,6 +464,9 @@ public abstract class AbstractRational
         };
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational sum(
@@ -357,14 +475,22 @@ public abstract class AbstractRational
         return arithRes(augend, false);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraNumber sum(
             AlgebraNumber augend
     ) {
-        return biOpHandler(augend, Rational::sum, Rational::sum, AlgebraNumber::sum);
+        return (augend instanceof Rational augendR)
+                ? arithRes(augendR, false)
+                : augend.sum(this);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational difference(
@@ -373,19 +499,27 @@ public abstract class AbstractRational
         return arithRes(subtrahend, true);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraNumber difference(
             AlgebraNumber subtrahend
     ) {
-        return biOpHandler(
-                subtrahend,
-                Rational::difference,
-                Rational::difference,
-                (y, x) -> y.difference(x).negated()
-        );
+        return (subtrahend instanceof Rational subtrahendR)
+                ? arithRes(subtrahendR, true)
+                : subtrahend.difference(this).negated();
     }
     
+    /**
+     * adds or subtracts this and that
+     *
+     * @param that      the value to add or subtract from this
+     * @param subtract  whether to add or subtract
+     *
+     * @return  the sum or difference
+     */
     @SideEffectFree
     private Rational arithRes(
             Rational that,
@@ -409,6 +543,10 @@ public abstract class AbstractRational
         return RationalFactory.fromBigIntegers(newNum, newDen);
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @SideEffectFree
     public Rational product(
             AlgebraInteger multiplicand
@@ -417,6 +555,9 @@ public abstract class AbstractRational
         return RationalFactory.fromBigIntegers(newNum, denominatorBI());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational product(
@@ -425,6 +566,9 @@ public abstract class AbstractRational
         return multRes(multiplicand, false);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraNumber product(
@@ -433,6 +577,9 @@ public abstract class AbstractRational
         return biOpHandler(multiplicand, AbstractRational::product, Rational::product, AlgebraNumber::product);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public NumberRemainderPair<AlgebraInteger, ? extends Rational> quotientZWithRemainder(
@@ -442,14 +589,20 @@ public abstract class AbstractRational
         return new NumberRemainderPair<>(this, floor, floor.product(divisor));
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    @SideEffectFree @SuppressWarnings("unchecked")
+    @SideEffectFree
     public Rational remainder(
             Rational divisor
     ) {
         return quotientZWithRemainder(divisor).remainder();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational modulo(
@@ -458,6 +611,10 @@ public abstract class AbstractRational
         return getModulo(modulus);
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @SideEffectFree
     public Rational quotient(
             AlgebraInteger divisor
@@ -466,6 +623,9 @@ public abstract class AbstractRational
         return RationalFactory.fromBigIntegers(numeratorBI(), newDen);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational quotient(
@@ -474,13 +634,19 @@ public abstract class AbstractRational
         return multRes(divisor, true);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public AlgebraNumber quotient(
             AlgebraNumber divisor
     ) {
+        if (divisor.isZero()) {
+            throw new ArithmeticException(DIV_0_EXC_MSG);
+        }
         if (isZero()) {
-            return Cache.get(0);
+            return getFromCache(0);
         }
         
         return biOpHandler(
@@ -491,6 +657,14 @@ public abstract class AbstractRational
         );
     }
     
+    /**
+     * Multiplies or divides this by that
+     *
+     * @param that      to multiply or divide by
+     * @param divide    whether to multiply or divide
+     *
+     * @return  the product/quotient
+     */
     @SideEffectFree
     private Rational multRes(
             Rational that,
@@ -513,6 +687,9 @@ public abstract class AbstractRational
         return RationalFactory.fromBigIntegers(newNum, newDen);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational raised(
@@ -527,6 +704,9 @@ public abstract class AbstractRational
         return intRaiser(exponent, raiser);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational raised(
@@ -535,6 +715,12 @@ public abstract class AbstractRational
         return longRaiser(exponent.toBigInteger(), Rational::raised, true);
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation uses {@link #rootRoundZ(int, RoundingMode)}
+     *              and subtraction to find the quotient and remainder
+     */
     @Override
     @SideEffectFree
     public NumberRemainderPair<? extends AlgebraInteger, ? extends Rational> rootZWithRemainder(
@@ -544,6 +730,12 @@ public abstract class AbstractRational
         return new NumberRemainderPair<>(this, floor, floor.raised(index));
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation uses {@link #rootRoundZ(AlgebraInteger, RoundingMode)}
+     *              and subtraction to find the quotient and remainder
+     */
     @Override
     @SideEffectFree
     public NumberRemainderPair<? extends AlgebraInteger, ? extends Rational> rootZWithRemainder(
@@ -553,23 +745,29 @@ public abstract class AbstractRational
         return new NumberRemainderPair<>(this, floor, floor.raised(index));
     }
     
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends Rational, ? extends Rational> rootQWithRemainder(
-            int index,
-            @Nullable Integer precision
-    ) {
-        Rational floor = rootRoundQ(index, getContextFrom(precision, RoundingMode.DOWN));
-        return new NumberRemainderPair<>(this, floor, floor.raised(index));
-    }
-    
-    @Override
-    @SideEffectFree
-    public NumberRemainderPair<? extends Rational, ? extends Rational> rootQWithRemainder(
-            AlgebraInteger index,
-            @Nullable Integer precision
-    ) {
-        Rational floor = rootRoundQ(index, getContextFrom(precision, RoundingMode.DOWN));
-        return new NumberRemainderPair<>(this, floor, floor.raised(index));
-    }
+//    /**
+//     * {@inheritDoc}
+//     */
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends Rational, ? extends Rational> rootQWithRemainder(
+//            int index,
+//            @Nullable Integer precision
+//    ) {
+//        Rational floor = rootRoundQ(index, getContextFrom(precision, RoundingMode.DOWN));
+//        return new NumberRemainderPair<>(this, floor, floor.raised(index));
+//    }
+//
+//    /**
+//     * {@inheritDoc}
+//     */
+//    @Override
+//    @SideEffectFree
+//    public NumberRemainderPair<? extends Rational, ? extends Rational> rootQWithRemainder(
+//            AlgebraInteger index,
+//            @Nullable Integer precision
+//    ) {
+//        Rational floor = rootRoundQ(index, getContextFrom(precision, RoundingMode.DOWN));
+//        return new NumberRemainderPair<>(this, floor, floor.raised(index));
+//    }
 }

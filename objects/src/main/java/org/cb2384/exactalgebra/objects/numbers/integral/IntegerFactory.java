@@ -36,7 +36,7 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
             BigInteger value
     ) {
         return BigMathObjectUtils.canBeLong(value, SHORTENED)
-                ? FiniteInteger.valueOf(value.longValue())
+                ? FiniteInteger.valueOfStrict(value.longValue())
                 : new ArbitraryInteger(value);
     }
     
@@ -45,7 +45,7 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
             long value
     ) {
         return (value != Long.MIN_VALUE)
-                ? FiniteInteger.valueOf(value)
+                ? FiniteInteger.valueOfStrict(value)
                 : new ArbitraryInteger(value);
     }
     

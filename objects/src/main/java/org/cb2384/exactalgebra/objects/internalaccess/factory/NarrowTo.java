@@ -12,7 +12,7 @@ import org.checkerframework.dataflow.qual.*;
  * <p>An {@link Enum} used to measure the size of parameters, to determine which implementation
  * the factory should ultimately employ.</p>
  *
- * <p>Throws: {@link NullPointerException} &ndash; on any {@code null} input</p>
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} input</p>
  *
  * @author  Corinne Buxton
  */

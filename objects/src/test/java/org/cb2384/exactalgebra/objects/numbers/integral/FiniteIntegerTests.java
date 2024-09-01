@@ -11,54 +11,53 @@ import org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
-import org.cb2384.exactalgebra.util.BigMathObjectUtils;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 import org.junit.jupiter.api.Test;
 
 public class FiniteIntegerTests {
     
-    private static final FiniteInteger ONE = FiniteInteger.valueOf(1);
+    private static final FiniteInteger ONE = FiniteInteger.valueOfStrict(1);
     
-    private static final FiniteInteger ZERO = FiniteInteger.valueOf(0);
+    private static final FiniteInteger ZERO = FiniteInteger.valueOfStrict(0);
     
-    private static final FiniteInteger NEG_ONE = FiniteInteger.valueOf(-1);
+    private static final FiniteInteger NEG_ONE = FiniteInteger.valueOfStrict(-1);
     
     @Test
     public void baseOpTests() {
-        FiniteInteger a = FiniteInteger.valueOf(15783);
-        FiniteInteger b = FiniteInteger.valueOf(-34981236490325684L);
-        FiniteInteger c = FiniteInteger.valueOf(-17490618245162842L);
+        FiniteInteger a = FiniteInteger.valueOfStrict(15783);
+        FiniteInteger b = FiniteInteger.valueOfStrict(-34981236490325684L);
+        FiniteInteger c = FiniteInteger.valueOfStrict(-17490618245162842L);
         assertEquals(-17490618245162842L + 15783, a.sum(c).longValue());
         assertEquals(-17490618245162842L - 15783, c.difference(a).longValue());
         assertEquals(15783 * 15783, a.squared().longValue());
-        assertEquals(-17490618245162842L, b.quotientZ(FiniteInteger.valueOf(2)).longValue());
+        assertEquals(-17490618245162842L, b.quotientZ(FiniteInteger.valueOfStrict(2)).longValue());
     }
     
     @Test
     public void constructionTests() {
-        assertThrows(IllegalArgumentException.class, () -> FiniteInteger.valueOf(Long.MIN_VALUE));
-        FiniteInteger a = FiniteInteger.valueOf(15);
-        FiniteInteger b = FiniteInteger.valueOf(15);
+        assertThrows(IllegalArgumentException.class, () -> FiniteInteger.valueOfStrict(Long.MIN_VALUE));
+        FiniteInteger a = FiniteInteger.valueOfStrict(15);
+        FiniteInteger b = FiniteInteger.valueOfStrict(15);
         assertSame(a, b);
-        FiniteInteger c = FiniteInteger.valueOf(-(long) Integer.MIN_VALUE);
-        FiniteInteger d = (FiniteInteger) FiniteInteger.valueOf(Integer.MAX_VALUE).sum(FiniteInteger.valueOf(1));
+        FiniteInteger c = FiniteInteger.valueOfStrict(-(long) Integer.MIN_VALUE);
+        FiniteInteger d = (FiniteInteger) FiniteInteger.valueOfStrict(Integer.MAX_VALUE).sum(FiniteInteger.valueOfStrict(1));
         assertEquals(c, d);
         assertNotSame(c, d);
     }
     
     @Test
     public void stringTests() {
-        FiniteInteger a = FiniteInteger.valueOf(2);
+        FiniteInteger a = FiniteInteger.valueOfStrict(2);
         assertEquals(String.valueOf(2), a.toString());
-        FiniteInteger b = FiniteInteger.valueOf(18);
+        FiniteInteger b = FiniteInteger.valueOfStrict(18);
         assertEquals("12", b.toString(16));
     }
     
     @Test
     public void truncationTests() {
-        FiniteInteger i = FiniteInteger.valueOf(Long.MAX_VALUE);
-        FiniteInteger s = FiniteInteger.valueOf(Integer.MAX_VALUE);
-        FiniteInteger b = FiniteInteger.valueOf(Short.MAX_VALUE);
+        FiniteInteger i = FiniteInteger.valueOfStrict(Long.MAX_VALUE);
+        FiniteInteger s = FiniteInteger.valueOfStrict(Integer.MAX_VALUE);
+        FiniteInteger b = FiniteInteger.valueOfStrict(Short.MAX_VALUE);
         assertThrows(DisallowedNarrowingException.class, i::intValueExact);
         assertThrows(DisallowedNarrowingException.class, s::shortValueExact);
         assertThrows(DisallowedNarrowingException.class, b::byteValueExact);
@@ -77,14 +76,14 @@ public class FiniteIntegerTests {
         assertFalse(NEG_ONE.isOne());
         assertFalse(ONE.isZero());
         assertFalse(ZERO.isNegative());
-        assertTrue(FiniteInteger.valueOf(-1134542554635L).isNegative());
-        assertTrue(FiniteInteger.valueOf(489567242).isWhole());
+        assertTrue(FiniteInteger.valueOfStrict(-1134542554635L).isNegative());
+        assertTrue(FiniteInteger.valueOfStrict(489567242).isWhole());
     }
     
     @Test
     public void signumTests() {
-        FiniteInteger pos = FiniteInteger.valueOf(16);
-        FiniteInteger neg = FiniteInteger.valueOf(-8);
+        FiniteInteger pos = FiniteInteger.valueOfStrict(16);
+        FiniteInteger neg = FiniteInteger.valueOfStrict(-8);
         assertSame(Signum.POSITIVE, pos.signum());
         assertSame(Signum.ZERO, ZERO.signum());
         assertSame(Signum.NEGATIVE, NEG_ONE.signum());
@@ -98,10 +97,10 @@ public class FiniteIntegerTests {
     @Test
     public void unaryTests() {
         long testL = 3498576238975423L;
-        FiniteInteger test = FiniteInteger.valueOf(testL);
+        FiniteInteger test = FiniteInteger.valueOfStrict(testL);
         assertSame(test, test.magnitude());
         FiniteInteger testNeg = test.negated();
-        assertEquals(FiniteInteger.valueOf(-testL), testNeg);
+        assertEquals(FiniteInteger.valueOfStrict(-testL), testNeg);
         assertEquals(test, testNeg.magnitude());
     }
     
@@ -111,10 +110,10 @@ public class FiniteIntegerTests {
         long b = 555666;
         long c = -45678;
         long d = -12;
-        FiniteInteger aFI = FiniteInteger.valueOf(a);
-        FiniteInteger bFI = FiniteInteger.valueOf(b);
-        FiniteInteger cFI = FiniteInteger.valueOf(c);
-        FiniteInteger dFI = FiniteInteger.valueOf(d);
+        FiniteInteger aFI = FiniteInteger.valueOfStrict(a);
+        FiniteInteger bFI = FiniteInteger.valueOfStrict(b);
+        FiniteInteger cFI = FiniteInteger.valueOfStrict(c);
+        FiniteInteger dFI = FiniteInteger.valueOfStrict(d);
         BigInteger aBI = BigInteger.valueOf(a);
         BigInteger bBI = BigInteger.valueOf(b);
         BigInteger cBI = BigInteger.valueOf(c);
@@ -151,20 +150,20 @@ public class FiniteIntegerTests {
     public void gcfLcmTests() {
         long a = 2500;
         long b = 1040;
-        FiniteInteger aFI = FiniteInteger.valueOf(a);
-        FiniteInteger bFI = FiniteInteger.valueOf(b);
+        FiniteInteger aFI = FiniteInteger.valueOfStrict(a);
+        FiniteInteger bFI = FiniteInteger.valueOfStrict(b);
         BigInteger aBI = BigInteger.valueOf(a);
         BigInteger bBI = BigInteger.valueOf(b);
         
-        assertEquals(FiniteInteger.valueOf(20), aFI.gcf(b));
-        assertEquals(FiniteInteger.valueOf(20), bFI.gcf(aBI));
-        assertEquals(FiniteInteger.valueOf(20), aFI.gcf((FiniteInteger) bFI));
-        assertEquals(FiniteInteger.valueOf(20), bFI.gcf((AlgebraInteger) aFI));
+        assertEquals(FiniteInteger.valueOfStrict(20), aFI.gcf(b));
+        assertEquals(FiniteInteger.valueOfStrict(20), bFI.gcf(aBI));
+        assertEquals(FiniteInteger.valueOfStrict(20), aFI.gcf((FiniteInteger) bFI));
+        assertEquals(FiniteInteger.valueOfStrict(20), bFI.gcf((AlgebraInteger) aFI));
         
-        assertEquals(FiniteInteger.valueOf(130_000), aFI.lcm(b));
-        assertEquals(FiniteInteger.valueOf(130_000), aFI.lcm(bBI));
-        assertEquals(FiniteInteger.valueOf(130_000), bFI.lcm((FiniteInteger) aFI));
-        assertEquals(FiniteInteger.valueOf(130_000), aFI.lcm((FiniteInteger) bFI));
+        assertEquals(FiniteInteger.valueOfStrict(130_000), aFI.lcm(b));
+        assertEquals(FiniteInteger.valueOfStrict(130_000), aFI.lcm(bBI));
+        assertEquals(FiniteInteger.valueOfStrict(130_000), bFI.lcm((FiniteInteger) aFI));
+        assertEquals(FiniteInteger.valueOfStrict(130_000), aFI.lcm((FiniteInteger) bFI));
         
         assertThrows(ArithmeticException.class, () -> ZERO.gcf(ZERO));
         assertThrows(ArithmeticException.class, () -> bFI.lcm(ZERO));
@@ -180,8 +179,8 @@ public class FiniteIntegerTests {
     public void canDivideTests() {
         long a = 750;
         long b = 25;
-        FiniteInteger aFI = FiniteInteger.valueOf(a);
-        FiniteInteger bFI = FiniteInteger.valueOf(b);
+        FiniteInteger aFI = FiniteInteger.valueOfStrict(a);
+        FiniteInteger bFI = FiniteInteger.valueOfStrict(b);
         BigInteger aBI = BigInteger.valueOf(a);
         BigInteger bBI = BigInteger.valueOf(b);
         
@@ -204,17 +203,17 @@ public class FiniteIntegerTests {
     @Test
     public void isPrimeTests() {
         assertFalse(ONE.isPrime());
-        assertFalse(FiniteInteger.valueOf(-2).isPrime());
-        assertTrue(FiniteInteger.valueOf(2).isPrime());
-        assertTrue(FiniteInteger.valueOf(31).isPrime());
+        assertFalse(FiniteInteger.valueOfStrict(-2).isPrime());
+        assertTrue(FiniteInteger.valueOfStrict(2).isPrime());
+        assertTrue(FiniteInteger.valueOfStrict(31).isPrime());
     }
     
     @Test
     public void compareToTests() {
         long a = -750;
         long b = 25;
-        FiniteInteger aFI = FiniteInteger.valueOf(a);
-        FiniteInteger bFI = FiniteInteger.valueOf(b);
+        FiniteInteger aFI = FiniteInteger.valueOfStrict(a);
+        FiniteInteger bFI = FiniteInteger.valueOfStrict(b);
         BigInteger aBI = BigInteger.valueOf(a);
         BigInteger bBI = BigInteger.valueOf(b);
         
@@ -239,8 +238,8 @@ public class FiniteIntegerTests {
     public void equivTests() {
         long a = -750;
         long b = 25;
-        FiniteInteger aFI = FiniteInteger.valueOf(a);
-        FiniteInteger bFI = FiniteInteger.valueOf(b);
+        FiniteInteger aFI = FiniteInteger.valueOfStrict(a);
+        FiniteInteger bFI = FiniteInteger.valueOfStrict(b);
         BigInteger aBI = BigInteger.valueOf(a);
         BigInteger bBI = BigInteger.valueOf(b);
         
@@ -265,13 +264,13 @@ public class FiniteIntegerTests {
     public void equalHashTests() {
         long a = -750;
         long b = 25;
-        FiniteInteger aFI = FiniteInteger.valueOf(a);
-        FiniteInteger bFI = FiniteInteger.valueOf(b);
+        FiniteInteger aFI = FiniteInteger.valueOfStrict(a);
+        FiniteInteger bFI = FiniteInteger.valueOfStrict(b);
         BigInteger aBI = BigInteger.valueOf(a);
         BigInteger bBI = BigInteger.valueOf(b);
         
         FiniteInteger[] rands = new Random().longs(40)
-                .mapToObj(FiniteInteger::valueOf)
+                .mapToObj(FiniteInteger::valueOfStrict)
                 .toArray(FiniteInteger[]::new);
         FiniteInteger last = ZERO;
         for (int i = 0; i < rands.length; i++) {
@@ -290,10 +289,10 @@ public class FiniteIntegerTests {
         long b = 415;
         long c = b - a; // -97
         long d = a + b; // 927
-        FiniteInteger aFI = FiniteInteger.valueOf(a);
-        FiniteInteger bFI = FiniteInteger.valueOf(b);
-        FiniteInteger cFI = FiniteInteger.valueOf(c);
-        FiniteInteger dFI = FiniteInteger.valueOf(d);
+        FiniteInteger aFI = FiniteInteger.valueOfStrict(a);
+        FiniteInteger bFI = FiniteInteger.valueOfStrict(b);
+        FiniteInteger cFI = FiniteInteger.valueOfStrict(c);
+        FiniteInteger dFI = FiniteInteger.valueOfStrict(d);
         
         assertEquals(dFI, aFI.sum((FiniteInteger) bFI));
         assertEquals(dFI, aFI.sum((AlgebraInteger) bFI));
@@ -321,9 +320,9 @@ public class FiniteIntegerTests {
         long a = 512;
         long b = -16;
         long c = -32;
-        FiniteInteger aFI = FiniteInteger.valueOf(a);
-        FiniteInteger bFI = FiniteInteger.valueOf(b);
-        FiniteInteger cFI = FiniteInteger.valueOf(c);
+        FiniteInteger aFI = FiniteInteger.valueOfStrict(a);
+        FiniteInteger bFI = FiniteInteger.valueOfStrict(b);
+        FiniteInteger cFI = FiniteInteger.valueOfStrict(c);
         
         assertEquals(aFI, bFI.product((FiniteInteger) cFI));
         assertEquals(aFI, bFI.product((AlgebraInteger) cFI));
@@ -353,11 +352,11 @@ public class FiniteIntegerTests {
     
     @Test
     public void quotientZTests() {
-        FiniteInteger two = FiniteInteger.valueOf(2);
-        FiniteInteger three = FiniteInteger.valueOf(3);
-        FiniteInteger five = FiniteInteger.valueOf(5);
-        FiniteInteger eight = FiniteInteger.valueOf(8);
-        FiniteInteger ten = FiniteInteger.valueOf(10);
+        FiniteInteger two = FiniteInteger.valueOfStrict(2);
+        FiniteInteger three = FiniteInteger.valueOfStrict(3);
+        FiniteInteger five = FiniteInteger.valueOfStrict(5);
+        FiniteInteger eight = FiniteInteger.valueOfStrict(8);
+        FiniteInteger ten = FiniteInteger.valueOfStrict(10);
         
         assertSame(three, eight.quotientRoundZ(three, null));
         assertSame(two, eight.quotientRoundZ(three, RoundingMode.DOWN));
@@ -408,11 +407,11 @@ public class FiniteIntegerTests {
     
     @Test
     public final void remainderTests() {
-        FiniteInteger three = FiniteInteger.valueOf(3);
-        FiniteInteger negThree = FiniteInteger.valueOf(-3);
-        FiniteInteger fifteen = FiniteInteger.valueOf(15);
-        FiniteInteger negFifteen = FiniteInteger.valueOf(-15);
-        FiniteInteger four = FiniteInteger.valueOf(4);
+        FiniteInteger three = FiniteInteger.valueOfStrict(3);
+        FiniteInteger negThree = FiniteInteger.valueOfStrict(-3);
+        FiniteInteger fifteen = FiniteInteger.valueOfStrict(15);
+        FiniteInteger negFifteen = FiniteInteger.valueOfStrict(-15);
+        FiniteInteger four = FiniteInteger.valueOfStrict(4);
         
         assertSame(negThree, negFifteen.remainder(four));
         assertSame(negThree, negFifteen.remainder((AlgebraInteger) four));
@@ -449,17 +448,17 @@ public class FiniteIntegerTests {
     
     @Test
     public void squareTests() {
-        FiniteInteger twentyFive = FiniteInteger.valueOf(25);
-        FiniteInteger twentySeven = FiniteInteger.valueOf(27);
-        FiniteInteger five = FiniteInteger.valueOf(5);
+        FiniteInteger twentyFive = FiniteInteger.valueOfStrict(25);
+        FiniteInteger twentySeven = FiniteInteger.valueOfStrict(27);
+        FiniteInteger five = FiniteInteger.valueOfStrict(5);
         
         assertSame(five, twentyFive.sqrtRoundZ(null));
         assertSame(five, twentySeven.sqrtRoundZ(null));
-        assertSame(FiniteInteger.valueOf(6), twentySeven.sqrtRoundZ(RoundingMode.UP));
+        assertSame(FiniteInteger.valueOfStrict(6), twentySeven.sqrtRoundZ(RoundingMode.UP));
         
         assertSame(five, twentyFive.sqRoot());
         NumberRemainderPair<FiniteInteger, FiniteInteger> fiveRTwo = new NumberRemainderPair<>(
-                five, FiniteInteger.valueOf(2));
+                five, FiniteInteger.valueOfStrict(2));
         assertEquals(fiveRTwo, twentySeven.sqrtZWithRemainder());
         
         assertSame(twentyFive, five.negated().squared());
@@ -473,9 +472,9 @@ public class FiniteIntegerTests {
     
     @Test
     public void raisedZTests() {
-        FiniteInteger negTwo = FiniteInteger.valueOf(-2);
-        assertSame(FiniteInteger.valueOf(16), negTwo.raisedZ(4));
-        assertSame(FiniteInteger.valueOf(-32), negTwo.raisedZ(FiniteInteger.valueOf(5)));
+        FiniteInteger negTwo = FiniteInteger.valueOfStrict(-2);
+        assertSame(FiniteInteger.valueOfStrict(16), negTwo.raisedZ(4));
+        assertSame(FiniteInteger.valueOfStrict(-32), negTwo.raisedZ(FiniteInteger.valueOfStrict(5)));
         
         assertThrows(NullPointerException.class, () -> NEG_ONE.raisedZ(null));
         assertThrows(ArithmeticException.class, () -> negTwo.raisedZ(-3));
@@ -484,63 +483,82 @@ public class FiniteIntegerTests {
     
     @Test
     public void raisingTests() {
-        FiniteInteger sixTwentyFive = FiniteInteger.valueOf(625);
-        FiniteInteger twentySeven = FiniteInteger.valueOf(27);
-        FiniteInteger negFive = FiniteInteger.valueOf(-5);
-        FiniteInteger three = FiniteInteger.valueOf(3);
+        FiniteInteger sixTwentyFive = FiniteInteger.valueOfStrict(625);
+        FiniteInteger twentySeven = FiniteInteger.valueOfStrict(27);
+        FiniteInteger negFive = FiniteInteger.valueOfStrict(-5);
+        FiniteInteger three = FiniteInteger.valueOfStrict(3);
         
         assertSame(twentySeven, three.raised(3));
         assertSame(twentySeven, three.raised(three));
         assertEquals(sixTwentyFive, negFive.raised(4));
-        assertEquals(sixTwentyFive, negFive.raised(FiniteInteger.valueOf(4)));
+        assertEquals(sixTwentyFive, negFive.raised(FiniteInteger.valueOfStrict(4)));
         
         assertSame(ONE, ONE.raised(-15));
         assertEquals(sixTwentyFive, sixTwentyFive.raised(NEG_ONE).inverted());
         
         assertThrows(NullPointerException.class, () -> ONE.raised(null));
         assertThrows(ArithmeticException.class, () -> ZERO.raised(ZERO));
+        assertThrows(ArithmeticException.class, () -> ZERO.raised(0));
     }
     
-    
-    public void errorTests() {
-        FiniteInteger finiteTest = FiniteInteger.valueOf(-398513790451L);
-        ArbitraryInteger arbTest = new ArbitraryInteger(BigMathObjectUtils.LONG_MAX_BI.multiply(BigInteger.TWO));
+    @Test
+    public void rootTests() {
+        FiniteInteger sixTwentyFive = FiniteInteger.valueOfStrict(625);
+        FiniteInteger negTwentySeven = FiniteInteger.valueOfStrict(-27);
+        FiniteInteger negNine = FiniteInteger.valueOfStrict(-9);
+        FiniteInteger eight = FiniteInteger.valueOfStrict(8);
+        FiniteInteger five = FiniteInteger.valueOfStrict(5);
+        FiniteInteger four = FiniteInteger.valueOfStrict(4);
+        FiniteInteger three = FiniteInteger.valueOfStrict(3);
+        FiniteInteger negThree = FiniteInteger.valueOfStrict(-3);
         
-        assertThrows(NullPointerException.class, ()
-                -> ONE.quotientZWithRemainder((FiniteInteger) null));
-        assertThrows(ArithmeticException.class, () -> ONE.quotientZWithRemainder(ZERO));
-        assertThrows(NullPointerException.class, ()
-                -> ONE.quotientZWithRemainder((AlgebraInteger) null));
-        assertThrows(ArithmeticException.class, ()
-                -> ONE.quotientZWithRemainder((AlgebraInteger) ZERO));
-        assertThrows(NullPointerException.class, () -> ONE.quotientZWithRemainder((Rational) null));
-        assertThrows(ArithmeticException.class, () -> ONE.quotientZWithRemainder((Rational) ZERO));
-        assertThrows(NullPointerException.class, ()
-                -> ONE.quotientZWithRemainder((AlgebraNumber) null));
-        assertThrows(ArithmeticException.class, ()
-                -> ONE.quotientZWithRemainder((AlgebraNumber) ZERO));
-        assertThrows(NullPointerException.class, () -> ONE.quotientZ((FiniteInteger) null));
-        assertThrows(ArithmeticException.class, () -> ONE.quotientZ(ZERO));
-        assertThrows(NullPointerException.class, () -> ONE.quotientZ((AlgebraInteger) null));
-        assertThrows(ArithmeticException.class, () -> ONE.quotientZ((AlgebraInteger) ZERO));
-        assertThrows(NullPointerException.class, () -> ONE.quotientZ((Rational) null));
-        assertThrows(ArithmeticException.class, () -> ONE.quotientZ((Rational) ZERO));
-        assertThrows(NullPointerException.class, () -> ONE.quotientZ((AlgebraNumber) null));
-        assertThrows(ArithmeticException.class, () -> ONE.quotientZ((AlgebraNumber) ZERO));
-        assertThrows(NullPointerException.class, ()
-                -> ONE.quotientRoundZ((FiniteInteger) null, null));
-        assertThrows(ArithmeticException.class, () -> ONE.quotientRoundZ(ZERO, null));
-        assertThrows(NullPointerException.class, ()
-                -> ONE.quotientRoundZ((AlgebraInteger) null, null));
-        assertThrows(ArithmeticException.class, ()
-                -> ONE.quotientRoundZ((AlgebraInteger) ZERO, null));
-        assertThrows(NullPointerException.class, ()
-                -> ONE.quotientRoundZ((Rational) null, null));
-        assertThrows(ArithmeticException.class, ()
-                -> ONE.quotientRoundZ((Rational) ZERO, null));
-        assertThrows(NullPointerException.class, ()
-                -> ONE.quotientRoundZ((AlgebraNumber) null, null));
-        assertThrows(ArithmeticException.class, ()
-                -> ONE.quotientRoundZ((AlgebraNumber) ZERO, null));
+        //assertSame(negThree, negTwentySeven.root(3));
+        //assertSame(negThree, negTwentySeven.root(three));
+        //assertSame(five, sixTwentyFive.root(4));
+        //assertSame(five, sixTwentyFive.root(four));
+        
+        assertSame(negThree, negNine.rootRoundZ(3, RoundingMode.FLOOR));
+        assertSame(negThree, negNine.rootRoundZ(three, RoundingMode.UP));
+        
+        NumberRemainderPair<FiniteInteger, FiniteInteger> negTwoRNegOne
+                = new NumberRemainderPair<>(FiniteInteger.valueOfStrict(-2), NEG_ONE);
+        assertEquals(negTwoRNegOne, negNine.rootZWithRemainder(3));
+        assertEquals(negTwoRNegOne, negNine.rootZWithRemainder(three));
+        
+        assertSame(five, sixTwentyFive.rootRoundQ(4, null));
+        assertSame(five, sixTwentyFive.rootRoundQ(four, null));
+        NumberRemainderPair<FiniteInteger, FiniteInteger> fiveRZero = new NumberRemainderPair<>(five, ZERO);
+        //assertEquals(fiveRZero, sixTwentyFive.rootQWithRemainder(4, null));
+        //assertEquals(fiveRZero, sixTwentyFive.rootQWithRemainder(four, null));
+        
+        //assertSame(ONE, ONE.root(-15));
+        
+        assertThrows(NullPointerException.class, () -> ONE.root(null));
+        assertThrows(NullPointerException.class, () -> ONE.rootRoundZ(null, null));
+        assertThrows(NullPointerException.class, () -> ONE.rootZWithRemainder(null));
+        assertThrows(NullPointerException.class, () -> ONE.rootQWithRemainder(null, null));
+        assertThrows(NullPointerException.class, () -> ONE.rootRoundQ(null, null));
+        
+        assertThrows(ArithmeticException.class, () -> ONE.root(ZERO));
+        assertThrows(ArithmeticException.class, () -> ONE.root(0));
+        assertThrows(ArithmeticException.class, () -> ONE.rootRoundQ(0, null));
+        assertThrows(ArithmeticException.class, () -> ONE.rootRoundZ(0, null));
+        assertThrows(ArithmeticException.class, () -> ONE.rootZWithRemainder(0));
+        assertThrows(ArithmeticException.class, () -> ONE.rootQWithRemainder(0, null));
+        assertThrows(ArithmeticException.class, () -> ONE.rootRoundQ(ZERO, null));
+        assertThrows(ArithmeticException.class, () -> ONE.rootRoundZ(ZERO, null));
+        assertThrows(ArithmeticException.class, () -> ONE.rootZWithRemainder(ZERO));
+        assertThrows(ArithmeticException.class, () -> ONE.rootQWithRemainder(ZERO, null));
+        
+        assertThrows(ArithmeticException.class, () -> negThree.root(8));
+        assertThrows(ArithmeticException.class, () -> negThree.root(eight));
+        assertThrows(ArithmeticException.class, () -> negThree.rootRoundQ(8, null));
+        assertThrows(ArithmeticException.class, () -> negThree.rootRoundZ(8, null));
+        assertThrows(ArithmeticException.class, () -> negThree.rootZWithRemainder(8));
+        assertThrows(ArithmeticException.class, () -> negThree.rootQWithRemainder(8, null));
+        assertThrows(ArithmeticException.class, () -> negThree.rootRoundQ(eight, null));
+        assertThrows(ArithmeticException.class, () -> negThree.rootRoundZ(eight, null));
+        assertThrows(ArithmeticException.class, () -> negThree.rootZWithRemainder(eight));
+        assertThrows(ArithmeticException.class, () -> negThree.rootQWithRemainder(eight, null));
     }
 }

@@ -31,17 +31,17 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
     
     protected static final int MAX_LENGTH = MAX_DEGREE + 1;
     
-    protected static final FiniteInteger MAX_DEG_AS_AI = FiniteInteger.valueOf(MAX_DEGREE);
+    protected static final FiniteInteger MAX_DEG_AS_AI = FiniteInteger.valueOfStrict(MAX_DEGREE);
     
     static final PolyArrayList<? super FiniteInteger> ZERO_PX
-            = new PolyArrayList<>( FiniteInteger.valueOf(0) );
+            = new PolyArrayList<>( FiniteInteger.valueOfStrict(0) );
     
     static final PolyArrayList<? super FiniteInteger> ONE_PX
-            = new PolyArrayList<>( FiniteInteger.valueOf(1) );
+            = new PolyArrayList<>( FiniteInteger.valueOfStrict(1) );
     
     @SideEffectFree
     private <R extends AlgebraNumber> Polynomial<R> buildZero() {
-        return constantOf((R) FiniteInteger.valueOf(0));
+        return constantOf((R) FiniteInteger.valueOfStrict(0));
     }
     
     @SideEffectFree
@@ -61,7 +61,7 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
     protected static <N extends AlgebraNumber> List<N> dummyZeros(
             @IntRange(from = 0, to = MAX_LENGTH) int number
     ) {
-        return Collections.nCopies(number, (N) FiniteInteger.valueOf(0));
+        return Collections.nCopies(number, (N) FiniteInteger.valueOfStrict(0));
     }
     
     /**
@@ -737,7 +737,7 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
             }
             if (first) {
                 remainder = new ArrayList<>(1);
-                remainder.add((R) FiniteInteger.valueOf(0));
+                remainder.add((R) FiniteInteger.valueOfStrict(0));
             } else {
                 remCurr--;
                 for (; remCurr >= 0; remCurr--) {
@@ -846,7 +846,7 @@ public abstract class AbstractPolynomial<N extends AlgebraNumber>
                 if (isZero()) {
                     throw new ArithmeticException("0^0 is undefined!");
                 }
-                yield constantOf((N) FiniteInteger.valueOf(1));
+                yield constantOf((N) FiniteInteger.valueOfStrict(1));
             }
             case 1 -> this;
             case 2 -> squared();

@@ -2,6 +2,7 @@ module org.cb2384.exactalgebra.objects {
     requires org.cb2384.exactalgebra.util;
     requires static com.numericalmethod.suanshu;
     requires org.checkerframework.checker.qual;
+    requires jdk8;
     
     exports org.cb2384.exactalgebra.objects;
     exports org.cb2384.exactalgebra.objects.numbers;

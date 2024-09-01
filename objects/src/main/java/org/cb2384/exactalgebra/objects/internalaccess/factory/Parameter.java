@@ -6,6 +6,15 @@ import org.cb2384.exactalgebra.objects.AlgebraObject;
 
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * A parameter, for use in factories.
+ *
+ * @param <R>   the type that the parameter actually outputs
+ * @param <S>   the type family that the parameter outputs
+ * @param <T>   the primary input type of the parameter
+ *
+ * @author  Corinne Buxton
+ */
 public interface Parameter<R extends S, S extends AlgebraObject<S>, T>
         extends AlgebraObject<Parameter<?, S, T>> {
     
