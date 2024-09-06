@@ -46,15 +46,15 @@ public enum NarrowTo
     
     /**
      * Gets the {@link NarrowTo NarrowTo} constant that indicates the actual length of {@code parameter}.
-     * Has the side effect of {@linkplain Parameter#process process}ing the parameter,
+     * Has the side effect of {@linkplain IntValuedParameter#process process}ing the parameter,
      * through the process by which the parameter's internal value is accessed.
      *
-     * @param   parameter   the {@link Parameter} whose actual size is to measured
+     * @param   parameter   the Parameter whose actual size is to measured
      *
      * @return  the corresponding {@code enum} constant for the length of the actual numerical
      *          value represented by {@code parameter}
      *
-     * @see Parameter#process
+     * @see IntValuedParameter#process
      */
     @Deterministic
     public static NarrowTo getPrimNarrow(
@@ -116,13 +116,13 @@ public enum NarrowTo
      * Has the side effect of processing the parameter, through the process by which the parameter's
      * internal value is accessed.</p>
      *
-     * <p>Is exactly equivalent to {@code parameter}{@link Parameter#process .process(}{@code
-     * this}{@link Parameter#process )}.</p>
+     * <p>Is exactly equivalent to {@code parameter}{@link IntValuedParameter#process(NarrowTo) .process(}{@code
+     * this}{@link IntValuedParameter#process(NarrowTo) )}.</p>
      *
      * @param   parameter   the {@link Parameter} whose actual size is to measured
      *
-     * @return  {@link #comp comp(}{@link #getPrimNarrow(Parameter) getPrimNarrow(}{@code
-     *          parameter}{@link #getPrimNarrow(Parameter) )}{@link #comp )}
+     * @return  {@link #comp comp(}{@link #getPrimNarrow(IntValuedParameter) getPrimNarrow(}{@code
+     *          parameter}{@link #getPrimNarrow(IntValuedParameter) )}{@link #comp )}
      */
     @Deterministic
     public NarrowTo getAndCompPrimNarrow(

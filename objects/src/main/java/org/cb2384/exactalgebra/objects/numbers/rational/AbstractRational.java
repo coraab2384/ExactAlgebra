@@ -11,13 +11,13 @@ import java.util.function.BinaryOperator;
 import org.cb2384.exactalgebra.objects.numbers.AbstractAlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.integral.AlgebraInteger;
-import org.cb2384.exactalgebra.objects.numbers.integral.ArbitraryInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.IntegerFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
 import org.cb2384.exactalgebra.objects.Sigmagnum;
 import org.cb2384.exactalgebra.util.corutils.functional.ObjectThenIntToObjectFunction;
 import org.cb2384.exactalgebra.util.corutils.functional.TriFunction;
+import org.cb2384.exactalgebra.util.corutils.ternary.ComparableSwitchSignum;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
 import org.checkerframework.checker.nullness.qual.*;
@@ -25,7 +25,9 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 /**
- * <p>Skeletal implementations for many parts of the {@link Rational} interface, to make implementation easier.</p>
+ * <p>Skeletal implementations for many parts of the {@link Rational} interface, to make implementation easier.
+ * The majority of them rely upon {@link #numeratorBI()} and {@link #denominatorBI()} and
+ * to their logic in {@link BigInteger}s.</p>
  *
  * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} argument,
  * unless otherwise specified.</p>
@@ -112,12 +114,11 @@ public abstract class AbstractRational
      * might be less; that is also the only time that the {@link RoundingMode} argument is actually
      * used.
      *
-     * @param   precision   the precision to use, capped at {@link #MAX_PRECISION}; if {@code null} then
+     * @param precision     the precision to use, capped at {@link #MAX_PRECISION}; if {@code null} then
      *                      the necessary precision needed to convey this stored value is used (which
-     *                      is possible because this is an integral type).
-     *
-     * @param   roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
-     *                          defaults to {@link #DEFAULT_ROUNDING}
+     *                      is possible because this is an integral type)
+     * @param roundingMode  the {@link RoundingMode} to use &mdash if {@code null},
+     *                      defaults to {@link #DEFAULT_ROUNDING}
      *
      * @return  a rational that either is this, or is a less precise representation of this value if
      *          for some reason that was specified.
@@ -163,6 +164,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
      */
     @Override
     @SideEffectFree
@@ -176,6 +179,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
      */
     @Override
     @SideEffectFree
@@ -217,6 +222,9 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply calls {@link #toBigDecimal()}{@link
+     *              BigDecimal#doubleValue() .doubleValue()}.
      */
     @Override
     @Pure
@@ -226,6 +234,9 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply calls {@link #toBigDecimal()}{@link
+     *              BigDecimal#floatValue() .floatValue()}.
      */
     @Override
     @Pure
@@ -235,20 +246,28 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()},
+     *              as well as {@link #isWhole()}.
      */
     @Override
     @SideEffectFree
     public String toString(
             int radix
     ) {
-        String numS = numeratorAI().toString(radix);
+        String numS = numeratorBI().toString(radix);
         return isWhole() ?
                 numS :
-                numS + "/" + denominatorAI().toString(radix);
+                numS + "/" + denominatorBI().toString(radix);
     }
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #wholeAI()} to find the whole value
+     *              and {@link #difference(Rational)} to find the fraction part, which then uses
+     *              {@link #toString(int)} for building the fraction part.
+     *              It also uses {@link #isWhole()} and {@link #isNegative()}.
      */
     @Override
     @SideEffectFree
@@ -261,13 +280,15 @@ public abstract class AbstractRational
         if (isWhole()) {
             return wholeS;
         }
-        Rational part = difference(ArbitraryInteger.valueOfStrict(whole.toBigInteger()));
+        Rational part = difference(whole);
         String sepString = isNegative() ? "-(" : "+(";
         return wholeS + sepString + part.toString(radixPrim) + ")";
     }
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply checks if {@link #numeratorBI()} is 0.
      */
     @Override
     @Pure
@@ -277,6 +298,9 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply gets {@link #numeratorBI()} and {@link #denominatorBI()}
+     *              and checks if they are both 1.
      */
     @Override
     @Pure
@@ -286,6 +310,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply checks if {@link #numeratorBI()} is negative.
      */
     @Override
     @Pure
@@ -295,6 +321,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply checks if {@link #denominatorBI()} is 1.
      */
     @Override
     @Pure
@@ -304,6 +332,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and gets the signum from that.
      */
     @Override
     @Pure
@@ -313,6 +343,9 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #isNegative()} and
+     *              {@link #compare(ComparableSwitchSignum) compare}.
      */
     @Override
     @Pure
@@ -338,6 +371,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
      */
     @Override
     @Pure
@@ -349,6 +384,9 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()},
+     *              as well is {@link AlgebraInteger#toBigInteger()} for {@code that}.
      */
     @Override
     @Pure
@@ -365,6 +403,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
      */
     @Override
     @Pure
@@ -385,6 +425,11 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation calls {@link #compareTo(AlgebraInteger)} or {@link
+     *              #compareTo(Rational)}, depending on the class of {@code o}. If {@code o} is neither,
+     *              then it becomes the receiver (and the result reversed); since {@code o} is an
+     *              {@link AlgebraNumber}, it is also required to implement this function after all.
      */
     @Override
     @Pure
@@ -400,6 +445,10 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    In line with the interface specification, this method calls {@link #numeratorBI()}{@link
+     *              BigInteger#hashCode() .hashCode()}<code> ^ </code>{@link #denominatorBI()}{@link
+     *              BigInteger#hashCode() .hashCode()}.
      */
     @Override
     @Pure
@@ -409,6 +458,9 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    In line with the interface specification, this method actually calls {@link #equiv(Rational)}
+     *              after checking the class and "Rank" requirements.
      */
     @Override
     @Pure
@@ -424,6 +476,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
      */
     @Override
     @SideEffectFree
@@ -433,6 +487,10 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
+     *
+     * @throws ArithmeticException  if this is {@code 0}
      */
     @Override
     @SideEffectFree
@@ -441,31 +499,9 @@ public abstract class AbstractRational
     }
     
     /**
-     * Takes three functions and switches to the correct one based on the class of that
-     *
-     * @param that      the value to do the operation on this with
-     * @param opIfAI    operation to use if that is an AlgebraInteger
-     * @param opIfRat   operation to use if that is Rational
-     * @param opElse    operation to use if neither; it is reversed so as to make that the reciever
-     *
-     * @return  the result of the relevant operation
-     */
-    @SideEffectFree
-    private AlgebraNumber biOpHandler(
-            AlgebraNumber that,
-            BiFunction<AbstractRational, AlgebraInteger, Rational> opIfAI,
-            BinaryOperator<Rational> opIfRat,
-            BiFunction<AlgebraNumber, Rational, AlgebraNumber> opElse
-    ) {
-        return switch (that) {
-            case AlgebraInteger thatAI -> opIfAI.apply(this, thatAI);
-            case Rational thatR -> opIfRat.apply(this, thatR);
-            default -> opElse.apply(that, this);
-        };
-    }
-    
-    /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
      */
     @Override
     @SideEffectFree
@@ -477,6 +513,11 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation calls {@link #sum(Rational)} if {@code augend} is a Rational,
+     *              otherwise it calls {@code augend}{@link AlgebraNumber#sum(AlgebraNumber) .sum(}{@code
+     *              this}{@link AlgebraNumber#sum(AlgebraNumber) )}. This is possible because {@code augend},
+     *              itself being an {AlgebraNumber}, is also required to have an implementation.
      */
     @Override
     @SideEffectFree
@@ -490,6 +531,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
      */
     @Override
     @SideEffectFree
@@ -501,6 +544,13 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation calls {@link #difference(Rational)} if {@code subtrahend} is
+     *              a Rational, otherwise it calls {@code subtrahend}{@link
+     *              AlgebraNumber#difference(AlgebraNumber) .difference(}{@code this}{@link
+     *              AlgebraNumber#difference(AlgebraNumber) )}{@link AlgebraNumber#negated() .negated()}.
+     *              This is possible because {@code subtrahend}, itself being an {AlgebraNumber},
+     *              is also required to have an implementation.
      */
     @Override
     @SideEffectFree
@@ -545,6 +595,9 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()},
+     *              as well as {@link AlgebraInteger#toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -557,6 +610,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
      */
     @Override
     @SideEffectFree
@@ -568,6 +623,13 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation calls {@link #product(AlgebraInteger)} if {@code multiplicand}
+     *              is an {@link AlgebraInteger} or {@link #product(Rational)} if {@code multiplicand} is a Rational;
+     *              otherwise it calls {@code multiplicand}{@link AlgebraNumber#product(AlgebraNumber)
+     *              .product(}{@code this}{@link AlgebraNumber#product(AlgebraNumber) )}. This is possible
+     *              because {@code multiplicand}, itself being an {AlgebraNumber},
+     *              is also required to have an implementation.
      */
     @Override
     @SideEffectFree
@@ -578,7 +640,37 @@ public abstract class AbstractRational
     }
     
     /**
+     * Takes three functions and switches to the correct one based on the class of that
+     *
+     * @param that      the value to do the operation on this with
+     * @param opIfAI    operation to use if that is an AlgebraInteger
+     * @param opIfRat   operation to use if that is Rational
+     * @param opElse    operation to use if neither; it is reversed so as to make that the reciever
+     *
+     * @return  the result of the relevant operation
+     */
+    @SideEffectFree
+    private AlgebraNumber biOpHandler(
+            AlgebraNumber that,
+            BiFunction<AbstractRational, AlgebraInteger, Rational> opIfAI,
+            BinaryOperator<Rational> opIfRat,
+            BiFunction<AlgebraNumber, Rational, AlgebraNumber> opElse
+    ) {
+        return switch (that) {
+            case AlgebraInteger thatAI -> opIfAI.apply(this, thatAI);
+            case Rational thatR -> opIfRat.apply(this, thatR);
+            default -> opElse.apply(that, this);
+        };
+    }
+    
+    /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation uses {@link #quotientZ(AlgebraNumber)} to find the quotient
+     *              and {@link Rational#product(Rational)} and {@link Rational#difference(Rational)} to find
+     *              the remainder.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -591,6 +683,12 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply calls {@link #quotientZWithRemainder(Rational)
+     *              quotientZWithRemainder(}{@code divisor}{@link #quotientZWithRemainder(Rational) )}{@link
+     *              NumberRemainderPair#remainder() .remainder()}.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -602,6 +700,11 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation checks the inputs (using {@link Rational#isNegative()}),
+     *              but then just uses {@link #remainder(Rational)}.
+     *
+     * @throws ArithmeticException  if {@code modulus == 0}
      */
     @Override
     @SideEffectFree
@@ -613,6 +716,9 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()},
+     *              as well as {@link AlgebraInteger#toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -625,6 +731,8 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()}.
      */
     @Override
     @SideEffectFree
@@ -636,6 +744,15 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation first checks for zeroes, returning 0 or throwing an exception
+     *              depending on which is 0, and if not calls {@link #quotient(AlgebraInteger)} if {@code divisor}
+     *              is an {@link AlgebraInteger} or {@link #quotient(Rational)} if {@code divisor} is a Rational;
+     *              otherwise it calls {@code divisor}{@link AlgebraNumber#quotient(AlgebraNumber)
+     *              .quotient(}{@code this}{@link AlgebraNumber#quotient(AlgebraNumber) )}{@link
+     *              AlgebraNumber#inverted() .inverted()}. This is possible
+     *              because {@code divisor}, itself being an {AlgebraNumber},
+     *              is also required to have an implementation.
      */
     @Override
     @SideEffectFree
@@ -689,6 +806,11 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()},
+     *              and may also use {@link AlgebraNumber#inverted()}, {@link AlgebraNumber#product(AlgebraNumber)},
+     *              and {@link AlgebraNumber#squared()}. None of those may call this function,
+     *              and none of them overridden so as to not work as intended anymore.
      */
     @Override
     @SideEffectFree
@@ -706,6 +828,11 @@ public abstract class AbstractRational
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #raised(int)} and {@link
+     *              AlgebraNumber#product(AlgebraNumber)}. If {@link #raised(int)} is not overridden,
+     *              then this also relies indirectly on everything that {@link #raised(int)} relies on,
+     *              as well as {@link AlgebraInteger#toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -718,8 +845,11 @@ public abstract class AbstractRational
     /**
      * {@inheritDoc}
      *
-     * @implNote    This skeletal implementation uses {@link #rootRoundZ(int, RoundingMode)}
-     *              and subtraction to find the quotient and remainder
+     * @implNote    This skeletal implementation uses {@link #rootRoundZ(int, RoundingMode)} to find the root
+     *              and {@link AlgebraInteger#raised(int)} and {@link Rational#difference(Rational)}
+     *              to find the remainder.
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @Override
     @SideEffectFree
@@ -733,8 +863,11 @@ public abstract class AbstractRational
     /**
      * {@inheritDoc}
      *
-     * @implNote    This skeletal implementation uses {@link #rootRoundZ(AlgebraInteger, RoundingMode)}
-     *              and subtraction to find the quotient and remainder
+     * @implNote    This skeletal implementation uses {@link #rootRoundZ(AlgebraInteger, RoundingMode)} to
+     *              find the root and {@link AlgebraInteger#raised(AlgebraInteger)} and {@link
+     *              Rational#difference(Rational)} to find the remainder.
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @Override
     @SideEffectFree

@@ -160,11 +160,11 @@ public final class IntValuedParameter
     
     /**
      * Determines if the value of this Parameter can be represented by a primitive {@code long},
-     * and thus that {@link #valPrim} is safe to call, if that is not yet known; or,
+     * and thus that {@link #primValue} is safe to call, if that is not yet known; or,
      * or the known value to that question if already determined.
      *
      * @return  {@code true} if this value can be represented as a primitive {@code long}
-     *          (and therefore {@link #valPrim()} is safe to call)
+     *          (and therefore {@link #primValue()} is safe to call)
      */
     @Deterministic
     public boolean isPrim() {
@@ -211,7 +211,7 @@ public final class IntValuedParameter
     
     /**
      * Completely resets this Parameter, as if overwriting it with
-     * {@link #Parameter(BigInteger) new Parameter(}{@code value}{@link #Parameter(BigInteger) )}.
+     * {@link #IntValuedParameter(BigInteger) new Parameter(}{@code value}{@link #IntValuedParameter(BigInteger) )}.
      *
      * @param   value   the {@link BigInteger} whose value this will now represent
      */
@@ -225,7 +225,7 @@ public final class IntValuedParameter
     
     /**
      * Completely resets this Parameter, as if overwriting it with
-     * {@link #Parameter(long) new Parameter(}{@code value}{@link #Parameter(long) )}.
+     * {@link #IntValuedParameter(long) new Parameter(}{@code value}{@link #IntValuedParameter(long) )}.
      *
      * @param   value   the {@code long} whose value this will now represent
      */
@@ -240,12 +240,12 @@ public final class IntValuedParameter
     /**
      * <p>Measures the size of the value of this parameter, and compares it with the given size
      * per {@link NarrowTo#comp}, in effect being equivalent to {@code currentDepth}{@link NarrowTo#comp
-     * .comp(}{@link NarrowTo#getPrimNarrow(BigInteger) NarrowTo.getPrimNarrow(}{@link #valBI()}{@link
+     * .comp(}{@link NarrowTo#getPrimNarrow(BigInteger) NarrowTo.getPrimNarrow(}{@link #value()}{@link
      * NarrowTo#getPrimNarrow(BigInteger) )}{@link NarrowTo#comp )} but while also updating the internal logic
-     * regarding {@link #isPrim()} and {@link #valPrim()} in accordance with the measuring results.</p>
+     * regarding {@link #isPrim()} and {@link #primValue()} in accordance with the measuring results.</p>
      *
-     * <p>Is exactly equivalent to {@code currentDepth}{@link NarrowTo#getAndCompPrimNarrow(NumberFactory.Parameter)
-     * .getAndCompPrimNarrow(}{@code this}{@link NarrowTo#getAndCompPrimNarrow(NumberFactory.Parameter) )}.</p>
+     * <p>Is exactly equivalent to {@code currentDepth}{@link NarrowTo#getAndCompPrimNarrow(IntValuedParameter)
+     * .getAndCompPrimNarrow(}{@code this}{@link NarrowTo#getAndCompPrimNarrow(IntValuedParameter) )}.</p>
      *
      * @param   currentDepth    the current depth of this factory, which is then compared via
      *                          {@link NarrowTo#comp comp} (which uses logic in line with the standard

@@ -9,6 +9,7 @@ import org.cb2384.exactalgebra.objects.internalaccess.factory.NarrowTo;
 import org.cb2384.exactalgebra.objects.internalaccess.factory.Parameter;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.integral.AlgebraInteger;
+import org.cb2384.exactalgebra.objects.numbers.integral.FiniteInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.IntegerFactory;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
 import org.cb2384.exactalgebra.util.PrimMathUtils;
@@ -23,16 +24,14 @@ import org.checkerframework.dataflow.qual.*;
 /**
  * <p>Factory for {@link Rational} types. This factory allows for three parameters: a whole, a numerator,
  * and a denominator (such as through {@link #whole(AlgebraInteger)}, {@link #numerator(BigInteger)}, or
- * {@link #denominator(long)}). The factory will normalize the given parameter to simplified improper fraction
- * form for actual construction.</p>
+ * {@link #denominator(long)}; all three input types work for all three parameter locations). The factory will
+ * normalize the given parameter to simplified improper fraction form for actual construction.</p>
  *
- * <p>Unlike {@link org.cb2384.exactalgebra.objects.management.numberfactories.IntegerFactory}, which works a bit differently to allow the recycling of an input parameter
- * that happens to be pre-normalized, all other factories are subclasses of this factory. One can think
- * of this factory as being able to make only {@link Rational} types (which still includes
- * {@link AlgebraInteger} as a subclass) but as also being capable of being extended to create
- * more complicated types.</p>
+ * <p>If a whole value is not specified, then there is no whole value / it is not a mixed number / the whole
+ * part is 0. If the numerator is not specified, it is taken to be 0. If the denominator is not specified, it is
+ * taken to be 1.</p>
  *
- * <p>Throws: {@link NullPointerException} &ndash; on any {@code null} input, unless otherwise noted</p>
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} input, unless otherwise noted</p>
  *
  * @author  Corinne Buxton
  */
@@ -61,9 +60,39 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     @SideEffectFree
     protected RationalFactory() {}
     
+    /**
+     * Grabs an instance of a factory implementation that is reified to always produce an {@link Rational}.
+     *
+     * @return  an instance of a factory implementation specifically for {@link Rational}s
+     */
     @SideEffectFree
     public static RationalFactory<Rational> newRational() {
         return new RationalFabricator();
+    }
+    
+    /**
+     * Shorthand for calling {@link RationalFactory#RationalFactory() new RationalFactory()}{@link
+     * RationalFactory#numerator(AlgebraInteger) .numerator(}{@code numerator}{@link
+     * RationalFactory#numerator(AlgebraInteger) )}{@link RationalFactory#denominator(AlgebraInteger)
+     * .denominator(}{@code denominator}{@link RationalFactory#denominator(AlgebraInteger) )}{@link
+     * RationalFactory#build() .build()}.
+     *
+     * @param numerator     the numerator to give the factory, through
+     *                      {@link RationalFactory#numerator(AlgebraInteger)}
+     * @param denominator   the denominator to give the factory, through
+     *                      {@link RationalFactory#denominator(AlgebraInteger)}
+     *
+     * @return  the constructed {@link Rational}, per {@link RationalFactory#build()} with the given
+     *          {@code numerator} and {@code denominator} parameters
+     *
+     * @throws ArithmeticException  if {@code denominator == 0}
+     */
+    @SideEffectFree
+    public static Rational fromAlgebraIntegers(
+            AlgebraInteger numerator,
+            AlgebraInteger denominator
+    ) {
+        return new RationalFabricator().numerator(numerator).denominator(denominator).build();
     }
     
     /**
@@ -73,16 +102,15 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
      * .denominator(}{@code denominator}{@link RationalFactory#denominator(BigInteger) )}{@link
      * RationalFactory#build() .build()}.
      *
-     * @param   numerator   the numerator to give the factory, through
+     * @param numerator     the numerator to give the factory, through
      *                      {@link RationalFactory#numerator(BigInteger)}
-     *
-     * @param   denominator the denominator to give the factory, through
+     * @param denominator   the denominator to give the factory, through
      *                      {@link RationalFactory#denominator(BigInteger)}
      *
      * @return  the constructed {@link Rational}, per {@link RationalFactory#build()} with the given
      *          {@code numerator} and {@code denominator} parameters
      *
-     * @throws  ArithmeticException if {@code denominator == 0}
+     * @throws ArithmeticException  if {@code denominator == 0}
      */
     @SideEffectFree
     public static Rational fromBigIntegers(
@@ -117,6 +145,32 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
         return new RationalFabricator().numerator(numerator).denominator(denominator).build();
     }
     
+    /**
+     * <p>All-in-one method for calling {@link #newRational()} and adding 1 to 3 of the given arguments,
+     * then {@link #build()}. While all 3 are denoted as being {@link Nullable}, at least one
+     * must not be {@code null}. For flexibility, this method accepts any {@link Number},
+     * but this does present some issues; any custom number implementation that might hold
+     * values that cannot be converted to a finite {@code double} will cause an exception.</p>
+     *
+     * <p>Since all default {@link Number} implementations are Rational,
+     * this also assumes that any input can be converted to a {@code double} and that the {@code double}
+     * representation is complete. Each argument is checked for if it is a {@link BigInteger} or
+     * {@link BigDecimal}, or a {@link Long} or other long-valued type
+     * (like {@link java.util.concurrent.atomic.LongAccumulator}) first, to mitigate the loss of precision,
+     * but that only works for the built-in Number subclasses. <b><em>In such a case, precision may
+     * be lost without exception or other indication!</b></em></p>
+     *
+     * @param whole         the whole value to use for the resulting Rational, if {@code null} then it is
+     *                      simply not a mixed number
+     * @param numerator     the numerator to use for the resulting Rational; if {@code null} defaults to 0
+     * @param denominator   the denominator to use for the resulting Rational; if {@code null} defaults to 1
+     *
+     * @return  the rational constructed from the non-{@code null} arguments
+     *
+     * @throws NullPointerException     if all three arguments are {@code null}
+     * @throws NumberFormatException    if any argument holds a value that, when turned to a double
+     *                                  through {@link Number#doubleValue()}, results in a non-finite value
+     */
     @SideEffectFree
     public static Rational fromNumbers(
             @Nullable Number whole,
@@ -154,7 +208,7 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
      * {@link BigDecimal#BigDecimal(double) new BigDecimal(double)} rather than
      * {@link BigDecimal#valueOf(double)}.
      *
-     * @param   value   the {@code double} whose value to make the {@link Rational} from
+     * @param value the {@code double} whose value to make the {@link Rational} from
      *
      * @return  a {@link Rational} representation of {@code value}
      *
@@ -170,7 +224,7 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     /**
      * Transforms {@code value} into a {@link Rational}.
      *
-     * @param   value   the {@link BigDecimal} whose value to make the {@link Rational} from
+     * @param value the {@link BigDecimal} whose value to make the {@link Rational} from
      *
      * @return  a {@link Rational} representation of {@code value}
      */
@@ -195,9 +249,60 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     }
     
     /**
-     * Takes a numerator parameter for this factory
+     * Takes a whole parameter for this factory. If there already is a whole parameter given,
+     * this will overwrite it.
      *
-     * @param   value  an {@link AlgebraInteger} representation of the value to use
+     * @param value the whole number to use
+     *
+     * @return  this same factory, to allow chaining to {@link #build()}
+     */
+    @Override
+    @Deterministic
+    public @This RationalFactory<N> whole(
+            AlgebraInteger value
+    ) {
+        return (value instanceof FiniteInteger valueFI)
+                ? whole(valueFI.longValue())
+                : whole(value.toBigInteger());
+    }
+    
+    /**
+     * Takes a whole parameter for this factory. If there already is a whole parameter given,
+     * this will overwrite it.
+     *
+     * @param value the whole number to use
+     *
+     * @return  this same factory, to allow chaining to {@link #build()}
+     */
+    @Deterministic
+    public @This RationalFactory<N> whole(
+            BigInteger value
+    ) {
+        whole = new IntValuedParameter(value);
+        return this;
+    }
+    
+    /**
+     * Takes a whole parameter for this factory. If there already is a whole parameter given,
+     * this will overwrite it.
+     *
+     * @param value the whole number to use
+     *
+     * @return  this same factory, to allow chaining to {@link #build()}
+     */
+    @Deterministic
+    public @This RationalFactory<N> whole(
+            long value
+    ) {
+        whole = new IntValuedParameter(value);
+        return this;
+    }
+    
+    /**
+     * Takes a numerator parameter for this factory. If there already is a numerator parameter given,
+     * this will overwrite it.
+     *
+     * @param value the numerator to use
      *
      * @return  this same factory, to allow chaining for possibly further parameters
      */
@@ -205,13 +310,16 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     public @This RationalFactory<N> numerator(
             AlgebraInteger value
     ) {
-        return numerator(value.toBigInteger());
+        return (value instanceof FiniteInteger valueFI)
+                ? numerator(valueFI.longValue())
+                : numerator(value.toBigInteger());
     }
     
     /**
-     * Takes a numerator parameter for this factory
+     * Takes a numerator parameter for this factory. If there already is a numerator parameter given,
+     * this will overwrite it.
      *
-     * @param   value   a {@link BigInteger} representation of the value to use
+     * @param value the numerator to use
      *
      * @return  this same factory, to allow chaining for possibly further parameters
      */
@@ -224,9 +332,10 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     }
     
     /**
-     * Takes a numerator parameter for this factory
+     * Takes a numerator parameter for this factory. If there already is a numerator parameter given,
+     * this will overwrite it.
      *
-     * @param   value   a {@code long} representation of the value to use
+     * @param value the numerator to use
      *
      * @return  this same factory, to allow chaining for possibly further parameters
      */
@@ -239,9 +348,10 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     }
     
     /**
-     * Takes a denominator parameter for this factory
+     * Takes a denominator parameter for this factory. If there already is a denominator parameter given,
+     * this will overwrite it.
      *
-     * @param   value   an {@link AlgebraInteger} representation of the value to use
+     * @param value the denominator to use
      *
      * @return  this same factory, to allow chaining for possibly further parameters
      */
@@ -249,13 +359,16 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     public @This RationalFactory<N> denominator(
             AlgebraInteger value
     ) {
-        return denominator(value.toBigInteger());
+        return (value instanceof FiniteInteger valueFI)
+                ? denominator(valueFI.longValue())
+                : denominator(value.toBigInteger());
     }
     
     /**
-     * Takes a denominator parameter for this factory
+     * Takes a denominator parameter for this factory. If there already is a denominator parameter given,
+     * this will overwrite it.
      *
-     * @param   value   a {@link BigInteger} representation of the value to use
+     * @param value the denominator to use
      *
      * @return  this same factory, to allow chaining for possibly further parameters
      */
@@ -271,9 +384,10 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     }
     
     /**
-     * Takes a denominator parameter for this factory
+     * Takes a denominator parameter for this factory. If there already is a denominator parameter given,
+     * this will overwrite it.
      *
-     * @param   value   a {@code long} representation of the value to use
+     * @param value the denominator to use
      *
      * @return  this same factory, to allow chaining for possibly further parameters
      */
@@ -288,43 +402,47 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
         return this;
     }
     
-    private static final class RationalFabricator extends RationalFactory<Rational> {
-        
-        private NarrowTo currentDepth = NarrowTo.NULL;
-        
-        private RationalFabricator() {}
+    /**
+     * Returns the simplest or smallest {@link Rational} representation of the parameters given previously,
+     * after normalization and simplification. Since this function is not strict, in the case that
+     * there is no denominator or the denominator is 1 (after normalization), what is actually returned
+     * will be an {@link AlgebraInteger}.
+     *
+     * @return  an {@link Rational} representation of the value of the values given
+     *
+     * @throws  IllegalStateException   if no parameters have been given yet
+     */
+    @Override
+    public abstract N build();
+    
+    /**
+     * Returns the simplest or smallest {@link Rational} representation of the parameters given previously,
+     * after normalization and simplification. Since this function is strict, in the case that
+     * there is no denominator or the denominator is 1 (after normalization), a Rational implementation (and
+     * not an {@link AlgebraInteger} implementation) will be returned.
+     *
+     * @return  an {@link Rational} representation of the value of the values given
+     *
+     * @throws  IllegalStateException   if no parameters have been given yet
+     */
+    @Override
+    public abstract N buildStrict();
+    
+    /**
+     * Actual implementation of parts that aren't meant to be inherited.
+     */
+    private static final class RationalFabricator
+            extends RationalFactory<Rational> {
         
         /**
-         * Takes the parameter for this factory in the form of a pre-existing {@link AlgebraInteger}.
-         *
-         * @param   value   an {@link AlgebraInteger} representation of the whole number to use; this same exact object
-         *                  may be returned by this the factory, though it will attempt narrowing if possible
-         *
-         * @return  this same factory, to allow chaining to {@link #build()}
+         * Used for tracking the size of the parameters, to determine the output from {@link #builder}
          */
-        @Override
-        @Deterministic
-        public @This RationalFactory<Rational> whole(
-                AlgebraInteger value
-        ) {
-            return whole(value.toBigInteger());
-        }
+        private NarrowTo currentDepth = NarrowTo.NULL;
         
-        @Override
-        @Deterministic
-        public @This RationalFactory<Rational> whole(
-                BigInteger value
-        ) {
-            return (RationalFactory<Rational>) super.whole(value);
-        }
-        
-        @Override
-        @Deterministic
-        public @This RationalFactory<Rational> whole(
-                long value
-        ) {
-            return (RationalFactory<Rational>) super.whole(value);
-        }
+        /**
+         * basic constructor
+         */
+        private RationalFabricator() {}
         
         @Override
         public void clear() {
@@ -335,15 +453,38 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
         }
         
         /**
+         * {@inheritDoc}
+         *
+         * @throws  IllegalStateException   if no parameters have been given yet
+         */
+        @Override
+        public Rational build() {
+            return builder(true);
+        }
+        
+        /**
+         * {@inheritDoc}
+         *
+         * @throws  IllegalStateException   if no parameters have been given yet
+         */
+        @Override
+        public Rational buildStrict() {
+            return builder(false);
+        }
+        
+        /**
          * Normalizes and simplifies the parameters down to just a numerator and denominator, and then
          * builds a {@link Rational} of the appropriate size from those parameters
+         *
+         * @param unstrict  whether to build strict or not
          *
          * @return  the constructed {@link Rational} (or rather subclass)
          *
          * @throws IllegalStateException    if no parameters have been given yet
          */
-        @Override
-        public Rational build() {
+        private Rational builder(
+                boolean unstrict
+        ) {
             normalize();
             
             if (currentDepth == NarrowTo.ARBITRARY) {
@@ -353,7 +494,7 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
             }
             
             assert (numerator != null) && (denominator != null) && (denominator.value().signum() == 1);
-            if (BigMathObjectUtils.isOne(denominator.value())) {
+            if (unstrict && BigMathObjectUtils.isOne(denominator.value())) {
                 return numerator.asAlgebraObject();
             }
             boolean canBeFinite = switch(currentDepth) {

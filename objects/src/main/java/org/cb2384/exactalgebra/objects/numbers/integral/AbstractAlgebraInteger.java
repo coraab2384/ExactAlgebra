@@ -16,8 +16,10 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException;
+import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.rational.AbstractRational;
 import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
+import org.cb2384.exactalgebra.objects.numbers.rational.RationalFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
 import org.cb2384.exactalgebra.util.PrimMathUtils;
@@ -578,6 +580,20 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #toBigInteger()}.
+     */
+    @Override
+    @Pure
+    public boolean isEven() {
+        return BigMathObjectUtils.isEven(toBigInteger());
+    }
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply calls {@link #toBigInteger()}{@link
+     *              BigInteger#equals(Object) .equals(}{@link BigInteger#ONE}{@link BigInteger#equals(Object) )}.
      */
     @Override
     @Pure
@@ -596,6 +612,8 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #toBigInteger()}.
      */
     @Override
     @Pure
@@ -605,6 +623,8 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #toBigInteger()}.
      */
     @Override
     @Pure
@@ -614,6 +634,8 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #toBigInteger()}.
      */
     @Override
     @Pure
@@ -625,6 +647,8 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -636,6 +660,8 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -647,6 +673,8 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -658,6 +686,28 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply calls {@link
+     *              RationalFactory#fromAlgebraIntegers(AlgebraInteger, AlgebraInteger)
+     *              RationalFactory.fromAlgebraIntegers(}{@code this, divisor}{@link
+     *              RationalFactory#fromAlgebraIntegers(AlgebraInteger, AlgebraInteger) )}
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
+     */
+    @Override
+    @SideEffectFree
+    public Rational quotient(
+            AlgebraInteger divisor
+    ) {
+        return RationalFactory.fromAlgebraIntegers(this, divisor);
+    }
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -671,6 +721,10 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -682,6 +736,10 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -693,6 +751,10 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -704,6 +766,10 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -715,6 +781,12 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #raisedZ(int)} (which itself also uses {@link
+     *              #toBigInteger()}), and may also use {@link AlgebraNumber#inverted()}, {@link
+     *              AlgebraNumber#product(AlgebraNumber)}, and {@link AlgebraNumber#squared()}.
+     *              None of those may call this function, and none of them overridden
+     *              so as to not work as intended anymore.
      */
     @Override
     @SideEffectFree
@@ -726,6 +798,8 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -737,6 +811,9 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #raisedZ(int)}, {@link
+     *              AlgebraNumber#product(AlgebraNumber)}, and {@link AlgebraInteger#toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -748,6 +825,9 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation relies on {@link #raisedZ(int)}, {@link
+     *              AlgebraNumber#product(AlgebraNumber)}, and {@link AlgebraInteger#toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -759,6 +839,12 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation uses {@link #rootRoundZ(int, RoundingMode)} to find the root
+     *              and {@link AlgebraInteger#raised(int)} and {@link Rational#difference(Rational)}
+     *              to find the remainder.
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @Override
     @SideEffectFree
@@ -771,6 +857,12 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation uses {@link #rootRoundZ(AlgebraInteger, RoundingMode)} to
+     *              find the root and {@link AlgebraInteger#raised(AlgebraInteger)} and {@link
+     *              Rational#difference(Rational)} to find the remainder.
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @Override
     @SideEffectFree
@@ -783,6 +875,9 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation is actually not very skeletal. It also only relies on
+     *              {@link #toBigInteger()}.
      */
     @Override
     @SideEffectFree
@@ -805,6 +900,7 @@ public abstract class AbstractAlgebraInteger
         
         Stream<BigInteger> stream = Stream.iterate(BigInteger.ONE, endIteration, BigMathObjectUtils::inc);
         
+        // If this isn't even, then even things can't be factors
         if (absVal.testBit(0)) {
             stream = stream.filter(i -> i.testBit(0));
         }
@@ -862,6 +958,7 @@ public abstract class AbstractAlgebraInteger
                 ? LongStream.range(1, max)
                 : LongStream.rangeClosed(1, max);
         
+        // If this isn't even, then even things can't be factors.
         if ((positiveValue & 1) == 1) {
             stream = stream.filter(l -> (l & 1) == 1);
         }
@@ -885,6 +982,9 @@ public abstract class AbstractAlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation is actually not very skeletal. It also only relies on
+     *              {@link #toBigInteger()}.
      */
     @Override
     @SideEffectFree

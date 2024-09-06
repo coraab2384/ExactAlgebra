@@ -9,7 +9,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import org.cb2384.exactalgebra.objects.numbers.integral.FiniteInteger;
@@ -34,7 +33,7 @@ import org.checkerframework.dataflow.qual.*;
  * {@link Integer#MAX_VALUE}<code>&nbsp;+ 1</code>. If the numerator or denominator use less space, the other
  * does not pick up the remaining space.</p>
  *
- * <p>Throws: {@link NullPointerException} &ndash; on any {@code null} input unless otherwise noted</p>
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} input unless otherwise noted</p>
  *
  * @author  Corinne Buxton
  */
@@ -112,7 +111,7 @@ public final class FiniteRational
      * @param denominator   the denominator that the new object will have; will however carry the sign
      */
     @SideEffectFree
-    private FiniteRational(
+    FiniteRational(
             @IntRange(from = 0, to = PrimMathUtils.LONG_TO_INT_MASK) long numerator,
             @IntRange(from = Integer.MIN_VALUE, to = PrimMathUtils.NEG_INT_MIN) long denominator
     ) {
@@ -213,7 +212,7 @@ public final class FiniteRational
         if (doesFit(numerator, denominator)) {
             return new FiniteRational(numerator, denominator);
         }
-        return ArbitraryRational.fromLongsStrict(numerator, denominator);
+        return ArbitraryRational.valueOfStrict(numerator, denominator);
     }
     
     /**
@@ -413,6 +412,9 @@ public final class FiniteRational
         return numeratorLongUnsigned() / denominatorLongSigned();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public BigInteger numeratorBI() {
@@ -422,6 +424,9 @@ public final class FiniteRational
                 : numerator;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public BigInteger denominatorBI() {
@@ -431,12 +436,18 @@ public final class FiniteRational
                 : denominator;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public BigInteger wholeBI() {
         return BigInteger.valueOf( wholePrim() );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public BigDecimal toBigDecimal(
@@ -448,6 +459,9 @@ public final class FiniteRational
         );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public BigInteger toBigInteger(
@@ -486,12 +500,18 @@ public final class FiniteRational
         return opIfElse.apply(numBD, denBD);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public double doubleValue() {
         return (double) numeratorLongUnsigned() / denominatorLongSigned();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String toString(
@@ -507,24 +527,36 @@ public final class FiniteRational
         return ans.toString();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isZero() {
         return value == ZERO_VAL;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isOne() {
         return value == ONE_VAL;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isNegative() {
         return value < 0;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isWhole() {
@@ -532,6 +564,9 @@ public final class FiniteRational
         return (den == 1) || (den == -1);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public Signum signum() {
@@ -554,6 +589,9 @@ public final class FiniteRational
         return Long.compare(thisNum, thatNum);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int compareTo(
@@ -564,6 +602,9 @@ public final class FiniteRational
                 : super.compareTo(that);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public FiniteRational negated() {
@@ -572,6 +613,9 @@ public final class FiniteRational
         return new FiniteRational(newNum, newDen);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational inverted() {
@@ -610,6 +654,9 @@ public final class FiniteRational
         return arithFind(subtrahend, true, false);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational difference(
@@ -659,6 +706,9 @@ public final class FiniteRational
         return multRes(multiplicand, false, false, Ternary.DEFAULT);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational product(
@@ -676,6 +726,9 @@ public final class FiniteRational
         return multRes(divisor, true, false, Ternary.DEFAULT);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational quotient(

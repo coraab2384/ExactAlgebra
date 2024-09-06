@@ -4,29 +4,17 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.function.IntConsumer;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import com.numericalmethod.suanshu.Constant;
 import com.numericalmethod.suanshu.number.big.BigDecimalUtils;
 import org.cb2384.exactalgebra.objects.internalaccess.CacheInteger;
-import org.cb2384.exactalgebra.objects.numbers.integral.AbstractAlgebraInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.AlgebraInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.FiniteInteger;
 import org.cb2384.exactalgebra.objects.numbers.integral.IntegerFactory;
 import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
-import org.cb2384.exactalgebra.objects.numbers.rational.RationalFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
-import org.cb2384.exactalgebra.util.corutils.StringUtils;
 import org.cb2384.exactalgebra.util.corutils.functional.ObjectThenIntToObjectFunction;
 import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
@@ -34,6 +22,16 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>Skeletal method implementations for {@link AlgebraNumber}s, to reduce implementation work.
+ * This class also contains protected non-overrideable implementation pieces, which can be used by
+ * inheriting implementers.</p>
+ *
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} argument,
+ * unless otherwise specified.</p>
+ *
+ * @author  Corinne Buxton
+ */
 public abstract class AbstractAlgebraNumber
         implements AlgebraNumber {
     
@@ -63,6 +61,9 @@ public abstract class AbstractAlgebraNumber
     protected static final int PRECISION_TO_ADD_FOR_FIRST_OP
             = Math.min(Long.SIZE - DEFAULT_PRECISION, 2);
     
+    /**
+     * Standardized exception message for division by 0.
+     */
     protected static final String DIV_0_EXC_MSG = "Cannot have denominator of 0";
     
     /**
@@ -182,11 +183,15 @@ public abstract class AbstractAlgebraNumber
     /**
      * Yield this number in string form, in normal base 10
      *
+     * @implNote    This skeletal implementation calls {@link #toString(int)
+     *              toString(}{@code 10}{@link #toString(int) )}, so to override its behavior, override that
+     *              function.
+     *
      * @return  a string representing the value of this object
      */
     @Override
     @SideEffectFree
-    public String toString() {
+    public final String toString() {
         return toString(10);
     }
     
@@ -238,8 +243,12 @@ public abstract class AbstractAlgebraNumber
     /**
      * {@inheritDoc}
      *
-     * @implNote    This skeletal implementation uses {@link #quotientZ}, and then subtraction to find
-     *              the remainder, so {@link #quotientZ} cannot call this method unless overridden.
+     * @implNote    This skeletal implementation uses {@link #quotientZ(AlgebraNumber)} to find the quotient,
+     *              and then {@link AlgebraNumber#product(AlgebraNumber)} and
+     *              {@link AlgebraNumber#difference(AlgebraNumber)} to find
+     *              the remainder.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -253,8 +262,11 @@ public abstract class AbstractAlgebraNumber
     /**
      * {@inheritDoc}
      *
-     * @implNote    This skeletal implementation simply takes the normal quotient and rounds it using
-     *              {@link RoundingMode#DOWN}
+     * @implNote    This skeletal implementation simply calls {@link #quotient(AlgebraNumber) quotient(}{@code
+     *              divisor}{@link #quotient(AlgebraNumber) )}{@link AlgebraNumber#roundZ(RoundingMode)
+     *              .roundZ(}{@link RoundingMode#DOWN}{@link AlgebraNumber#roundZ(RoundingMode) )}.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -267,7 +279,10 @@ public abstract class AbstractAlgebraNumber
     /**
      * {@inheritDoc}
      *
-     * @implNote    This skeletal implementation simply takes the normal quotient and rounds it
+     * @implNote    This skeletal implementation simply takes the normal quotient and rounds it using
+     *              {@link #roundZ(RoundingMode)}.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -283,6 +298,8 @@ public abstract class AbstractAlgebraNumber
      *
      * @implNote    This skeletal implementation takes the remainder from {@link #quotientZWithRemainder}, and so
      *              that method cannot itself take the remainder found here.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -297,6 +314,8 @@ public abstract class AbstractAlgebraNumber
      *
      * @implNote    This skeletal implementation obtains the modulo result with help from {@link #remainder}, and so
      *              that method cannot itself call this one.
+     *
+     * @throws ArithmeticException  if {@code modulus <= 0}
      */
     @Override
     @SideEffectFree
@@ -567,6 +586,14 @@ public abstract class AbstractAlgebraNumber
 //        return rootRoundQ(index, MAX_PREC_CONTEXT);
 //    }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation uses {@link #rootRoundZ(int, RoundingMode)},
+     *              {@link #raised(int)}, and subtraction to build the RemainderPair.
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
+     */
     @Override
     @SideEffectFree
     public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> rootZWithRemainder(
@@ -576,6 +603,14 @@ public abstract class AbstractAlgebraNumber
         return new NumberRemainderPair<>(this, floor, floor.raised(index));
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation uses {@link #rootRoundZ(AlgebraInteger, RoundingMode)},
+     *              {@link #raised(AlgebraInteger)}, and subtraction to build the RemainderPair.
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
+     */
     @Override
     @SideEffectFree
     public NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> rootZWithRemainder(
@@ -605,6 +640,14 @@ public abstract class AbstractAlgebraNumber
 //        return new NumberRemainderPair<>(this, floor, floor.raised(index));
 //    }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation only relies upon {@link #isNegative()} and {@link
+     *              #toBigDecimal(MathContext)} and is otherwise safe regarding dependent overridable methods.
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger rootRoundZ(
@@ -619,6 +662,15 @@ public abstract class AbstractAlgebraNumber
         return IntegerFactory.fromBigInteger(resBD.toBigInteger());
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation only relies upon {@link #isNegative()},
+     *              {@link #toBigDecimal(MathContext)}, and {@link AlgebraInteger#isEven()} for checking
+     *              even-ness and is otherwise safe regarding dependent overridable methods.
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
+     */
     @Override
     @SideEffectFree
     public AlgebraInteger rootRoundZ(
@@ -626,7 +678,7 @@ public abstract class AbstractAlgebraNumber
             @Nullable RoundingMode roundingMode
     ) {
         // If negative with even index
-        if (isNegative() && index.canDivideBy(2)) {
+        if (isNegative() && index.isEven()) {
             throw new ArithmeticException("Negative value with an even radical index!");
         }
         BigDecimal resBD = rootRound(index, getInitContextZ(roundingMode), null);
@@ -970,44 +1022,44 @@ public abstract class AbstractAlgebraNumber
         );
     }
     
-    /**
-     * Checks the given {@link MathContext} for validity&mdash;for example, lowers the precision if it is too high
-     * &mdash; and fills it in if it is {@code null}
-     *
-     * @param mathContext   the MathContext to check and return or replace; if {@code null}, it will of course
-     *                      be replaced by one using
-     *
-     * @return  the aforementioned MathContext
-     */
-    @SideEffectFree
-    protected static MathContext getRatContext(
-            @Nullable MathContext mathContext
-    ) {
-        if (mathContext == null) {
-            return DEFAULT_CONTEXT;
-        }
-        if (mathContext.getPrecision() <= MAX_PRECISION) {
-            return mathContext;
-        }
-        return new MathContext(MAX_PRECISION, mathContext.getRoundingMode());
-    }
-    
-    /**
-     * Takes the given {@link MathContext} and increases the precision by {@link #PRECISION_TO_ADD_FOR_FIRST_OP}
-     * (capped at {@link #MAX_PRECISION}) before returning a copy with the changes made.
-     *
-     * @param ratContext    the MathContext to check and return or replace;
-     *
-     * @return  the aforementioned MathContext
-     */
-    protected static MathContext getInitContextQ(
-            MathContext ratContext
-    ) {
-        return new MathContext(
-                Math.min(ratContext.getPrecision() + PRECISION_TO_ADD_FOR_FIRST_OP, MAX_PRECISION),
-                ratContext.getRoundingMode()
-        );
-    }
+//    /**
+//     * Checks the given {@link MathContext} for validity&mdash;for example, lowers the precision if it is too high
+//     * &mdash; and fills it in if it is {@code null}
+//     *
+//     * @param mathContext   the MathContext to check and return or replace; if {@code null}, it will of course
+//     *                      be replaced by one using
+//     *
+//     * @return  the aforementioned MathContext
+//     */
+//    @SideEffectFree
+//    protected static MathContext getRatContext(
+//            @Nullable MathContext mathContext
+//    ) {
+//        if (mathContext == null) {
+//            return DEFAULT_CONTEXT;
+//        }
+//        if (mathContext.getPrecision() <= MAX_PRECISION) {
+//            return mathContext;
+//        }
+//        return new MathContext(MAX_PRECISION, mathContext.getRoundingMode());
+//    }
+//
+//    /**
+//     * Takes the given {@link MathContext} and increases the precision by {@link #PRECISION_TO_ADD_FOR_FIRST_OP}
+//     * (capped at {@link #MAX_PRECISION}) before returning a copy with the changes made.
+//     *
+//     * @param ratContext    the MathContext to check and return or replace;
+//     *
+//     * @return  the aforementioned MathContext
+//     */
+//    protected static MathContext getInitContextQ(
+//            MathContext ratContext
+//    ) {
+//        return new MathContext(
+//                Math.min(ratContext.getPrecision() + PRECISION_TO_ADD_FOR_FIRST_OP, MAX_PRECISION),
+//                ratContext.getRoundingMode()
+//        );
+//    }
     
     /**
      * This is the final step in several rounded real operations. It rounds the first argument according to

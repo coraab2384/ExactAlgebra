@@ -150,11 +150,11 @@ public interface RealField<I extends AlgebraicRing<I, R> & AlgebraObject<R>,
     /**
      * True division of this by divisor, with no remainder.
      *
-     * @param   divisor the value to divide this by
+     * @param divisor the value to divide this by
      *
      * @return  the quotient of {@code divisor} and this
      *
-     * @throws  ArithmeticException if dividing by {@code 0}
+     * @throws ArithmeticException  if dividing by 0
      */
     @SideEffectFree
     R quotient(R divisor);

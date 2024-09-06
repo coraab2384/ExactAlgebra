@@ -9,11 +9,10 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongPredicate;
-import java.util.function.LongToIntFunction;
-import java.util.function.ToLongFunction;
 
 import org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException;
 import org.cb2384.exactalgebra.objects.internalaccess.CacheInteger;
+import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
 import org.cb2384.exactalgebra.util.PrimMathUtils;
@@ -28,10 +27,23 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>Essentially a wrapper around a {@code long}, though not supporting {@link Long#MIN_VALUE}, and with
+ * more functions and integration into the rest of the {@link
+ * org.cb2384.exactalgebra.objects.numbers.AlgebraNumber AlgebraNumber} hierarchy.</p>
+ *
+ * <p>Throws:&ensp{@link NullPointerException} on any {@code null} argument, unless otherwise specified</p>
+ *
+ * @author  Corinne Buxton
+ */
 public sealed class FiniteInteger
         extends AbstractAlgebraInteger
         implements Serializable
         permits CacheInteger {
+    
+    /**
+     * A tribute for the serial gods
+     */
     @Serial
     private static final long serialVersionUID = 0xBE0A89B78FE0C0DAL;
     
@@ -54,9 +66,9 @@ public sealed class FiniteInteger
     /**
      * Exists solely for {@link CacheInteger}, which has the {@link BigInteger} cache pre-filled.
      *
-     * @param   value   the value to represent
+     * @param value   the value to represent
      *
-     * @param   valueBI the value to represent, as a {@link BigInteger} for the cache
+     * @param valueBI the value to represent, as a {@link BigInteger} for the cache
      */
     @SideEffectFree
     protected FiniteInteger(
@@ -70,7 +82,7 @@ public sealed class FiniteInteger
     /**
      * Creates the object from the value
      *
-     * @param   value   the value to represent
+     * @param value   the value to represent
      */
     @SideEffectFree
     private FiniteInteger(
@@ -79,6 +91,13 @@ public sealed class FiniteInteger
         this.value = value;
     }
     
+    /**
+     * Yields a FiniteInteger to represent the given value.
+     *
+     * @param value the {@code long} to represent
+     *
+     * @return  {@code value} as a FiniteInteger
+     */
     public static AlgebraInteger valueOf(
             long value
     ) {
@@ -88,13 +107,13 @@ public sealed class FiniteInteger
     }
     
     /**
-     * Creates a {@link FiniteInteger} to represent the given value, but first checks the Cache.
+     * Yields a FiniteInteger to represent the given value, but first checks the Cache.
      *
-     * @param   value   the {@code long} value to represent, though it cannot be {@link Long#MIN_VALUE}
+     * @param value   the {@code long} value to represent, though it cannot be {@link Long#MIN_VALUE}
      *
-     * @return  {@code value} as a {@link FiniteInteger}
+     * @return  {@code value} as a FiniteInteger
      *
-     * @throws  IllegalArgumentException    if {@code value == }{@link Long#MIN_VALUE}
+     * @throws IllegalArgumentException if {@code value == }{@link Long#MIN_VALUE}
      */
     @SideEffectFree
     public static FiniteInteger valueOfStrict(
@@ -107,33 +126,71 @@ public sealed class FiniteInteger
         return valueFactory(value);
     }
     
+    @SideEffectFree
+    public static AlgebraInteger valueOf(
+            BigInteger value
+    ) {
+        return valueFactory(value, false);
+    }
+    
     /**
      * Creates a {@link FiniteInteger} to represent the given value, but first checks the Cache.
      *
-     * @param   value   the {@code long} value to represent, though it cannot be {@link Long#MIN_VALUE}
+     * @param value   the {@code long} value to represent, though it cannot be {@link Long#MIN_VALUE}
      *
      * @return  {@code value} as a {@link FiniteInteger}
      *
-     * @throws  IllegalArgumentException    if {@code value == }{@link Long#MIN_VALUE}
+     * @throws IllegalArgumentException if {@code value == }{@link Long#MIN_VALUE}
      */
     @SideEffectFree
     public static FiniteInteger valueOfStrict(
             BigInteger value
     ) {
-        if (BigMathObjectUtils.canBeLong(value, PrimMathUtils.IntegralBoundaryTypes.EXTENDED)) {
-            return new CacheInteger(value.longValue(), value);
-        }
-        throw new IllegalArgumentException("This value is too large for "
-                + StringUtils.getIdealName(FiniteInteger.class));
+        return (FiniteInteger) valueFactory(value, true);
     }
     
-    protected static FiniteInteger valueFactory(
+    /**
+     * Checks if the value is cached, and calls the constructor if not.
+     *
+     * @param value the value of the result
+     *
+     * @return  a FiniteInteger with the given value
+     */
+    @SideEffectFree
+    static FiniteInteger valueFactory(
             @IntRange(from = MIN_VALUE) long value
     ) {
         if (Math.abs(value) <= CACHE_DEPTH) {
             return getFromCache((int) value);
         }
         return new FiniteInteger(value);
+    }
+    
+    /**
+     * Checks if the value is cached, and calls the constructor of the appropriate size if not.
+     *
+     * @param value     the value of the result
+     * @param strict    whether to allow results larger than a FiniteInteger
+     *
+     * @return  an AlgebraInteger with the given value
+     */
+    @SideEffectFree
+    static AlgebraInteger valueFactory(
+            BigInteger value,
+            boolean strict
+    ) {
+        if (BigMathObjectUtils.canBeLong(value, PrimMathUtils.IntegralBoundaryTypes.SHORTENED)) {
+            long valLong = value.longValue();
+            if (Math.abs(valLong) <= CACHE_DEPTH) {
+                return getFromCache((int) valLong);
+            }
+            return new CacheInteger(valLong, value);
+        }
+        if (strict) {
+            throw new IllegalArgumentException("This value is too large for "
+                    + StringUtils.getIdealName(FiniteInteger.class));
+        }
+        return new ArbitraryInteger(value);
     }
     
     /**
@@ -535,6 +592,14 @@ public sealed class FiniteInteger
         return true;
     }
     
+    /**
+     * Like {@link #compareTo(AlgebraNumber)}, but specialized specifically for FiniteIntegers.
+     *
+     * @param that  the FiniteInteger to be compared
+     *
+     * @return  a negative integer, zero, or a positive integer
+     *          as this is less than, equal to, or greater than {@code that}
+     */
     @Pure
     public int compareTo(
             FiniteInteger that
@@ -555,6 +620,18 @@ public sealed class FiniteInteger
                 : super.compareTo(that);
     }
     
+    /**
+     * Divides this by {@code divisor}, with the caveat that the quotient is a whole number
+     * ({@link AlgebraInteger}).
+     * That is, the quotient is the highest value such divisor {@code divisor * quotient <= this}.
+     * The second value is the remainder, which is {@code this - (divisor * quotient)}.
+     *
+     * @param   divisor the value to divide this by
+     *
+     * @return  an array with the quotient, followed by the remainder
+     *
+     * @throws  ArithmeticException if {@code divisor == 0}
+     */
     @SideEffectFree
     public NumberRemainderPair<FiniteInteger, FiniteInteger> quotientZWithRemainder(
             FiniteInteger divisor
@@ -573,6 +650,17 @@ public sealed class FiniteInteger
         return new NumberRemainderPair<>(quotientZ(divisor), remainder(divisor));
     }
     
+    /**
+     * Divides this by {@code divisor}, with the caveat that the quotient is a whole number
+     * ({@link AlgebraInteger}).
+     * That is, the quotient is the highest value such divisor {@code divisor * quotient <= this}.
+     *
+     * @param   divisor the value to divide this by
+     *
+     * @return  the quotient of {@code this / divisor}, specifically using integer division
+     *
+     * @throws  ArithmeticException if {@code divisor == 0}
+     */
     @SideEffectFree
     public FiniteInteger quotientZ(
             FiniteInteger divisor
@@ -593,6 +681,19 @@ public sealed class FiniteInteger
                 : (FiniteInteger) super.quotientZ(divisor);
     }
     
+    /**
+     * Finds the remainder of this if it were divided by {@code divisor}, in line with {@code %}.
+     * Specifically, this is the remainder and not the modulo, so it will not throw errors on negatives.
+     *
+     * @implNote    The remainder is as if from {@code this - (divisor * quotient)}, but there is no requirement
+     *              the quotient be specifically calculated if it is not needed to find the result.
+     *
+     * @param   divisor    the value to pretend divide this by for the purpose of finding the remainder.
+     *
+     * @return  the remainder as if from {@code this % divisor}
+     *
+     * @throws  ArithmeticException if {@code divisor == 0}
+     */
     @SideEffectFree
     public FiniteInteger remainder(
             FiniteInteger divisor
@@ -613,6 +714,17 @@ public sealed class FiniteInteger
                 : (FiniteInteger) super.remainder(divisor);
     }
     
+    /**
+     * Finds the modulo of this by {@code modulus}, similar to {@code %}. However, in line with other languages,
+     * this operation is only valid when {@code modulus} is positive. Furthermore, the returned
+     * value is also always positive.
+     *
+     * @param modulus   the value to pretend divide this by for the purpose of finding the remainder.
+     *
+     * @return  the remainder as if from {@code this % modulus}
+     *
+     * @throws ArithmeticException  if {@code modulus <= 0}
+     */
     @SideEffectFree
     public FiniteInteger modulo(
             FiniteInteger modulus

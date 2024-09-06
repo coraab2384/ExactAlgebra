@@ -93,7 +93,7 @@ public interface AlgebraObject<T> {
      *              if this type is actually to be represented with variables.
      *
      * @param radix     the radix for the representation
-     * @param variables the variable/-s for this representation; ignored if there are
+     * @param variables the variable(s) for this representation; ignored if there are
      *                  no variables used in this type
      *
      * @return  a string representation of this

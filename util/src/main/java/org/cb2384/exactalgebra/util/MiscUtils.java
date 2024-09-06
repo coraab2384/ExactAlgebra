@@ -34,12 +34,12 @@ public final class MiscUtils {
     }
     
     @SideEffectFree
-    public static <T> Spliterator<T> spliteratorOrderedSizedNonnullImmutableSubsizedIterator(
+    public static <T> Spliterator<T> spliteratorOrderedNonnullImmutableIterator(
             Iterator<T> iterator,
             long size
     ) {
-        return Spliterators.spliterator(iterator, size, Spliterator.ORDERED | Spliterator.SIZED
-                | Spliterator.NONNULL | Spliterator.IMMUTABLE | Spliterator.SUBSIZED);
+        return Spliterators.spliterator(iterator, size, Spliterator.ORDERED
+                | Spliterator.NONNULL | Spliterator.IMMUTABLE);
     }
     
     @Pure
@@ -47,7 +47,7 @@ public final class MiscUtils {
             int radix
     ) {
         if ((radix < Character.MIN_RADIX) || (radix > Character.MAX_RADIX)) {
-            throw new IllegalArgumentException("Improper radix");
+            throw new NumberFormatException("Improper radix");
         }
     }
     

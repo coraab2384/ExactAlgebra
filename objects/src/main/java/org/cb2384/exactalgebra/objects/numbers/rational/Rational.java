@@ -185,6 +185,9 @@ public interface Rational
         return this;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     Rational negated();
@@ -201,6 +204,11 @@ public interface Rational
         return isNegative() ? negated() : this;
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if this is {@code 0}
+     */
     @Override
     @SideEffectFree
     Rational inverted();
@@ -266,7 +274,7 @@ public interface Rational
      * Multiplies this by {@code multiplicand}
      *
      * @implNote    Since {@link AlgebraInteger} is an extension of {@link Rational}, the default implementation
-     *              simply passes the divisor to {@link #product(Rational)}
+     *              simply passes the divisor to {@link #product(Rational)}. This should be overridden.
      *
      * @param multiplicand  the value to multiply this by
      *
@@ -281,6 +289,8 @@ public interface Rational
     
     /**
      * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -290,7 +300,7 @@ public interface Rational
      * True division of this by divisor, with no remainder.
      *
      * @implNote    Since {@link AlgebraInteger} is an extension of {@link Rational}, the default implementation
-     *              simply passes the divisor to {@link #quotient(Rational)}
+     *              simply passes the divisor to {@link #quotient(Rational)}. This should be overridden.
      *
      * @param divisor   the value to divide this by
      *
@@ -310,9 +320,15 @@ public interface Rational
      * That is, the quotient is the highest value such divisor {@code divisor * quotient <= this}.
      * The second value is the remainder, which is {@code this - (divisor * quotient)}.
      *
+     * @implNote    The default implementation finds both quotient and remainder and returns them as a pair.
+     *              Many implementations grab the remainder for {@link #remainder} out of this pair,
+     *              and so they override this method.
+     *
      * @param divisor   the value to divide this by
      *
-     * @return  an array with the quotient, followed by the remainder
+     * @return  a {@link Record} with the quotient being obtained through
+     *          {@link NumberRemainderPair#value() value()}
+     *          and the remainder through {@link NumberRemainderPair#remainder() remainder()}
      *
      * @throws ArithmeticException  if {@code divisor == 0}
      */
@@ -326,6 +342,8 @@ public interface Rational
     
     /**
      * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -375,6 +393,8 @@ public interface Rational
      *
      * @implNote    The default implementation simply calls {@link #rootZWithRemainder
      *              rootZWithRemainder(}{@code 2}{@link #rootZWithRemainder )}.
+     *
+     * @throws ArithmeticException  if this is negative
      */
     @Override
     @SideEffectFree
@@ -384,6 +404,8 @@ public interface Rational
     
     /**
      * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @Override
     @SideEffectFree
@@ -391,6 +413,8 @@ public interface Rational
     
     /**
      * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @Override
     @SideEffectFree

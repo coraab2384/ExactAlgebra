@@ -19,6 +19,10 @@ import org.checkerframework.dataflow.qual.*;
 public final class ArbitraryInteger
         extends AbstractAlgebraInteger
         implements Serializable {
+    
+    /**
+     * The cereal gods be assuaged
+     */
     @Serial
     private static final long serialVersionUID = 0x83A0B98FB73A1A4L;
     

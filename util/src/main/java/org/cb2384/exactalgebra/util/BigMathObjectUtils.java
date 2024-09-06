@@ -293,6 +293,20 @@ public final class BigMathObjectUtils {
     }
     
     /**
+     * Checks if {@code value} is even.
+     *
+     * @param value the value to check for even-ness
+     *
+     * @return  {@code true} if this is even, else {@code false}
+     */
+    @Pure
+    public static boolean isEven(
+            BigInteger value
+    ) {
+        return !value.testBit(0);
+    }
+    
+    /**
      * Finds the LCM of two {@link BigInteger}s, neither of which can be {@link BigInteger#ZERO}.
      *
      * @param   left    the first number to get the LCM of

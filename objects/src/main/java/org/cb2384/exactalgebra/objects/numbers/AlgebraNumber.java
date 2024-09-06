@@ -31,7 +31,7 @@ import org.checkerframework.dataflow.qual.*;
  * This interface guarantees closure for all mathematical operations performed on implementations</p>
  *
  * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} argument,
- * unless otherwise specified.</p>
+ * unless otherwise specified</p>
  *
  * @author  Corinne Buxton
  */
@@ -110,20 +110,47 @@ public interface AlgebraNumber
         return RationalFactory.fromDouble(value.doubleValue());
     }
     
+    /**
+     * Creates an AlgebraNumber representing the given String. This function assumes a base of 10.
+     *
+     * @implNote    The heavy lifting is done through {@link BigDecimal#BigDecimal(String)} and relies on
+     *              that function for actual String interpretation.
+     *
+     * @param value The string to find the value of
+     *
+     * @return  An AlgebraNumber representing the value indicated by the {@code value}
+     *
+     * @throws NumberFormatException    If {@code value} is not a valid number format
+     */
     @SideEffectFree
     static AlgebraNumber valueOf(
-            String val
+            String value
     ) {
-        String valNormed = val.replaceAll("[ _]", "");
+        String valNormed = value.replaceAll("[ _]", "");
         return RationalFactory.fromBigDecimal(new BigDecimal(valNormed));
     }
     
+    /**
+     * Creates an AlgebraNumber representing the given String. This function assumes a base of 10.
+     *
+     * @implNote    The heavy lifting is done through {@link BigDecimal#BigDecimal(String)} and relies on
+     *              that function for actual String interpretation.
+     *
+     * @param value The string to find the value of
+     * @param radix the radix for {@code value}; must be a valid radix!
+     *
+     * @return  An AlgebraNumber representing the value indicated by the {@code value}
+     *
+     * @throws IllegalArgumentException if {@code radix} is not between {@link Character#MIN_RADIX}
+     *                                  and {@link Character#MAX_RADIX}, inclusive
+     * @throws NumberFormatException    If {@code value} is not a valid number format
+     */
     @SideEffectFree
     static AlgebraNumber valueOf(
-            String val,
+            String value,
             @IntRange(from = Character.MIN_RADIX, to = Character.MAX_RADIX) int radix
     ) {
-        String valNormed = val.replaceAll("[ _]", "");
+        String valNormed = value.replaceAll("[ _]", "");
         return (radix == 10)
                 ? RationalFactory.fromBigDecimal(new BigDecimal(valNormed))
                 : valueOf( MiscUtils.conformRadixToTen(valNormed, radix) );
@@ -441,7 +468,7 @@ public interface AlgebraNumber
      *
      * @param that  the value to check against this
      *
-     * @return  {@code true} if these are equal in numerical value, otherwise {@code false}
+     * @return  the larger of this and {@code that}
      */
     @Pure
     default AlgebraNumber max(
@@ -458,7 +485,7 @@ public interface AlgebraNumber
      *
      * @param that  the value to check against this
      *
-     * @return  {@code true} if these are equal in numerical value, otherwise {@code false}
+     * @return  the smaller of this and {@code that}
      */
     @Pure
     default AlgebraNumber min(
@@ -490,6 +517,8 @@ public interface AlgebraNumber
     
     /**
      * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -511,7 +540,7 @@ public interface AlgebraNumber
      *          {@link NumberRemainderPair#value() value()}
      *          and the remainder through {@link NumberRemainderPair#remainder() remainder()}
      *
-     * @throws ArithmeticException  if dividing by {@code 0}
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -523,6 +552,8 @@ public interface AlgebraNumber
     
     /**
      * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -543,13 +574,15 @@ public interface AlgebraNumber
      *
      * @return  the rounded quotient of this divided by {@code divisor}
      *
-     * @throws ArithmeticException  if {@code divisor} is {@code 0}
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @SideEffectFree
     AlgebraInteger quotientRoundZ(AlgebraNumber divisor, @Nullable RoundingMode roundingMode);
     
     /**
      * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -661,8 +694,7 @@ public interface AlgebraNumber
      *          and the second ({@link NumberRemainderPair#remainder() remainder()}) being the remainder between
      *          that value squared and this
      *
-     * @throws ArithmeticException  if {@code index < 0} and this is greater in magnitude than {@code 1},
-     *                              or if {@code index} is even and this is negative
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @SideEffectFree
     NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber> rootZWithRemainder(int index);
@@ -681,8 +713,7 @@ public interface AlgebraNumber
      *
      * @return  the rounded {@code index}<sup>th</sup> root of this
      *
-     * @throws ArithmeticException  if {@code index < 0} and this is greater in magnitude than {@code 1},
-     *                              or if {@code index} is even and this is negative
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @SideEffectFree
     AlgebraInteger rootRoundZ(int index, @Nullable RoundingMode roundingMode);
@@ -698,8 +729,7 @@ public interface AlgebraNumber
      *          and the second ({@link NumberRemainderPair#remainder() remainder()}) being the remainder between
      *          that value squared and this
      *
-     * @throws ArithmeticException  if {@code index < 0} and this is greater in magnitude than {@code 1},
-     *                              or if {@code index} is even and this is negative
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @SideEffectFree
     NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraNumber>
@@ -719,8 +749,7 @@ public interface AlgebraNumber
      *
      * @return  the rounded {@code index}<sup>th</sup> root of this
      *
-     * @throws ArithmeticException  if {@code index < 0} and this is greater in magnitude than {@code 1},
-     *                              or if {@code index} is even and this is negative
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @SideEffectFree
     AlgebraInteger rootRoundZ(AlgebraInteger index, @Nullable RoundingMode roundingMode);

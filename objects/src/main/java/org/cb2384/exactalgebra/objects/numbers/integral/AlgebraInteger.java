@@ -116,7 +116,7 @@ public interface AlgebraInteger
      * Normally would round this to an integer according to the given rounding, but since this
      * already is an integer, simply returns this.
      *
-     * @param   roundingMode    the rounding mode to use; is irrelevant since this is already
+     * @param roundingMode    the rounding mode to use; is irrelevant since this is already
      *                          an integral type
      *
      * @return  this
@@ -136,11 +136,11 @@ public interface AlgebraInteger
      * might be less; that is also the only time that the {@link RoundingMode} argument is actually
      * used.
      *
-     * @param   precision   the precision to use, capped at {@link #MAX_PRECISION}; if {@code null} then
+     * @param precision   the precision to use, capped at {@link #MAX_PRECISION}; if {@code null} then
      *                      the necessary precision needed to convey this stored value is used (which
      *                      is possible because this is an integral type).
      *
-     * @param   roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
+     * @param roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
      *                          defaults to {@link #DEFAULT_ROUNDING}
      *
      * @return  a rational that either is this, or is a less precise representation of this value if
@@ -170,7 +170,7 @@ public interface AlgebraInteger
      * than the precision needed to represent this value, then precision will be lost in the
      * returned value as well.
      *
-     * @param   mathContext the {@link MathContext} to use; this mainly just determines if any precision
+     * @param mathContext the {@link MathContext} to use; this mainly just determines if any precision
      *                      should be lost, as if the precision of the given context is higher than
      *                      the precision of this value, nothing changes
      *
@@ -188,6 +188,9 @@ public interface AlgebraInteger
     /**
      * Returns this integral value represented as a {@link BigDecimal}.
      *
+     * @implNote    The default implementation simply calls {@link BigDecimal#BigDecimal(BigInteger)
+     *              new BigDecimal(}{@link #toBigInteger()}{@link BigDecimal#BigDecimal(BigInteger) )}.
+     *
      * @return  this, but as a {@link BigDecimal}
      */
     @Override
@@ -203,10 +206,10 @@ public interface AlgebraInteger
      * might be less; that is also the only time that the {@link RoundingMode} argument is actually
      * used.
      *
-     * @param   precision   the precision to use; is capped at {@link #MAX_PRECISION} and if {@code null}
+     * @param precision   the precision to use; is capped at {@link #MAX_PRECISION} and if {@code null}
      *                      defaults to {@link #DEFAULT_PRECISION}
      *
-     * @param   roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
+     * @param roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
      *                          defaults to {@link #DEFAULT_ROUNDING}
      *
      * @return  {@link BigDecimal} representing this value, with the indicated precision
@@ -232,7 +235,7 @@ public interface AlgebraInteger
      * might be less; that is also the only time that the {@link RoundingMode} argument is actually
      * used.
      *
-     * @param   mathContext the {@link MathContext} to use; this mainly just determines if any precision
+     * @param mathContext the {@link MathContext} to use; this mainly just determines if any precision
      *                      should be lost
      *
      * @return  {@link BigDecimal} representing this value, with the indicated precision
@@ -258,7 +261,7 @@ public interface AlgebraInteger
      * Returns a {@link BigInteger} representing this value. Since AlgebraIntegers are integer types,
      * this result shall be the same as that from {@link #toBigInteger()}.
      *
-     * @param   roundingMode    the rounding mode to use; is irrelevant since this is already
+     * @param roundingMode    the rounding mode to use; is irrelevant since this is already
      *                          an integral type
      *
      * @return  this value as a {@link BigInteger}
@@ -431,7 +434,7 @@ public interface AlgebraInteger
     /**
      * Returns the larger of this and {@code that}.
      *
-     * @param   that    the value to compare and possibly return
+     * @param that    the value to compare and possibly return
      *
      * @return  {@code that} or this, whichever is larger
      */
@@ -441,7 +444,7 @@ public interface AlgebraInteger
     /**
      * Returns the larger of this and {@code that}.
      *
-     * @param   that    the value to compare and possibly return
+     * @param that    the value to compare and possibly return
      *
      * @return  {@code that} or this, whichever is larger
      */
@@ -465,7 +468,7 @@ public interface AlgebraInteger
     /**
      * Returns the smaller of this and {@code that}.
      *
-     * @param   that    the value to compare and possibly return
+     * @param that    the value to compare and possibly return
      *
      * @return  {@code that} or this, whichever is smaller
      */
@@ -475,7 +478,7 @@ public interface AlgebraInteger
     /**
      * Returns the smaller of this and {@code that}.
      *
-     * @param   that    the value to compare and possibly return
+     * @param that    the value to compare and possibly return
      *
      * @return  {@code that} or this, whichever is smaller
      */
@@ -557,7 +560,7 @@ public interface AlgebraInteger
     /**
      * Checks if {@code divisor} can evenly divide this.
      *
-     * @param   divisor the prospective divisor to test
+     * @param divisor   the prospective divisor to test
      *
      * @return  the boolean equivalent of {@code (divisor % this) == 0}
      */
@@ -567,7 +570,7 @@ public interface AlgebraInteger
     /**
      * Checks if {@code divisor} can evenly divide this.
      *
-     * @param   divisor the prospective divisor to test
+     * @param divisor   the prospective divisor to test
      *
      * @return  the boolean equivalent of {@code (divisor % this) == 0}
      */
@@ -580,7 +583,7 @@ public interface AlgebraInteger
      * @implNote    This skeletal implementation uses {@link #canDivideBy(BigInteger) canDivideBy(}{@code
      *              divisor}{@link #toBigInteger() .toBigInteger()}{@link #canDivideBy(BigInteger) )}.
      *
-     * @param   divisor the prospective divisor to test
+     * @param divisor   the prospective divisor to test
      *
      * @return  the boolean equivalent of {@code (divisor % this) == 0}
      */
@@ -604,7 +607,7 @@ public interface AlgebraInteger
      */
     @Override
     @SideEffectFree
-    AlgebraNumber difference(AlgebraNumber subtrahend);
+    AlgebraInteger difference(AlgebraInteger subtrahend);
     
     /**
      * {@inheritDoc}
@@ -615,6 +618,12 @@ public interface AlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    The default implementation finds both quotient and remainder and returns them as a pair.
+     *              Many implementations grab the remainder for {@link #remainder} out of this pair,
+     *              and so they override this method.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -626,6 +635,8 @@ public interface AlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
      */
     @Override
     @SideEffectFree
@@ -636,11 +647,11 @@ public interface AlgebraInteger
      * this operation is only valid when {@code modulus} is positive. Furthermore, the returned
      * value is also always positive.
      *
-     * @param   modulus the value to pretend divide this by for the purpose of finding the remainder.
+     * @param modulus   the value to pretend divide this by for the purpose of finding the remainder.
      *
      * @return  the remainder as if from {@code this % modulus}
      *
-     * @throws  ArithmeticException if {@code modulus <= 0}
+     * @throws ArithmeticException  if {@code modulus <= 0}
      */
     @SideEffectFree
     AlgebraInteger modulo(AlgebraInteger modulus);
@@ -648,11 +659,11 @@ public interface AlgebraInteger
     /**
      * Returns a value {@code x} such that {@code (x * this) mod(modulus) = 1}.
      *
-     * @param   modulus the modulus to use
+     * @param modulus   the modulus to use
      *
      * @return  the modular inverse of this with respect to {@code modulus}
      *
-     * @throws  ArithmeticException if {@code modulus <= 0} or {@code modulus} is not
+     * @throws ArithmeticException  if {@code modulus <= 0} or {@code modulus} is not
      *                              relatively prime with this
      */
     @SideEffectFree
@@ -660,6 +671,8 @@ public interface AlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @implNote    The default implementation simply calls {@link #product product(}{@code this}{@link #product )}.
      */
     @Override
     @SideEffectFree
@@ -669,6 +682,8 @@ public interface AlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @throws  ArithmeticException if {@code exponent < 0}
      */
     @Override
     @SideEffectFree
@@ -676,25 +691,20 @@ public interface AlgebraInteger
     
     /**
      * {@inheritDoc}
+     *
+     * @throws  ArithmeticException if {@code exponent < 0}
      */
     @Override
     @SideEffectFree
     AlgebraInteger raisedZ(AlgebraInteger exponent);
     
     /**
-     * Finds the square root of this, always rounded down to an
-     * {@link Rational}, as well as the difference between the
-     * first returned value, squared, and this original value. The first value is the largest
-     * integer {@code x} such that {@code x * x <= this} and the second is {@code this - x * x}.
+     * {@inheritDoc}
      *
      * @implNote    The default implementation simply calls {@link #rootZWithRemainder
      *              rootZWithRemainder(}{@code 2}{@link #rootZWithRemainder )}.
      *
-     * @return  an array of two values, the first being the highest {@link AlgebraInteger}
-     *          less than or equal to the real square root, and the second being the remainder between
-     *          that value squared and this
-     *
-     * @throws  ArithmeticException if this is negative
+     * @throws ArithmeticException  if this is negative
      */
     @SideEffectFree
     default NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> sqrtZWithRemainder() {
@@ -702,31 +712,17 @@ public interface AlgebraInteger
     }
     
     /**
-     * Finds the {@code index}<sup>th</sup> root of this, always rounded down to an
-     * {@link AlgebraInteger}, as well as the difference between the
-     * first returned value, squared, and this original value. The first value is the largest
-     * integer {@code x} such that {@code x * x <= this} and the second is {@code this - x * x}.
+     * {@inheritDoc}
      *
-     * @return  an array of two values, the first being the highest {@link AlgebraInteger}
-     *          less than or equal to the real square root, and the second being the remainder between
-     *          that value squared and this
-     *
-     * @throws  ArithmeticException if {@code index} is even and this is negative
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @SideEffectFree
     NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> rootZWithRemainder(int index);
     
     /**
-     * Finds the {@code index}<sup>th</sup> root of this, always rounded down to an
-     * {@link AlgebraInteger}, as well as the difference between the
-     * first returned value, squared, and this original value. The first value is the largest
-     * integer {@code x} such that {@code x * x <= this} and the second is {@code this - x * x}.
+     * {@inheritDoc}
      *
-     * @return  an array of two values, the first being the highest {@link AlgebraInteger}
-     *          less than or equal to the real square root, and the second being the remainder between
-     *          that value squared and this
-     *
-     * @throws  ArithmeticException if {@code index} is even and this is negative
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @SideEffectFree
     NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> rootZWithRemainder(AlgebraInteger index);
@@ -750,6 +746,14 @@ public interface AlgebraInteger
      */
     @Pure
     boolean isPrime();
+    
+    /**
+     * Checks if this is an even number, divisible by 2
+     *
+     * @return  {@code} true if this is even, otherwise {@code false}
+     */
+    @Pure
+    boolean isEven();
     
     /**
      * Returns a {@link List}, in ascending order, of all of the prime factors of this. The returned list is,

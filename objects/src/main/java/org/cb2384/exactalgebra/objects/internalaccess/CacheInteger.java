@@ -21,6 +21,9 @@ import org.checkerframework.dataflow.qual.*;
 public final class CacheInteger
         extends FiniteInteger {
     
+    /**
+     * serialVersionUID
+     */
     @Serial
     private static final long serialVersionUID = 0x83A0B98FB73A1AEL;
     
@@ -37,7 +40,7 @@ public final class CacheInteger
     /**
      * Passes the given value up, both as itself and as a {@link BigInteger} for pre-caching
      *
-     * @param   value   the value to represent
+     * @param value the value to represent
      */
     @SideEffectFree
     private CacheInteger(
@@ -47,11 +50,10 @@ public final class CacheInteger
     }
     
     /**
-     * Simply passes the values up
+     * Simply passes the values up to {@link FiniteInteger#FiniteInteger(long, BigInteger)}.
      *
-     * @param   value   the value to represent
-     *
-     * @param   valueBI the value to represent, as a {@link BigInteger} for the cache
+     * @param value     the value to represent
+     * @param valueBI   the value to represent, as a {@link BigInteger} for the cache
      */
     @SideEffectFree
     public CacheInteger(
@@ -59,14 +61,14 @@ public final class CacheInteger
             BigInteger valueBI
     ) {
         super(value, valueBI);
+        assert (valueBI.longValueExact() == value) && (value != Long.MIN_VALUE);
     }
     
     /**
-     * An alternate version of {@link #valueOfStrict(long)} which pre-caches the {@link BigInteger} value as well.
+     * An alternate version of {@link #valueOf(long)} which pre-caches the {@link BigInteger} value as well.
      *
-     * @param   value   the {@code long} value to represent, though it cannot be {@link Long#MIN_VALUE}
-     *
-     * @param   valueBI the {@link BigInteger} representation of {@code value}, to be handed to the cache field
+     * @param value     the {@code long} value to represent, though it cannot be {@link Long#MIN_VALUE}
+     * @param valueBI   the {@link BigInteger} representation of {@code value}, to be handed to the cache field
      *
      * @return  A {@link FiniteInteger} representing {@code value} and {@code valueBI}
      */
@@ -75,6 +77,7 @@ public final class CacheInteger
             @IntRange(from = MIN_VALUE) long value,
             BigInteger valueBI
     ) {
+        assert (valueBI.longValueExact() == value) && (value != Long.MIN_VALUE);
         if (Math.abs(value) <= CACHE_DEPTH) {
             return getFromCache((int) value);
         }
@@ -100,6 +103,9 @@ public final class CacheInteger
         return intStream.mapToObj(CacheInteger::new).toList();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public BigInteger toBigInteger() {

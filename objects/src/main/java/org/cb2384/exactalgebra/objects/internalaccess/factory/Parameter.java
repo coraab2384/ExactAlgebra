@@ -19,7 +19,8 @@ public interface Parameter<R extends S, S extends AlgebraObject<S>, T>
         extends AlgebraObject<Parameter<?, S, T>> {
     
     /**
-     * standardized exception message, so as to not have to retype it
+     * Standardized exception message, mainly so as to not have to retype it. If I had an exclamation point
+     * in one factory's message and a period in another, that would be irksome.
      */
     String EMPTY_STATE_EXC = "No Parameters given; cannot build!";
     
