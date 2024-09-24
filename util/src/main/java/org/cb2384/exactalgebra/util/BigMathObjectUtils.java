@@ -183,7 +183,7 @@ public final class BigMathObjectUtils {
             BigInteger dividend,
             BigInteger divisor
     ) {
-        return isZero( dividend.remainder(divisor) );
+        return !isZero(divisor) && isZero( dividend.remainder(divisor) );
     }
     
     /**
@@ -290,6 +290,20 @@ public final class BigMathObjectUtils {
             BigInteger value
     ) {
         return value.signum() == -1;
+    }
+    
+    /**
+     * Checks if {@code value} is even.
+     *
+     * @param value the value to check for even-ness
+     *
+     * @return  {@code true} if this is even, else {@code false}
+     */
+    @Pure
+    public static boolean isEven(
+            BigInteger value
+    ) {
+        return !value.testBit(0);
     }
     
     /**

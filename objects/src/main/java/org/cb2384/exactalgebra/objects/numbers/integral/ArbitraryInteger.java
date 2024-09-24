@@ -19,6 +19,10 @@ import org.checkerframework.dataflow.qual.*;
 public final class ArbitraryInteger
         extends AbstractAlgebraInteger
         implements Serializable {
+    
+    /**
+     * The cereal gods be assuaged
+     */
     @Serial
     private static final long serialVersionUID = 0x83A0B98FB73A1A4L;
     
@@ -33,7 +37,7 @@ public final class ArbitraryInteger
      * @param   value   the actual value that this will have
      */
     @SideEffectFree
-    public ArbitraryInteger(
+    ArbitraryInteger(
             BigInteger value
     ) {
         this.value = value;
@@ -46,10 +50,34 @@ public final class ArbitraryInteger
      * @param   value   the actual value that this will have
      */
     @SideEffectFree
-    public ArbitraryInteger(
+    ArbitraryInteger(
             long value
     ) {
         this.value = BigInteger.valueOf(value);
+    }
+    
+    public static ArbitraryInteger valueOfStrict(
+            BigInteger value
+    ) {
+        return new ArbitraryInteger(value);
+    }
+    
+    public static AlgebraInteger valueOf(
+            BigInteger value
+    ) {
+        return IntegerFactory.fromBigInteger(value);
+    }
+    
+    public static ArbitraryInteger valueOfStrict(
+            long value
+    ) {
+        return new ArbitraryInteger(value);
+    }
+    
+    public static AlgebraInteger valueOf(
+            long value
+    ) {
+        return IntegerFactory.fromLong(value);
     }
     
     @Override

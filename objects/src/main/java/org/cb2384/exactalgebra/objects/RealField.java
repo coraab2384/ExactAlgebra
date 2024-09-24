@@ -40,11 +40,11 @@ public interface RealField<I extends AlgebraicRing<I, R> & AlgebraObject<R>,
     
     /**
      * Divides this by {@code divisor}, with the caveat that the quotient is a whole number
-     * ({@link AlgebraInteger}).
+     * (an implementer of {@link AlgebraicRing}).
      * That is, the quotient is the highest value such divisor {@code divisor * quotient <= this}.
      * The second value is the remainder, which is {@code this - (divisor * quotient)}.
      *
-     * @param   divisor the value to divide this by
+     * @param divisor   the value to divide this by
      *
      * @return  a {@link RemainderPair} with the quotient being {@link RemainderPair#value()}
      *          and the remainder being {@link RemainderPair#remainder()}
@@ -115,86 +115,86 @@ public interface RealField<I extends AlgebraicRing<I, R> & AlgebraObject<R>,
     @SideEffectFree
     R raised(AlgebraInteger exponent);
     
-    /**
-     * Find the square root of this value.
-     *
-     * @return  the square root
-     */
-    @SideEffectFree
-    R sqRoot();
-    
-    /**
-     * Finds the root of this to the given index.
-     *
-     * @param   index   the index of the root ({@code 2} for square, {@code 3} for cube, etc)
-     *
-     * @return  the {@code index}th root of this.
-     *
-     * @throws  ArithmeticException if this is negative and {@code index} is even
-     */
-    @SideEffectFree
-    R root(int index);
-    
-    /**
-     * Finds the root of this to the given index.
-     *
-     * @param   index   the index of the root ({@code 2} for square, {@code 3} for cube, etc)
-     *
-     * @return  the {@code index}th root of this.
-     *
-     * @throws  ArithmeticException if this is negative and {@code index} is even
-     */
-    @SideEffectFree
-    R root(AlgebraInteger index);
+//    /**
+//     * Find the square root of this value.
+//     *
+//     * @return  the square root
+//     */
+//    @SideEffectFree
+//    R sqRoot();
+//
+//    /**
+//     * Finds the root of this to the given index.
+//     *
+//     * @param   index   the index of the root ({@code 2} for square, {@code 3} for cube, etc)
+//     *
+//     * @return  the {@code index}th root of this.
+//     *
+//     * @throws  ArithmeticException if this is negative and {@code index} is even
+//     */
+//    @SideEffectFree
+//    R root(int index);
+//
+//    /**
+//     * Finds the root of this to the given index.
+//     *
+//     * @param   index   the index of the root ({@code 2} for square, {@code 3} for cube, etc)
+//     *
+//     * @return  the {@code index}th root of this.
+//     *
+//     * @throws  ArithmeticException if this is negative and {@code index} is even
+//     */
+//    @SideEffectFree
+//    R root(AlgebraInteger index);
     
     /**
      * True division of this by divisor, with no remainder.
      *
-     * @param   divisor the value to divide this by
+     * @param divisor the value to divide this by
      *
      * @return  the quotient of {@code divisor} and this
      *
-     * @throws  ArithmeticException if dividing by {@code 0}
+     * @throws ArithmeticException  if dividing by 0
      */
     @SideEffectFree
     R quotient(R divisor);
     
-    /**
-     * This to the power of {@code power}. Remember that a root function is simply this function,
-     * but with an inverted power.
-     *
-     * @param   power   the real power to use
-     *
-     * @return  {@code this ^ power}
-     *
-     * @throws  ArithmeticException if {@code} power has an even reciprocal and this is negative
-     */
-    @SideEffectFree
-    R power(R power);
-    
-    /**
-     * Performs an exp operation, such as {@link Math#exp}.
-     *
-     * @return  {@code e ^ this}, with {@code e} being Euler's number {@link Math#E}
-     */
-    @SideEffectFree
-    R exp();
-    
-    /**
-     * Returns the logarithm of this with the given base.
-     *
-     * @param   base    the base of the returned logarithm
-     *
-     * @return  {@code log_base(this)}
-     */
-    @SideEffectFree
-    R logBase(AlgebraNumber base);
-    
-    /**
-     * Returns the logarithm of this with the natural base {@link Math#E}
-     *
-     * @return  {@code ln(this)}
-     */
-    @SideEffectFree
-    R logNatural();
+//    /**
+//     * This to the power of {@code power}. Remember that a root function is simply this function,
+//     * but with an inverted power.
+//     *
+//     * @param   power   the real power to use
+//     *
+//     * @return  {@code this ^ power}
+//     *
+//     * @throws  ArithmeticException if {@code} power has an even reciprocal and this is negative
+//     */
+//    @SideEffectFree
+//    R power(R power);
+//
+//    /**
+//     * Performs an exp operation, such as {@link Math#exp}.
+//     *
+//     * @return  {@code e ^ this}, with {@code e} being Euler's number {@link Math#E}
+//     */
+//    @SideEffectFree
+//    R exp();
+//
+//    /**
+//     * Returns the logarithm of this with the given base.
+//     *
+//     * @param   base    the base of the returned logarithm
+//     *
+//     * @return  {@code log_base(this)}
+//     */
+//    @SideEffectFree
+//    R logBase(AlgebraNumber base);
+//
+//    /**
+//     * Returns the logarithm of this with the natural base {@link Math#E}
+//     *
+//     * @return  {@code ln(this)}
+//     */
+//    @SideEffectFree
+//    R logNatural();
 }

@@ -9,48 +9,92 @@ import java.util.List;
 import java.util.Objects;
 
 import org.cb2384.exactalgebra.objects.AlgebraicRing;
+import org.cb2384.exactalgebra.objects.internalaccess.CacheInteger;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
 import org.cb2384.exactalgebra.objects.numbers.rational.RationalFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
+import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>Integer values. The implementations of this class are wrappers or adapters for integer-valued-types
+ * or arbitrary integer types like {@link BigInteger}. This interface is an extension of {@link Rational},
+ * but Rational-specific seeming functions have default implementations here.</p>
+ *
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} argument,
+ * unless otherwise specified.</p>
+ *
+ * @author  Corinne Buxton
+ */
 public interface AlgebraInteger
         extends AlgebraicRing<AlgebraInteger, AlgebraNumber>, Rational {
     
+    /**
+     * As this is an {@link AlgebraInteger} and therefore a whole value, its numerator is itself.
+     *
+     * @return  this, as it is its own numerator due to being whole
+     */
     @Override
     @Pure
     default @This AlgebraInteger numeratorAI() {
         return this;
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} and therefore a whole value, its denominator is 1
+     *
+     * @return  1 (as a {@link FiniteInteger}), as it is its own numerator due to being whole
+     */
     @Override
     @Pure
     default AlgebraInteger denominatorAI() {
-        return FiniteInteger.valueOf(1);
+        return CacheInteger.CACHE.getLast().getFirst();
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} it is therefore its own whole value
+     *
+     * @return  this, as it is its own whole value
+     */
     @Override
     @Pure
     default @This AlgebraInteger wholeAI() {
         return this;
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} and therefore a whole value, its numerator is itself.
+     * Thus, the numerator as a {@link BigInteger} is the same as {@link #toBigInteger()}.
+     *
+     * @return  this as a BigInteger, as it is its own numerator due to being whole
+     */
     @Override
     @SideEffectFree
     default BigInteger numeratorBI() {
         return toBigInteger();
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} and therefore a whole value, its denominator is 1
+     *
+     * @return  {@link BigInteger#ONE}
+     */
     @Override
     @Pure
     default BigInteger denominatorBI() {
         return BigInteger.ONE;
     }
     
+    /**
+     * As this is an {@link AlgebraInteger} it is therefore its own whole value. Thus, it as a {@link BigInteger}
+     * is the same as simply {@link #toBigInteger()}.
+     *
+     * @return  this as a BigInteger, as it is its own whole value
+     */
     @Override
     @SideEffectFree
     default BigInteger wholeBI() {
@@ -73,7 +117,7 @@ public interface AlgebraInteger
      * Normally would round this to an integer according to the given rounding, but since this
      * already is an integer, simply returns this.
      *
-     * @param   roundingMode    the rounding mode to use; is irrelevant since this is already
+     * @param roundingMode    the rounding mode to use; is irrelevant since this is already
      *                          an integral type
      *
      * @return  this
@@ -87,17 +131,26 @@ public interface AlgebraInteger
     }
     
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Pure
+    default @This AlgebraInteger roundQ() {
+        return this;
+    }
+    
+    /**
      * Essentially just returns this, since there is no rounding needed to go between an integer type
      * and a rational type. However, if {@code precision} is specified, and is smaller than
      * the length of the current precision, then the precision of the returned value
      * might be less; that is also the only time that the {@link RoundingMode} argument is actually
      * used.
      *
-     * @param   precision   the precision to use, capped at {@link #MAX_PRECISION}; if {@code null} then
+     * @param precision   the precision to use, capped at {@link #MAX_PRECISION}; if {@code null} then
      *                      the necessary precision needed to convey this stored value is used (which
      *                      is possible because this is an integral type).
      *
-     * @param   roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
+     * @param roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
      *                          defaults to {@link #DEFAULT_ROUNDING}
      *
      * @return  a rational that either is this, or is a less precise representation of this value if
@@ -105,7 +158,7 @@ public interface AlgebraInteger
      */
     @Override
     @SideEffectFree
-    default Rational roundQ(
+    default AlgebraInteger roundQ(
             @Nullable Integer precision,
             @Nullable RoundingMode roundingMode
     ) {
@@ -114,11 +167,11 @@ public interface AlgebraInteger
         }
         
         MathContext context = new MathContext(
-                Math.max(precision, MAX_PRECISION),
+                Math.min(precision, MAX_PRECISION),
                 Objects.requireNonNullElse(roundingMode, DEFAULT_ROUNDING)
         );
-        
-        return roundQ(context);
+        BigDecimal thisBD = AbstractAlgebraInteger.buildBigDecimal(this, context);
+        return IntegerFactory.fromBigInteger(thisBD.toBigInteger());
     }
     
     /**
@@ -127,7 +180,7 @@ public interface AlgebraInteger
      * than the precision needed to represent this value, then precision will be lost in the
      * returned value as well.
      *
-     * @param   mathContext the {@link MathContext} to use; this mainly just determines if any precision
+     * @param mathContext the {@link MathContext} to use; this mainly just determines if any precision
      *                      should be lost, as if the precision of the given context is higher than
      *                      the precision of this value, nothing changes
      *
@@ -136,14 +189,22 @@ public interface AlgebraInteger
      */
     @Override
     @SideEffectFree
-    default Rational roundQ(
-            MathContext mathContext
+    default AlgebraInteger roundQ(
+            @Nullable MathContext mathContext
     ) {
-        return RationalFactory.fromBigDecimal(toBigDecimal(mathContext));
+        return NullnessUtils.returnDefaultIfNull(
+                mathContext,
+                c -> IntegerFactory.fromBigInteger(
+                        AbstractAlgebraInteger.buildBigDecimal(this, c).toBigInteger()),
+                this
+        );
     }
     
     /**
      * Returns this integral value represented as a {@link BigDecimal}.
+     *
+     * @implNote    The default implementation simply calls {@link BigDecimal#BigDecimal(BigInteger)
+     *              new BigDecimal(}{@link #toBigInteger()}{@link BigDecimal#BigDecimal(BigInteger) )}.
      *
      * @return  this, but as a {@link BigDecimal}
      */
@@ -160,10 +221,10 @@ public interface AlgebraInteger
      * might be less; that is also the only time that the {@link RoundingMode} argument is actually
      * used.
      *
-     * @param   precision   the precision to use; is capped at {@link #MAX_PRECISION} and if {@code null}
+     * @param precision   the precision to use; is capped at {@link #MAX_PRECISION} and if {@code null}
      *                      defaults to {@link #DEFAULT_PRECISION}
      *
-     * @param   roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
+     * @param roundingMode    the {@link RoundingMode} to use &mdash if {@code null},
      *                          defaults to {@link #DEFAULT_ROUNDING}
      *
      * @return  {@link BigDecimal} representing this value, with the indicated precision
@@ -174,12 +235,8 @@ public interface AlgebraInteger
             @Nullable Integer precision,
             @Nullable RoundingMode roundingMode
     ) {
-        MathContext context = new MathContext(
-                (precision != null) ? Math.max(precision, MAX_PRECISION) : DEFAULT_PRECISION,
-                Objects.requireNonNullElse(roundingMode, DEFAULT_ROUNDING)
-        );
-        
-        return toBigDecimal(context);
+        return AbstractAlgebraInteger.buildBigDecimal(this,
+                AbstractAlgebraInteger.buildContext(precision, roundingMode));
     }
     
     /**
@@ -189,7 +246,7 @@ public interface AlgebraInteger
      * might be less; that is also the only time that the {@link RoundingMode} argument is actually
      * used.
      *
-     * @param   mathContext the {@link MathContext} to use; this mainly just determines if any precision
+     * @param mathContext the {@link MathContext} to use; this mainly just determines if any precision
      *                      should be lost
      *
      * @return  {@link BigDecimal} representing this value, with the indicated precision
@@ -197,9 +254,10 @@ public interface AlgebraInteger
     @Override
     @SideEffectFree
     default BigDecimal toBigDecimal(
-            MathContext mathContext
+            @Nullable MathContext mathContext
     ) {
-        return new BigDecimal(toBigInteger());
+        BigDecimal result = toBigDecimal();
+        return NullnessUtils.returnDefaultIfNull(mathContext, result::round, result);
     }
     
     /**
@@ -212,9 +270,10 @@ public interface AlgebraInteger
     BigInteger toBigInteger();
     
     /**
-     * Returns a {@link BigInteger} representing this value.
+     * Returns a {@link BigInteger} representing this value. Since AlgebraIntegers are integer types,
+     * this result shall be the same as that from {@link #toBigInteger()}.
      *
-     * @param   roundingMode    the rounding mode to use; is irrelevant since this is already
+     * @param roundingMode    the rounding mode to use; is irrelevant since this is already
      *                          an integral type
      *
      * @return  this value as a {@link BigInteger}
@@ -227,63 +286,171 @@ public interface AlgebraInteger
         return toBigInteger();
     }
     
+    /**
+     * returns a {@code long} representation of this
+     *
+     * @return  this as a {@code long}
+     */
+    @Pure
     long longValue();
     
+    /**
+     * Returns a {@code int} representation of this.
+     *
+     * @implNote    The default implementation simply calls <code>(int)&nbsp;</code>{@link #longValue()}.
+     *
+     * @return  this as a {@code int}
+     */
+    @Pure
     default int intValue() {
         return (int) longValue();
     }
     
+    /**
+     * Returns a {@code short} representation of this.
+     *
+     * @implNote    The default implementation simply calls <code>(short)&nbsp;</code>{@link #longValue()}.
+     *
+     * @return  this as a {@code short}
+     */
+    @Pure
     default short shortValue() {
         return (short) longValue();
     }
     
+    /**
+     * Returns a {@code long} representation of this.
+     *
+     * @implNote    The default implementation simply calls <code>(byte)&nbsp;</code>{@link #longValue()}.
+     *
+     * @return  this as a {@code long}
+     */
+    @Pure
     default byte byteValue() {
         return (byte) longValue();
     }
     
     /**
-     * {@inheritDoc}
+     * Yields this as a {@code long}, but throwing an exception if information would be lost
      *
-     * @implNote    This default implementation simply calls {@link #toBigInteger()}{@link
-     *              BigInteger#floatValue() .floatValue()}.
+     * @return  a {@code long} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
      */
-    @Override
-    @Pure
-    default float floatValue() {
-        return toBigInteger().floatValue();
-    }
-    
     long longValueExact();
     
+    /**
+     * Yields this as a {@code int}, but throwing an exception if information would be lost
+     *
+     * @return  a {@code int} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
+     */
     int intValueExact();
     
+    /**
+     * Yields this as a {@code short}, but throwing an exception if information would be lost
+     *
+     * @return  a {@code short} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
+     */
     short shortValueExact();
     
+    /**
+     * Yields this as a {@code byte}, but throwing an exception if information would be lost
+     *
+     * @return  a {@code byte} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
+     */
     byte byteValueExact();
     
+    /**
+     * Yields this as a {@code char}, but throwing an exception if information would be lost
+     *
+     * @return  a {@code char} representing this value
+     *
+     * @throws org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException  if information would
+     *                                                                                  be lost
+     */
     char charValueExact();
     
+    /**
+     * As an integer type, all AlgebraIntegers are whole
+     *
+     * @return  {@code true}
+     */
     @Override
     @Pure
     default boolean isWhole() {
         return true;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     AlgebraInteger negated();
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    The default implementation simply calls {@link #isNegative()}<code> ? </code>{@link
+     *              #negated()}<code> : this</code>
+     */
     @Override
     @SideEffectFree
     default AlgebraInteger magnitude() {
-        return (AlgebraInteger) Rational.super.magnitude();
+        return isNegative() ? negated() : this;
+    }
+    
+    /**
+     * <p>The contract regarding {@link #equals} suggests that any two values in the same "Rank" (such as
+     * any two AlgebraIntegers) should be equal if they represent the same value.
+     * Since {@link Object#equals} also has a contractual obligation with {@link Object#hashCode()},
+     * The hashcodes of all Rationals should be standardized.</p>
+     *
+     * <p>However, an interface may not override a function from {@link Object},
+     * so it cannot be specified through the interface. It should be the bitwise negation operation ({@code ~})
+     * of hashcode of the {@link BigInteger} representation of this value.</p>
+     *
+     * @implSpec    The result shall be equivalent to that returned by {@code ~ }{@link
+     *              #toBigInteger()}{@link BigInteger#hashCode() .hashCode()}.
+     *
+     * @return  a hashcode for this Rational
+     */
+    @Override
+    @Pure
+    int hashCode();
+    
+    /**
+     * Just like {@link #equiv(AlgebraNumber)}, but specialized for members of this specific interface.
+     *
+     * @implNote    The default implementation simply calls {@link #compareTo compareTo(}{@code
+     *              that}{@link #compareTo )&nbsp;}{@code == 0}.
+     *
+     * @param that  the value to check against this
+     *
+     * @return  true if these are equal in numerical value, otherwise false
+     */
+    @Pure
+    default boolean equiv(
+            AlgebraInteger that
+    ) {
+        return compareTo(that) == 0;
     }
     
     /**
      * {@inheritDoc}
      *
      * @implNote    This default implementation simply calls {@code (}{@link #compareTo compareTo(}{@code
-     *              that}{@link #compareTo )&nbsp}{@code < 0) ? that : this}.
+     *              that}{@link #compareTo )&nbsp;}{@code < 0) ? that : this}.
      */
     @Override
     @Pure
@@ -296,7 +463,7 @@ public interface AlgebraInteger
     /**
      * Returns the larger of this and {@code that}.
      *
-     * @param   that    the value to compare and possibly return
+     * @param that    the value to compare and possibly return
      *
      * @return  {@code that} or this, whichever is larger
      */
@@ -306,7 +473,7 @@ public interface AlgebraInteger
     /**
      * Returns the larger of this and {@code that}.
      *
-     * @param   that    the value to compare and possibly return
+     * @param that    the value to compare and possibly return
      *
      * @return  {@code that} or this, whichever is larger
      */
@@ -330,7 +497,7 @@ public interface AlgebraInteger
     /**
      * Returns the smaller of this and {@code that}.
      *
-     * @param   that    the value to compare and possibly return
+     * @param that    the value to compare and possibly return
      *
      * @return  {@code that} or this, whichever is smaller
      */
@@ -340,43 +507,89 @@ public interface AlgebraInteger
     /**
      * Returns the smaller of this and {@code that}.
      *
-     * @param   that    the value to compare and possibly return
+     * @param that    the value to compare and possibly return
      *
      * @return  {@code that} or this, whichever is smaller
      */
     @SideEffectFree
     AlgebraInteger min(BigInteger that);
     
+    /**
+     * Finds the greatest common factor of this and {@code that}..
+     *
+     * @param that  the value to find the gcf with
+     *
+     * @return  the gcf
+     *
+     * @throws ArithmeticException  if both this and {@code that} are 0
+     */
     @SideEffectFree
-    default AlgebraInteger gcf(
-            AlgebraInteger that
-    ) {
-        return gcf(that.toBigInteger());
-    }
+    AlgebraInteger gcf(AlgebraInteger that);
     
+    /**
+     * Finds the greatest common factor of this and {@code that}..
+     *
+     * @param that  the value to find the gcf with
+     *
+     * @return  the gcf
+     *
+     * @throws ArithmeticException  if both this and {@code that} are 0
+     */
     @SideEffectFree
     AlgebraInteger gcf(long that);
     
+    /**
+     * Finds the greatest common factor of this and {@code that}..
+     *
+     * @param that  the value to find the gcf with
+     *
+     * @return  the gcf
+     *
+     * @throws ArithmeticException  if both this and {@code that} are 0
+     */
     @SideEffectFree
     AlgebraInteger gcf(BigInteger that);
     
+    /**
+     * Finds the least common multiple of this and {@code that}.
+     *
+     * @param that  the value to find the lcm with
+     *
+     * @return  the lcm
+     *
+     * @throws ArithmeticException  if either this or {@code that} are 0
+     */
     @SideEffectFree
-    default AlgebraInteger lcm(
-            AlgebraInteger that
-    ) {
-        return lcm(that.toBigInteger());
-    }
+    AlgebraInteger lcm(AlgebraInteger that);
     
+    /**
+     * Finds the least common multiple of this and {@code that}.
+     *
+     * @param that  the value to find the lcm with
+     *
+     * @return  the lcm
+     *
+     * @throws ArithmeticException  if either this or {@code that} are 0
+     */
     @SideEffectFree
     AlgebraInteger lcm(long that);
     
+    /**
+     * Finds the least common multiple of this and {@code that}.
+     *
+     * @param that  the value to find the lcm with
+     *
+     * @return  the lcm
+     *
+     * @throws ArithmeticException  if either this or {@code that} are 0
+     */
     @SideEffectFree
     AlgebraInteger lcm(BigInteger that);
     
     /**
      * Checks if {@code divisor} can evenly divide this.
      *
-     * @param   divisor the prospective divisor to test
+     * @param divisor   the prospective divisor to test
      *
      * @return  the boolean equivalent of {@code (divisor % this) == 0}
      */
@@ -386,7 +599,7 @@ public interface AlgebraInteger
     /**
      * Checks if {@code divisor} can evenly divide this.
      *
-     * @param   divisor the prospective divisor to test
+     * @param divisor   the prospective divisor to test
      *
      * @return  the boolean equivalent of {@code (divisor % this) == 0}
      */
@@ -399,7 +612,7 @@ public interface AlgebraInteger
      * @implNote    This skeletal implementation uses {@link #canDivideBy(BigInteger) canDivideBy(}{@code
      *              divisor}{@link #toBigInteger() .toBigInteger()}{@link #canDivideBy(BigInteger) )}.
      *
-     * @param   divisor the prospective divisor to test
+     * @param divisor   the prospective divisor to test
      *
      * @return  the boolean equivalent of {@code (divisor % this) == 0}
      */
@@ -411,6 +624,36 @@ public interface AlgebraInteger
         return canDivideBy(divisor.toBigInteger());
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger sum(AlgebraInteger augend);
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger difference(AlgebraInteger subtrahend);
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger product(AlgebraInteger multiplicand);
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    The default implementation finds both quotient and remainder and returns them as a pair.
+     *              Many implementations grab the remainder for {@link #remainder} out of this pair,
+     *              and so they override this method.
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
+     */
     @Override
     @SideEffectFree
     default NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> quotientZWithRemainder(
@@ -420,15 +663,24 @@ public interface AlgebraInteger
     }
     
     /**
+     * {@inheritDoc}
+     *
+     * @throws ArithmeticException  if {@code divisor == 0}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger remainder(AlgebraInteger divisor);
+    
+    /**
      * Finds the modulo of this by {@code modulus}, similar to {@code %}. However, in line with other languages,
      * this operation is only valid when {@code modulus} is positive. Furthermore, the returned
      * value is also always positive.
      *
-     * @param   modulus the value to pretend divide this by for the purpose of finding the remainder.
+     * @param modulus   the value to pretend divide this by for the purpose of finding the remainder.
      *
      * @return  the remainder as if from {@code this % modulus}
      *
-     * @throws  ArithmeticException if {@code modulus <= 0}
+     * @throws ArithmeticException  if {@code modulus <= 0}
      */
     @SideEffectFree
     AlgebraInteger modulo(AlgebraInteger modulus);
@@ -436,36 +688,52 @@ public interface AlgebraInteger
     /**
      * Returns a value {@code x} such that {@code (x * this) mod(modulus) = 1}.
      *
-     * @param   modulus the modulus to use
+     * @param modulus   the modulus to use
      *
      * @return  the modular inverse of this with respect to {@code modulus}
      *
-     * @throws  ArithmeticException if {@code modulus <= 0} or {@code modulus} is not
+     * @throws ArithmeticException  if {@code modulus <= 0} or {@code modulus} is not
      *                              relatively prime with this
      */
     @SideEffectFree
     AlgebraInteger modInverse(AlgebraInteger modulus);
     
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    The default implementation simply calls {@link #product product(}{@code this}{@link #product )}.
+     */
     @Override
     @SideEffectFree
     default AlgebraInteger squared() {
-        return (AlgebraInteger) Rational.super.squared();
+        return product(this);
     }
     
     /**
-     * Finds the square root of this, always rounded down to an
-     * {@link Rational}, as well as the difference between the
-     * first returned value, squared, and this original value. The first value is the largest
-     * integer {@code x} such that {@code x * x <= this} and the second is {@code this - x * x}.
+     * {@inheritDoc}
+     *
+     * @throws  ArithmeticException if {@code exponent < 0}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger raisedZ(int exponent);
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @throws  ArithmeticException if {@code exponent < 0}
+     */
+    @Override
+    @SideEffectFree
+    AlgebraInteger raisedZ(AlgebraInteger exponent);
+    
+    /**
+     * {@inheritDoc}
      *
      * @implNote    The default implementation simply calls {@link #rootZWithRemainder
      *              rootZWithRemainder(}{@code 2}{@link #rootZWithRemainder )}.
      *
-     * @return  an array of two values, the first being the highest {@link AlgebraInteger}
-     *          less than or equal to the real square root, and the second being the remainder between
-     *          that value squared and this
-     *
-     * @throws  ArithmeticException if this is negative
+     * @throws ArithmeticException  if this is negative
      */
     @SideEffectFree
     default NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> sqrtZWithRemainder() {
@@ -473,31 +741,17 @@ public interface AlgebraInteger
     }
     
     /**
-     * Finds the {@code index}<sup>th</sup> root of this, always rounded down to an
-     * {@link AlgebraInteger}, as well as the difference between the
-     * first returned value, squared, and this original value. The first value is the largest
-     * integer {@code x} such that {@code x * x <= this} and the second is {@code this - x * x}.
+     * {@inheritDoc}
      *
-     * @return  an array of two values, the first being the highest {@link AlgebraInteger}
-     *          less than or equal to the real square root, and the second being the remainder between
-     *          that value squared and this
-     *
-     * @throws  ArithmeticException if {@code index} is even and this is negative
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @SideEffectFree
     NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> rootZWithRemainder(int index);
     
     /**
-     * Finds the {@code index}<sup>th</sup> root of this, always rounded down to an
-     * {@link AlgebraInteger}, as well as the difference between the
-     * first returned value, squared, and this original value. The first value is the largest
-     * integer {@code x} such that {@code x * x <= this} and the second is {@code this - x * x}.
+     * {@inheritDoc}
      *
-     * @return  an array of two values, the first being the highest {@link AlgebraInteger}
-     *          less than or equal to the real square root, and the second being the remainder between
-     *          that value squared and this
-     *
-     * @throws  ArithmeticException if {@code index} is even and this is negative
+     * @throws ArithmeticException  if {@code index} is even and this is negative
      */
     @SideEffectFree
     NumberRemainderPair<? extends AlgebraInteger, ? extends AlgebraInteger> rootZWithRemainder(AlgebraInteger index);
@@ -521,6 +775,14 @@ public interface AlgebraInteger
      */
     @Pure
     boolean isPrime();
+    
+    /**
+     * Checks if this is an even number, divisible by 2
+     *
+     * @return  {@code} true if this is even, otherwise {@code false}
+     */
+    @Pure
+    boolean isEven();
     
     /**
      * Returns a {@link List}, in ascending order, of all of the prime factors of this. The returned list is,

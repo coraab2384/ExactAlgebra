@@ -1,12 +1,24 @@
 package org.cb2384.exactalgebra.objects.pair;
 
-import org.cb2384.exactalgebra.objects.RealField;
+import org.cb2384.exactalgebra.objects.relations.AlgebraFunction;
 import org.cb2384.exactalgebra.objects.relations.polynomial.Polynomial;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>A {@link Record} implementation of {@link RemainderPair} that is specialized specifically for
+ * {@link AlgebraFunction}. This specialization makes some of the type-checking less cumbersome.</p>
+ *
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} input, unless otherwise noted</p>
+ *
+ * @param value     the primary answer, usually a quotient or root
+ * @param remainder the secondary answer, usually an actual remainder from a division or root operation
+ *
+ * @param <Q>   the type of the quotient, which much be a subtype of {@link Polynomial}
+ * @param <R>   the type of the remainder, which much be a subtype of {@link Polynomial}
+ */
 public record FunctionRemainderPair<Q extends Polynomial<?>, R extends Polynomial<?>>(Q value, R remainder)
         implements RemainderPair<Q, R, Polynomial<?>, FunctionRemainderPair<?, ?>> {
     
@@ -24,9 +36,11 @@ public record FunctionRemainderPair<Q extends Polynomial<?>, R extends Polynomia
      * @param floorAnswer   the value component, called {@code floorAnswer} because in division it is the quotient
      *                      rounded towards 0
      * @param reverseAnswer the inverse if one were to use {@code floorAnswer} instead of the exact value
-     * @throws ClassCastException if {@link R} is not closed under subtraction
-     *                            ({@link RealField#difference})
+     *
+     * @throws ClassCastException if {@code R} is not closed under subtraction
+     *                            ({@link Polynomial#difference})
      */
+    @SideEffectFree @SuppressWarnings("unchecked")
     public FunctionRemainderPair(
             R original,
             Q floorAnswer,
@@ -35,12 +49,33 @@ public record FunctionRemainderPair<Q extends Polynomial<?>, R extends Polynomia
         this(floorAnswer, (R) original.difference(reverseAnswer));
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Pure
+    public boolean equiv(FunctionRemainderPair<?, ?> that) {
+        return value.equiv(that.value) && remainder.equiv(that.remainder);
+    }
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NumberFormatException    if {@code radix < }{@link Character#MIN_RADIX} or
+     *                                  {@code radix > }{@link Character#MAX_RADIX}
+     */
     @Override
     @SideEffectFree
     public String toString() {
         return toString(10, (String[]) null);
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NumberFormatException    if {@code radix < }{@link Character#MIN_RADIX} or
+     *                                  {@code radix > }{@link Character#MAX_RADIX}
+     */
     @Override
     @SideEffectFree
     public String toString(
@@ -49,6 +84,18 @@ public record FunctionRemainderPair<Q extends Polynomial<?>, R extends Polynomia
         return toString(radix, (String[]) null);
     }
     
+    /**
+     * Represents this FunctionRemainderPair as a string, with the given {@code radix} and
+     * {@code variables}.
+     *
+     * @param radix     the radix for the representation
+     * @param variables the variable(s) for this representation
+     *
+     * @return  a string representation of this
+     *
+     * @throws NumberFormatException    if {@code radix < }{@link Character#MIN_RADIX} or
+     *                                  {@code radix > }{@link Character#MAX_RADIX}
+     */
     @Override
     @SideEffectFree
     public String toString(

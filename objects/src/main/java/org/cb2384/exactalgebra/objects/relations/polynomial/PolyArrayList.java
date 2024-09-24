@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.SequencedCollection;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,7 @@ import org.checkerframework.dataflow.qual.*;
  * This class is an {@link ArrayList} of some {@link AlgebraNumber}.
  * The index of a term is its degree.
  * The primary reason for this class's existence if for the underlying logic of the major operations.
- * Almost all methods in {@link PolynomBase} use one or more methods from this class for major parts of
+ * Almost all methods in {@link PolyRat} use one or more methods from this class for major parts of
  * the operation that they carry out.
  * In a sense, this is the actual Polynomial class, and the ones with the public methods are handlers to ensure
  * proper encapsulation of the values.
@@ -32,33 +33,50 @@ import org.checkerframework.dataflow.qual.*;
  */
 final class PolyArrayList<N extends AlgebraNumber>
         extends ArrayList<N>
-        implements ComparableSwitchSignum<PolyArrayList<? extends AlgebraNumber>> {
+        implements ComparableSwitchSignum<PolyArrayList<?>> {
+    
+    /**
+     * static PolyArrayList of 0, though with an unset type
+     */
+    static final PolyArrayList<?> ZERO_PX
+            = new PolyArrayList<>(AbstractPolynomial.ZERO);
+    
+    /**
+     * static PolyArrayList of 1, though with an unset type
+     */
+    static final PolyArrayList<?> ONE_PX
+            = new PolyArrayList<>(AbstractPolynomial.ONE);
     
     /**
      * Extension of {@link ArrayList#ArrayList(int)}
      *
-     * @param   initialCapacity the initial capacity of the list
+     * @param initialCapacity the initial capacity of the list
      */
     @SideEffectFree
     PolyArrayList(
-            @IntRange(from = 1, to = AbstractPolynomial.MAX_LENGTH) int initialCapacity
+            @IntRange(from = 1, to = AbstractPolynomial.DEFAULT_MAX_LENGTH) int initialCapacity
     ) {
         super(initialCapacity);
     }
     
     /**
-     * Extension equivalent of {@link ArrayList#ArrayList(Collection)}
+     * Extension equivalent of {@link ArrayList#ArrayList(Collection)}.
      *
-     * @param   c   the collection whose elements are to be placed into this list
+     * @param c   the collection whose elements are to be placed into this list
      */
     @SideEffectFree
     PolyArrayList(
             SequencedCollection<? extends N> c
     ) {
-        this(c.size());
-        addAll(c);
+        super(c);
+        assert !c.isEmpty();
     }
     
+    /**
+     * Constructor that makes a constant PolyArrayList.
+     *
+     * @param constant  The constant value of the new PolyArrayList
+     */
     @SideEffectFree
     PolyArrayList(
             N constant
@@ -68,33 +86,19 @@ final class PolyArrayList<N extends AlgebraNumber>
     }
     
     /**
-     * Static factory for constant polynomials (degree == 0)
-     * @param val the value to give the constant term
-     * @return the constructed {@link PolyArrayList} monomial
+     * Constructor for a monomial PolyArrayList
+     *
+     * @param coefficient   the non-zero coefficient
+     * @param degree        the degree of the monomial
      */
     @SideEffectFree
-    static <N extends AlgebraNumber> PolyArrayList<N> constant(
-            N val
-    ) {
-        PolyArrayList<N> ans = new PolyArrayList<>(1);
-        ans.add(val);
-        return ans;
-    }
-    
-    /**
-     * Static factory for monomials of one term
-     * @param coefficient the value to give the non-zero term.
-     * @return the constructed {@link PolyArrayList} monomial
-     */
-    @SideEffectFree
-    static <N extends AlgebraNumber> PolyArrayList<N> monomial(
+    PolyArrayList(
             N coefficient,
-            @IntRange(from = 1, to = AbstractPolynomial.MAX_DEGREE) int degree
+            @IntRange(from = 1, to = AbstractPolynomial.DEFAULT_MAX_DEGREE) int degree
     ) {
-        PolyArrayList<N> ans = new PolyArrayList<>(degree + 1);
-        ans.addAll( AbstractPolynomial.dummyZeros(degree) );
-        ans.add(coefficient);
-        return ans;
+        super(degree + 1);
+        addAll((Collection<? extends N>) AbstractPolynomial.dummyZeros(degree));
+        add(coefficient);
     }
     
     @Pure
@@ -113,7 +117,7 @@ final class PolyArrayList<N extends AlgebraNumber>
     @Override
     @Pure
     public int compareTo(
-            PolyArrayList<? extends AlgebraNumber> that
+            PolyArrayList<?> that
     ) {
         int thisLength = size();
         int lengthDiff = thisLength - that.size();
@@ -135,41 +139,38 @@ final class PolyArrayList<N extends AlgebraNumber>
      * Performs the given {@code unaryOp} on each coefficient of this polynomial. This is done through
      * a stream and collecting the result directly into a new PolyArrayList.
      *
-     * @param   unaryOp the op; should be stateless and otherwise comply with the requirements of
+     * @param op the op; should be stateless and otherwise comply with the requirements of
      *                  {@link java.util.stream.Stream#map}
      *
      * @return  a new PolyArrayList with the results of the op, in order
      */
     @SideEffectFree
-    PolyArrayList<N> unaryOp(
-            Function<N, N> unaryOp
+    <R extends AlgebraNumber> PolyArrayList<R> unaryOp(
+            Function<? super N, ? extends R> op
     ) {
-        int size = size();
         return stream()
-                .map(unaryOp)
-                .collect( Collectors.toCollection(() -> new PolyArrayList<>(size)) );
+                .map(op)
+                .collect( Collectors.toCollection(() -> new PolyArrayList<>(size())) );
     }
     
     /**
-     * Finds the result for an addition or subtraction operation
+     * Finds the result for an addition or subtraction operation.
      *
-     * @param   that    the PolyArrayList to add or subtract from this
-     *
-     * @param   subtract    to determine if we are subtracting or adding
+     * @param that      the PolyArrayList to add or subtract from this
+     * @param subtract  to determine if we are subtracting or adding
+     * @param op        while this could be determined from subtract, there is more flexibility leaving it as
+     *                  a parameter
      *
      * @return  the sum or difference
      */
     @SideEffectFree
-    PolyArrayList<N> arithRes(
-            PolyArrayList<? extends N> that,
+    <R extends AlgebraNumber> PolyArrayList<R> arithRes(
+            PolyArrayList<? extends R> that,
             boolean subtract,
-            PolyArrayList<N> zero
+            BiFunction<? super N, ? super R, ? extends R> op
     ) {
         // Initialize since it will be needed in later blocks
-        PolyArrayList<N> ans;
-        BiFunction<N, N, N> op = subtract ?
-                (x, y) -> (N) x.difference(y) :
-                (x, y) -> (N) x.sum(y);
+        PolyArrayList<R> ans;
         int thisLength = size();
         int thatLength = that.size();
         // Length of result
@@ -199,143 +200,129 @@ final class PolyArrayList<N extends AlgebraNumber>
                 // Incrememnt by 1 here to fix
                 ans = new PolyArrayList<>(++ansLength);
                 for (int i = 0; i < ansLength; i++) {
-                    N arithRes = op.apply(get(i), that.get(i));
-                    ans.add(arithRes);
+                    ans.add( op.apply(get(i), that.get(i)) );
                 }
             } else {
-                return zero;
+                return (PolyArrayList<R>) ZERO_PX;
             }
         } else {
             ans = new PolyArrayList<>(ansLength);
             int shortLen = Math.min(thisLength, thatLength);
             for (int i = 0; i < shortLen; i++) {
-                N arithRes = op.apply(get(i), that.get(i));
-                ans.add(arithRes);
+                ans.add( op.apply(get(i), that.get(i)) );
             }
             if (ansLength > thatLength) {
-                List<N> aXRem = subList(shortLen, ansLength);
-                ans.addAll(aXRem);
+                ans.addAll((Collection<? extends R>) subList(shortLen, ansLength));
             } else if (subtract) {
                 for (int i = shortLen; i < ansLength; i++) {
-                    N bXNeg = (N) that.get(i).negated();
-                    ans.add(bXNeg);
+                    ans.add((R) that.get(i).negated());
                 }
             } else {
-                List<? extends N> bXRem = that.subList(shortLen, ansLength);
-                ans.addAll(bXRem);
+                ans.addAll( that.subList(shortLen, ansLength) );
             }
         }
         return ans;
     }
     
     /**
-     * Scales this by a constant.
+     * Scales the first argument by a constant (the second arg). This is static because it cannot be made virtual
+     * without causing more type parameter issues.
      *
-     * @param   scale   the factor by which to scale this
+     * @param scale     the scalar
+     * @param divide    whether to divide or multiply
+     * @param op        while this could be determined from divide, there is more flexibility leaving it as
+     *                  a parameter
      *
-     * @param   divide  whether scale is multiplicative or divisive (vertical stretch or compression)
+     * @return  the sum or difference
      *
-     * @return  a copy of this, but scaled
+     * @throws ArithmeticException  if scale is 0 and dividing
      */
     @SideEffectFree
-    PolyArrayList<N> scalar(
-            N scale,
+    <R extends AlgebraNumber> PolyArrayList<R> scalar(
+            R scale,
             boolean divide,
-            PolyArrayList<N> zero
+            BiFunction<? super N, R, R> op
     ) {
         if (scale.isZero()) {
             if (divide) {
                 throw new ArithmeticException("Cannot divide by 0");
             }
-            
-            return zero;
+            return (PolyArrayList<R>) ZERO_PX;
         }
         
         if (scale.isOne()) {
-            return this;
+            return (PolyArrayList<R>) this;
         }
-        
-        Function<N, N> op = divide ?
-                x -> (N) x.quotient(scale) :
-                x -> (N) x.product(scale);
-        return unaryOp(op);
+        return unaryOp(n -> op.apply(n, scale));
     }
     
     /**
      * Multiplies this by multiplicand
      *
-     * @param   multiplicand    the polynomial being multiplied with this
+     * @param multiplicand    the polynomial being multiplied with this
      *
      * @return  the product
      */
     @SideEffectFree
-    PolyArrayList<N> mult(
-            PolyArrayList<? extends N> multiplicand,
-            PolyArrayList<N> zero
-    ) throws ArithmeticException {
+    <R extends AlgebraNumber> PolyArrayList<R> mult(
+            PolyArrayList<? extends R> multiplicand,
+            BiFunction<? super N, R, R> multiplier,
+            BinaryOperator<R> adder
+    ) {
         int thisLength = size();
         if (thisLength == 1) {
-            return ((PolyArrayList<N>) multiplicand).scalar(getFirst(), false, zero);
+            return multiplicand.scalar((R) getFirst(), false, (BinaryOperator<R>) multiplier);
         }
         
         int thatLength = multiplicand.size();
         if (thatLength == 1) {
-            return scalar(multiplicand.getFirst(), false, zero);
+            return scalar(multiplicand.getFirst(), false, multiplier);
         }
         
         int ansLength = thisLength + thatLength - 1;
         AbstractPolynomial.checkLength(ansLength);
-        PolyArrayList<N> ans = new PolyArrayList<>( AbstractPolynomial.dummyZeros(ansLength) );
+        PolyArrayList<R> ans = new PolyArrayList<>((List<? extends R>) AbstractPolynomial.dummyZeros(ansLength));
         for (int i = 0; i < thisLength; i++) {
             for (int j = 0; j < thatLength; j++) {
                 int index =  i + j;
-                N prod = (N) get(i).product( multiplicand.get(j) );
-                N sum = (N) ans.get(index).sum(prod);
+                R prod = multiplier.apply(get(i), multiplicand.get(j));
+                R sum = adder.apply(ans.get(index), prod);
                 ans.set(index, sum);
             }
         }
         return ans;
     }
     
-    /**
-     * Wraps the two into an UNCHECKED array
-     *
-     * @param   first   the first member of the array
-     *
-     * @param   second  the second member of the array
-     *
-     * @return  a recast {@code Object[2]}
-     *
-     * @param   <N> the type of the coefficient of the polynomial of the resulting array
-     */
-    @SideEffectFree @SuppressWarnings({"deprecation", "unchecked"})
+    @SideEffectFree
     private static <N extends AlgebraNumber> @PolyNull PolyArrayList<N>@ArrayLen(2)[] arrayPair(
-             @PolyNull PolyArrayList<? extends N> first,
-             @PolyNull PolyArrayList<? extends N> second
+            @PolyNull PolyArrayList<N> answer,
+            @PolyNull PolyArrayList<N> remainder
     ) {
-        // Since this array will never be exposed, an unchecked array is acceptable
-        PolyArrayList<N>[] res = Arrayz.unCheckedArrayGenerator(2);
-        res[0] = (PolyArrayList<N>) first;
-        res[1] = (PolyArrayList<N>) second;
-        return res;
+        PolyArrayList<N>[] result = Arrayz.checkedArrayGenerator(2, PolyArrayList.class);
+        result[0] = answer;
+        result[1] = remainder;
+        return result;
     }
     
     /**
      * Determines which division function to use.
      *
-     * @param   divisor    the divisor for this
+     * @param divisor    the divisor for this
      *
-     * @param   wantRemainder   whether we want the remainder or not; if not, no reason to do the extra work
+     * @param wantRemainder   whether we want the remainder or not; if not, no reason to do the extra work
      *
      * @return  An array of two {@link PolyArrayList}s: the first is the quotient,
      *          and the second is the remainder, or could be {@code null} if {@code wantRemainder == false}.
      *          The quotient should not be null.
      */
     @SideEffectFree
-    @Nullable PolyArrayList<N>@ArrayLen(2)[] divRouter(
-            PolyArrayList<? extends N> divisor,
+    <R extends AlgebraNumber> @Nullable PolyArrayList<R>@ArrayLen(2)[] divRouter(
+            PolyArrayList<? extends R> divisor,
             boolean wantRemainder,
-            PolyArrayList<N> zero
+            BinaryOperator<R> adder,
+            BinaryOperator<R> subtracter,
+            BinaryOperator<R> multiplier,
+            BinaryOperator<R> divider
     ) {
         if (divisor.isZero()) {
             throw new ArithmeticException("Cannot divide by 0!");
@@ -345,22 +332,23 @@ final class PolyArrayList<N extends AlgebraNumber>
         
         return switch (divisorLength) {
             case 1 -> {
-                    PolyArrayList<N> quotient = scalar(divisor.getFirst(), true, zero);
-                    yield arrayPair(quotient, zero);
+                    PolyArrayList<R> quotient = scalar(divisor.getFirst(), true,
+                            (BiFunction<? super N, R, R>) divider);
+                    yield new PolyArrayList[]{quotient, ZERO_PX};
             }
             case 2 -> {
-                N thatConstNeg = (N) divisor.getFirst().negated();
-                yield divSyn(thatConstNeg, divisor.getLast(), wantRemainder, zero);
+                R thatConstNeg = (R) divisor.getFirst().negated();
+                yield divSyn(thatConstNeg, divisor.getLast(), wantRemainder, adder, multiplier, divider);
             }
             // Now switch by which is larger
             default -> switch ( Signum.valueOf(size() - divisorLength) ) {
-                case POSITIVE -> divLong(divisor, wantRemainder, zero);
+                case POSITIVE -> divLong(divisor, wantRemainder, adder, subtracter, multiplier, divider);
                 case ZERO -> {
-                    N quotient = divisor.getLast();
-                    PolyArrayList<N> remainder = scalar(quotient, true, zero);
-                    yield arrayPair(constant(quotient), remainder);
+                    R quotient = divisor.getLast();
+                    PolyArrayList<R> remainder = scalar(quotient, true, (BiFunction<? super N, R, R>) divider);
+                    yield arrayPair(new PolyArrayList<>(quotient), remainder);
                 }
-                case NEGATIVE -> arrayPair(zero, this);
+                case NEGATIVE -> arrayPair((PolyArrayList<R>) ZERO_PX, (PolyArrayList<R>) this);
             };
         };
     }
@@ -372,43 +360,45 @@ final class PolyArrayList<N extends AlgebraNumber>
      * To make this function work for boh instances, it is expected that divConNeg is {@code r}, not {@code -r};
      * that is, it is already negated if it came from a polynomial.
      *
-     * @param   divConNeg   the constant term&mdash;but negated&mdash;of the divisor for this,
+     * @param divConNeg   the constant term&mdash;but negated&mdash;of the divisor for this,
      *                      OR the value for x that is being evaluated
      *
-     * @param   divCoeff    the slope, or linear coefficient of the divisor
+     * @param divCoeff    the slope, or linear coefficient of the divisor
      *
      * @return an array of two PolyArrayLists; the first is the quotient, and the second is
      *         the remainder if {@code wantRemainder == true}, or {@code null} if we didn't want the remainder
      */
     @SideEffectFree
-    PolyArrayList<N>@ArrayLen(2)[] divSyn(
-            N divConNeg,
-            N divCoeff,
+    <R extends AlgebraNumber> PolyArrayList<R>@ArrayLen(2)[] divSyn(
+            R divConNeg,
+            R divCoeff,
             boolean wantRemainder,
-            PolyArrayList<N> zero
+            BinaryOperator<R> adder,
+            BinaryOperator<R> multiplier,
+            BinaryOperator<R> divider
     ) {
         int thisLength = size();
         if (thisLength == 1) {
-            return arrayPair(zero, this);
+            return arrayPair((PolyArrayList<R>) ZERO_PX, (PolyArrayList<R>) this);
         }
         // Else, divide this by the coefficient of the divisor
-        PolyArrayList<? extends N> thisScaled = scalar(divCoeff, true, zero);
+        PolyArrayList<R> thisScaled = scalar(divCoeff, true, (BiFunction<? super N, R, R>) divider);
         // Also divide the main divisor, divCon, as well
-        N divisor = (N) divConNeg.quotient(divCoeff);
+        R divisor = divider.apply(divConNeg, divCoeff);
         // Initialize the quotient values
-        List<? extends N> thisNotConst = thisScaled.subList(1, thisLength);
-        PolyArrayList<N> quotient = new PolyArrayList<>(thisNotConst);
-        N remainder = thisScaled.getLast();
+        List<R> thisNotConst = thisScaled.subList(1, thisLength);
+        PolyArrayList<R> quotient = new PolyArrayList<>(thisNotConst);
+        R remainder = thisScaled.getLast();
         for (int i = thisLength - 3; i >= 0; i--) {
-            remainder = (N) remainder.product(divisor);
-            remainder = (N) thisNotConst.get(i).sum(remainder);
+            remainder = multiplier.apply(remainder, divisor);
+            remainder = adder.apply(remainder, thisNotConst.get(i));
             quotient.set(i, remainder);
         }
         if (wantRemainder) {
-            remainder = (N) remainder.product(divisor);
-            remainder = (N) thisScaled.getFirst().sum(remainder);
+            remainder = multiplier.apply(remainder, divisor);
+            remainder = adder.apply(remainder, thisScaled.getFirst());
             
-            return arrayPair(quotient, constant(remainder));
+            return arrayPair(quotient, new PolyArrayList<>(remainder));
         }
         return arrayPair(quotient, null);
     }
@@ -416,59 +406,63 @@ final class PolyArrayList<N extends AlgebraNumber>
     /**
      * Polynomial long division
      *
-     * @param   divisor the divisor
+     * @param divisor the divisor
      *
-     * @param   wantRemainder   whether we want the remainder
+     * @param wantRemainder   whether we want the remainder
      *                          (which sometimes can be more effort than the quotient)
      *
      * @return an array of two PolyArrayLists; the first is the quotient, and the second is
      *         the remainder if {@code wantRemainder == true}, or {@code null} if we didn't want the remainder
      */
     @SideEffectFree
-    private @Nullable PolyArrayList<N>@ArrayLen(2)[] divLong(
-            PolyArrayList<? extends N> divisor,
+    private <R extends AlgebraNumber> @Nullable PolyArrayList<R>@ArrayLen(2)[] divLong(
+            PolyArrayList<? extends R> divisor,
             boolean wantRemainder,
-            PolyArrayList<N> zero
+            BinaryOperator<R> adder,
+            BinaryOperator<R> subtracter,
+            BinaryOperator<R> multiplier,
+            BinaryOperator<R> divider
     ) {
         int thisLength = size();
         int thatLength = divisor.size();
         int quoCurr = thisLength - thatLength;
         int quoLength = quoCurr + 1;
-        PolyArrayList<N> quotient = new PolyArrayList<>( AbstractPolynomial.dummyZeros(quoLength) );
+        PolyArrayList<R> quotient = new PolyArrayList<>(
+                (List<? extends R>) AbstractPolynomial.dummyZeros(quoLength));
         int remLength = thatLength - 1;
         
         for (; quoCurr >= 0; quoCurr--) {
-            N term = get(remLength + quoCurr);
-            quotient.set(quoCurr, get(remLength + quoCurr));
+            R term = (R) get(remLength + quoCurr);
+            quotient.set(quoCurr, (R) get(remLength + quoCurr));
             int i = quoCurr + 1;
             int j = remLength;
             while (j > 0 && i < quoLength) {
-                N prod = (N) divisor.get(--j).product( quotient.get(i++) );
-                term = (N) term.difference(prod);
+                R prod = multiplier.apply(divisor.get(--j), quotient.get(i++));
+                term = subtracter.apply(term, prod);
             }
-            term = (N) term.quotient( divisor.get(remLength) );
+            term = divider.apply(term, divisor.get(remLength));
             quotient.set(quoCurr, term);
         }
-        PolyArrayList<N> remainder = null;
+        PolyArrayList<R> remainder = null;
         if (wantRemainder) {
             boolean first = true;
             int remCurr = remLength;
             while (remCurr > 0) {
-                N remain = remainBuild(divisor, quotient, quoLength, --remCurr);
+                R remain = remainBuild(divisor, quotient, quoLength, --remCurr, adder, multiplier);
                 if (!remain.isZero()) {
-                    remainder = new PolyArrayList<>( subList(0, remCurr) );
+                    remainder = new PolyArrayList<>((List<? extends R>) subList(0, remCurr));
                     remainder.set(remCurr, remain);
                     first = false;
                     break;
                 }
             }
             if (first) {
-                remainder = zero;
+                remainder = (PolyArrayList<R>) ZERO_PX;
             } else {
                 remCurr--;
                 for (; remCurr >= 0; remCurr--) {
-                    N remain = remainBuild(divisor, quotient, quoLength, remCurr);
-                    N diff = (N) remainder.get(remCurr).difference(remain);
+                    R remain = remainBuild(divisor, quotient, quoLength, remCurr, adder, multiplier);
+                    R diff = subtracter.apply(remainder.get(remCurr), remain);
                     remainder.set(remCurr, diff);
                 }
             }
@@ -481,30 +475,32 @@ final class PolyArrayList<N extends AlgebraNumber>
      * {@link PolyArrayList#divLong} happen in two parts, but this particular process is used
      * in both of them. Thus it is itself a function.
      *
-     * @param   dX  the divisor
+     * @param dX  the divisor
      *
-     * @param   qX  the previously-found quotient
+     * @param qX  the previously-found quotient
      *
-     * @param   quoLength   the length of the quotient; while it is easy to find,
+     * @param quoLength   the length of the quotient; while it is easy to find,
      *                      in the situations that this function is called, we have already found it
      *
-     * @param   remCurr the current index of the term of the remainder that we are now building
+     * @param remCurr the current index of the term of the remainder that we are now building
      *
      * @return  the term of the remainder for index {@code remCurr}
      */
     @SideEffectFree
-    private N remainBuild(
-            PolyArrayList<? extends N> dX,
-            PolyArrayList<? extends N> qX,
+    private <R extends AlgebraNumber> R remainBuild(
+            PolyArrayList<? extends R> dX,
+            PolyArrayList<R> qX,
             int quoLength,
-            int remCurr
+            int remCurr,
+            BinaryOperator<R> adder,
+            BinaryOperator<R> multiplier
     ) {
-        N remain = get(remCurr);
+        R remain = (R) get(remCurr);
         int j = 0;
         for (int i = remCurr; i > 0; j++) {
             if (quoLength > i--) {
-                N prod = (N) dX.get(j).product(qX.get(i));
-                remain = (N) remain.sum(prod);
+                R prod = multiplier.apply(dX.get(j), qX.get(i));
+                remain = adder.apply(remain, prod);
             }
         }
         return remain;
@@ -512,40 +508,41 @@ final class PolyArrayList<N extends AlgebraNumber>
     
     @SideEffectFree
     PolyArrayList<N> squared(
-            PolyArrayList<N> zero
+            BinaryOperator<N> multiplier,
+            BinaryOperator<N> adder
     ) {
-        return mult(this, zero);
+        return mult(this, multiplier, adder);
     }
     
     /**
      * Raises this to a power
      *
-     * @param   exponent    the power to raise this to; can't be negative
+     * @param exponent    the power to raise this to; can't be negative
      *
      * @return  this to the power of {@code exponent}
      */
     @SideEffectFree
     PolyArrayList<N> raised(
             @NonNegative int exponent,
-            PolyArrayList<N> one,
-            PolyArrayList<N> zero
+            BinaryOperator<N> multiplier,
+            BinaryOperator<N> adder
     ) {
         return switch (exponent) {
             case 0 -> {
                 if (isZero()) {
                     throw new ArithmeticException("0^0 is undefined!");
                 }
-                yield one;
+                yield (PolyArrayList<N>) ONE_PX;
             }
             case 1 -> this;
-            case 2 -> squared(zero);
+            case 2 -> squared(multiplier, adder);
             default -> {
                 int newLength = exponent * (size() - 1) + 1;
                 AbstractPolynomial.checkLength(newLength);
                 
-                PolyArrayList<N> ans = squared(zero);
+                PolyArrayList<N> ans = squared(multiplier, adder);
                 for (int i = 3; i < exponent; i++) {
-                    ans = mult(ans, zero);
+                    ans = mult(ans, multiplier, adder);
                 }
                 yield ans;
             }

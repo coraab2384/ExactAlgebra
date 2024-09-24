@@ -13,6 +13,7 @@ import java.util.Queue;
 import java.util.SequencedCollection;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -34,20 +35,17 @@ import org.checkerframework.dataflow.qual.*;
 public final class PolyRat
         extends AbstractPolynomial<Rational>
         implements Serializable {
+    /**
+     * yeah yeah
+     */
     @Serial
     private static final long serialVersionUID = 0x83A0B98FB73A1A9L;
     
-    private static final PolyArrayList<Rational> ZERO_PX = (PolyArrayList<Rational>) AbstractPolynomial.ZERO_PX;
+    public static final PolyRat ZERO = new PolyRat((PolyArrayList<Rational>) PolyArrayList.ZERO_PX);
     
-    public static final PolyRat ZERO = new PolyRat(ZERO_PX);
+    public static final PolyRat ONE = new PolyRat((PolyArrayList<Rational>) PolyArrayList.ONE_PX);
     
-    private static final PolyArrayList<Rational> ONE_PX = (PolyArrayList<Rational>) AbstractPolynomial.ONE_PX;
-    
-    public static final PolyRat ONE = new PolyRat(ONE_PX);
-    
-    private static final Rational ONE_RAT = ONE_PX.getFirst();
-    
-    private static final PolyRat ONE_X = new PolyRat(PolyArrayList.monomial(ONE_RAT, 1));
+    private static final PolyRat ONE_X = new PolyRat(new PolyArrayList<>(AbstractPolynomial.ONE, 1));
     
     private final PolyArrayList<Rational> pX;
     
@@ -75,7 +73,7 @@ public final class PolyRat
     private PolyRat(
            PolyArrayList<Rational> pX
     ) {
-        assert pX.size() <= MAX_LENGTH;
+        assert pX.size() <= DEFAULT_MAX_LENGTH;
         this.pX = pX;
     }
     
@@ -83,7 +81,6 @@ public final class PolyRat
      * Static factory for constant polynomials (degree == 0)
      * @param constant the constant value
      * @return the constant
-     * @throws NullPointerException if val is null
      */
     public static PolyRat constant(
             Rational constant
@@ -94,7 +91,7 @@ public final class PolyRat
         if (constant.isOne()) {
             return ONE;
         }
-        return new PolyRat(PolyArrayList.constant(constant));
+        return new PolyRat(new PolyArrayList<>(constant));
     }
     
     /**
@@ -142,7 +139,7 @@ public final class PolyRat
             return ONE_X;
         }
         
-        return new PolyRat( PolyArrayList.monomial(coefficient, degree) );
+        return new PolyRat(new PolyArrayList<>(coefficient, degree));
     }
     
     @SideEffectFree
@@ -188,7 +185,7 @@ public final class PolyRat
     @SideEffectFree
     protected <R extends AlgebraNumber> Polynomial<R> monomialOf(
             R coefficient,
-            @IntRange(from = 0, to = MAX_DEGREE) int degree
+            @IntRange(from = 0, to = DEFAULT_MAX_DEGREE) int degree
     ) {
         return (Polynomial<R>) monomialFactory((Rational) coefficient, degree);
     }
@@ -252,18 +249,7 @@ public final class PolyRat
         int length = pX.size();
         return (length == 1) || pX.subList(0, length - 1)
                 .parallelStream()
-                .allMatch(Rational::isZero);
-    }
-    
-    @SideEffectFree
-    private static Polynomial<?> biPolyOp(
-            Polynomial<? extends AlgebraNumber> that,
-            Function<PolyRat, PolyRat> smallOp,
-            Function<Polynomial<? extends AlgebraNumber>, ? extends Polynomial<? extends AlgebraNumber>> bigOp
-    ) {
-        return (that instanceof PolyRat thatPR)
-                ? smallOp.apply(thatPR)
-                : bigOp.apply(that);
+                .allMatch(AlgebraNumber::isZero);
     }
     
     @Override
@@ -271,15 +257,14 @@ public final class PolyRat
     public int compareTo(
             Polynomial<?> that
     ) {
-        if (that instanceof PolyRat TPR) {
-            return pX.compareTo(TPR.pX);
+        if (that instanceof PolyRat thatPR) {
+            return pX.compareTo(thatPR.pX);
         }
-        int thatLen = that.length();
-        PolyArrayList<AlgebraNumber> thatPX = new PolyArrayList<>(thatLen);
-        for (AlgebraNumber algebraNumber : that) {
-            thatPX.add(algebraNumber);
-        }
-        return pX.compareTo(thatPX);
+        
+        int thatLength = that.length();
+        PolyArrayList<?> thatPx = that.stream()
+                .collect( Collectors.toCollection(() -> new PolyArrayList<>(thatLength)) );
+        return pX.compareTo(thatPx);
     }
     
     @Override
@@ -306,7 +291,7 @@ public final class PolyRat
     @Override
     @SideEffectFree
     public PolyRat absoluteValue() {
-        if (isZero() || isOne() || pX.parallelStream().noneMatch(Rational::isNegative) ) {
+        if (isZero() || isOne() || pX.parallelStream().noneMatch(AlgebraNumber::isNegative)) {
             return this;
         }
         return new PolyRat(pX.unaryOp(Rational::magnitude));
@@ -317,7 +302,8 @@ public final class PolyRat
     public Rational apply(
             Rational input
     ) {
-        PolyArrayList<Rational>[] quoRemain = pX.divSyn(input, ONE_RAT, true, ZERO_PX);
+        PolyArrayList<Rational>[] quoRemain = pX.divSyn(input, AbstractPolynomial.ONE, true,
+                Rational::sum, Rational::product, Rational::quotient);
         return quoRemain[1].getFirst();
     }
     
@@ -353,7 +339,7 @@ public final class PolyRat
     public PolyRat sum(
             PolyRat augend
     ) {
-        return new PolyRat( pX.arithRes(augend.pX, false, ZERO_PX) );
+        return new PolyRat( pX.arithRes(augend.pX, false, Rational::sum) );
     }
     
     @Override
@@ -361,14 +347,16 @@ public final class PolyRat
     public Polynomial<?> sum(
             Polynomial<?> augend
     ) {
-        return biPolyOp(augend, this::sum, super::sum);
+        return (augend instanceof PolyRat augendPR)
+                ? sum(augendPR)
+                : super.sum(augend);
     }
     
     @SideEffectFree
     public PolyRat difference(
             PolyRat subtrahend
     ) {
-        return new PolyRat( pX.arithRes(subtrahend.pX, true, ZERO_PX) );
+        return new PolyRat( pX.arithRes(subtrahend.pX, true, Rational::difference) );
     }
     
     @Override
@@ -376,14 +364,16 @@ public final class PolyRat
     public Polynomial<?> difference(
             Polynomial<?> subtrahend
     ) {
-        return biPolyOp(subtrahend, this::difference, super::difference);
+        return (subtrahend instanceof PolyRat subtrahendPR)
+                ? difference(subtrahendPR)
+                : super.difference(subtrahend);
     }
     
     @SideEffectFree
     public PolyRat scaled(
             Rational scalar
     ) {
-        return new PolyRat( pX.scalar(scalar, false, ZERO_PX) );
+        return new PolyRat( pX.scalar(scalar, false, Rational::product) );
     }
     
     @Override
@@ -400,7 +390,7 @@ public final class PolyRat
     public PolyRat product(
             PolyRat multiplicand
     ) {
-        return new PolyRat( pX.mult(multiplicand.pX, ZERO_PX) );
+        return new PolyRat( pX.mult(multiplicand.pX, Rational::product, Rational::sum) );
     }
     
     @Override
@@ -408,14 +398,18 @@ public final class PolyRat
     public Polynomial<?> product(
             Polynomial<?> multiplicand
     ) {
-        return biPolyOp(multiplicand, this::product, super::product);
+        return (multiplicand instanceof PolyRat multiplicandPR)
+                ? product(multiplicandPR)
+                : super.product(multiplicand);
     }
     
     @SideEffectFree
     public FunctionRemainderPair<? extends PolyRat, ? extends PolyRat> quotientZWithRemainder(
             PolyRat divisor
     ) {
-        PolyArrayList<Rational>[] polyArray = pX.divRouter(divisor.pX, true, ZERO_PX);
+        PolyArrayList<Rational>[] polyArray = pX.divRouter(divisor.pX, true, Rational::sum,
+                Rational::difference, Rational::product, Rational::quotient);
+        
         return new FunctionRemainderPair<>(
                 new PolyRat(polyArray[0]),
                 new PolyRat(polyArray[1])
@@ -436,7 +430,8 @@ public final class PolyRat
     public PolyRat quotientZ(
             PolyRat divisor
     ) {
-        return new PolyRat( pX.divRouter(divisor.pX, false, ZERO_PX)[0] );
+        return new PolyRat( pX.divRouter(divisor.pX, false, Rational::sum,
+                Rational::difference, Rational::product, Rational::quotient)[0] );
     }
     
     @Override
@@ -444,14 +439,17 @@ public final class PolyRat
     public Polynomial<?> quotientZ(
             Polynomial<?> divisor
     ) {
-        return biPolyOp(divisor, this::quotientZ, super::quotientZ);
+        return (divisor instanceof PolyRat divisorPR)
+                ? quotientZ(divisorPR)
+                : super.quotientZ(divisor);
     }
     
     @SideEffectFree
     public PolyRat remainder(
             PolyRat divisor
     ) {
-        return new PolyRat( pX.divRouter(divisor.pX, true, ZERO_PX)[1] );
+        return new PolyRat( pX.divRouter(divisor.pX, true, Rational::sum,
+                Rational::difference, Rational::product, Rational::quotient)[1] );
     }
     
     @Override
@@ -459,7 +457,9 @@ public final class PolyRat
     public Polynomial<?> remainder(
             Polynomial<?> divisor
     ) {
-        return biPolyOp(divisor, this::remainder, super::remainder);
+        return (divisor instanceof PolyRat divisorPR)
+                ? remainder(divisorPR)
+                : super.remainder(divisor);
     }
     
     /**
@@ -473,7 +473,8 @@ public final class PolyRat
             PolyRat divisor,
             boolean wantRemainder
     ) {
-        PolyArrayList<Rational>[] polyArray = pX.divRouter(divisor.pX, wantRemainder, ZERO_PX);
+        PolyArrayList<Rational>[] polyArray = pX.divRouter(divisor.pX, wantRemainder, Rational::sum,
+                Rational::difference, Rational::product, Rational::quotient);
         PolyRat quotient = new PolyRat(polyArray[0]);
         PolyRat remainder = wantRemainder ? new PolyRat(polyArray[1]) : null;
         return new FunctionRemainderPair<>(quotient, remainder);
@@ -482,7 +483,7 @@ public final class PolyRat
     @Override
     @SideEffectFree
     public PolyRat squared() {
-        return new PolyRat(pX.squared(ZERO_PX));
+        return new PolyRat(pX.squared(Rational::product, Rational::sum));
     }
     
     @SideEffectFree
@@ -493,7 +494,7 @@ public final class PolyRat
             return this;
         }
         
-        return new PolyRat( pX.raised(exponent, ONE_PX, ZERO_PX) );
+        return new PolyRat( pX.raised(exponent, Rational::product, Rational::sum) );
     }
     
     @Pure
@@ -524,7 +525,7 @@ public final class PolyRat
         if (curDeg >= 1) {
             Rational scalar = getFactoredOutCoeff(workingCopy, mainQ, curDeg);
             if (scalar != null) {
-                workingCopy = workingCopy.scalar(scalar, true, ZERO_PX);
+                workingCopy = workingCopy.scalar(scalar, true, Rational::quotient);
                 mainP = workingCopy.getFirst();
                 mainQ = workingCopy.getLast();
                 if (ratFactors.isEmpty()) {
@@ -547,7 +548,8 @@ public final class PolyRat
                     Rational divCoeff = posFactor.denominatorAI();
                     Rational divConst = posFactor.numeratorAI();
                     PolyArrayList<Rational>[] quoRemain =
-                            workingCopy.divSyn(divConst.negated(), divCoeff, true, ZERO_PX);
+                            workingCopy.divSyn(divConst.negated(), divCoeff, true, Rational::sum,
+                                    Rational::product, Rational::quotient);
                     if (quoRemain[1].isZero()) {
                         workingCopy = quoRemain[0];
                         curDeg--;
@@ -695,7 +697,7 @@ public final class PolyRat
             boolean parallel
     ) {
         List<Rational> resList = pX.subList(startInclusive, endExclusive);
-        return StreamSupport.stream(MiscUtils.spliteratorOrderedSizedNonnullImmutableSubsizedIterator(
+        return StreamSupport.stream(MiscUtils.spliteratorOrderedNonnullImmutableIterator(
                 resList.iterator(), resList.size()), parallel);
     }
 }

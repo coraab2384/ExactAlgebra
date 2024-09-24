@@ -9,9 +9,10 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.LongFunction;
 
+import org.cb2384.exactalgebra.objects.numbers.integral.FiniteInteger;
+import org.cb2384.exactalgebra.objects.numbers.integral.IntegerFactory;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
 import org.cb2384.exactalgebra.util.PrimMathUtils;
 import org.cb2384.exactalgebra.util.corutils.StringUtils;
@@ -24,26 +25,59 @@ import org.checkerframework.checker.signedness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
-public class FiniteRational
+/**
+ * <p>Rationals with a finite length. Specifically, this class supports a maximum numerator magnitude of
+ * an unsigned {@code int} ({@code -2 * }{@link Integer#MIN_VALUE} or {@link PrimMathUtils#LONG_TO_INT_MASK}
+ * or {@code 0xFF_FF_FF_FF} or {@code 4_294_967_296}) and a maximum denominator magnitude equal to the maximum signed
+ * integer magnitude (specifically the negative directions, so {@code -}{@link Integer#MIN_VALUE} or
+ * {@link Integer#MAX_VALUE}<code>&nbsp;+ 1</code>. If the numerator or denominator use less space, the other
+ * does not pick up the remaining space.</p>
+ *
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} input unless otherwise noted</p>
+ *
+ * @author  Corinne Buxton
+ */
+public final class FiniteRational
         extends AbstractRational
         implements Serializable {
+    
     @Serial
     private static final long serialVersionUID = 0x83A0B98FB73A1A5L;
     
-    private static final String STRICT_EXC_MSG = "Overflow of bounds of "
-            + StringUtils.getIdealName(FiniteRational.class) + ". Consider using "
-            + StringUtils.getIdealName(ArbitraryRational.class) + " or factory instead";
-    
+    /**
+     * Value of 0 in this format
+     */
     private static final long ZERO_VAL = 0x1_00_00_00_00L;
     
+    /**
+     * value of 1 in this format
+     */
     private static final long ONE_VAL = ZERO_VAL + 1;
     
+    /**
+     * The value; the long value is actually two ints; the first 32 bits are the denominator, and the second
+     * the numerator
+     */
     private final long value;
     
+    /**
+     * cached BigInteger value, for calculations
+     */
     private transient @MonotonicNonNull BigInteger numerator;
     
+    /**
+     * cached BigInteger value, for calculations
+     */
     private transient @MonotonicNonNull BigInteger denominator;
     
+    /**
+     * Constructor for if the pre-cached values already happen to be known
+     *
+     * @param numerator     the numerator that the new object will have; will be interpreted as unsigned
+     * @param denominator   the denominator that the new object will have; will however carry the sign
+     * @param numeratorBI   BigInteger version of numerator for caching
+     * @param denominatorBI BigInteger version of denominator for caching
+     */
     @SideEffectFree
     FiniteRational(
             @Unsigned int numerator,
@@ -56,6 +90,12 @@ public class FiniteRational
         this.denominator = denominatorBI;
     }
     
+    /**
+     * Constructor for when values are in int form
+     *
+     * @param numerator     the numerator that the new object will have; will be interpreted as unsigned
+     * @param denominator   the denominator that the new object will have; will however carry the sign
+     */
     @SideEffectFree
     private FiniteRational(
             @Unsigned int numerator,
@@ -64,29 +104,76 @@ public class FiniteRational
         value = compressToLong(Integer.toUnsignedLong(numerator), denominator);
     }
     
+    /**
+     * Constructor for when values are in long form
+     *
+     * @param numerator     the numerator that the new object will have; must be positive
+     * @param denominator   the denominator that the new object will have; will however carry the sign
+     */
     @SideEffectFree
-    private FiniteRational(
-            long val
+    FiniteRational(
+            @IntRange(from = 0, to = PrimMathUtils.LONG_TO_INT_MASK) long numerator,
+            @IntRange(from = Integer.MIN_VALUE, to = PrimMathUtils.NEG_INT_MIN) long denominator
     ) {
-        this.value = val;
+        this.value = compressToLong(numerator, denominator);
     }
     
+    /**
+     * Creates a FiniteRational representation of the given {@code numerator} and {@code denominator}; unlike
+     * {@link #valueOf(long, long)}, the result will always be a FiniteRational, even if the value is actually
+     * whole. However, this means that the numerator must be within the appropriate range or else an exception
+     * will be thrown!
+     *
+     * @param numerator     the numerator the Rational will have
+     * @param denominator   the denominator the Rational will have
+     *
+     * @return  a FiniteRational representing the given {@code numerator} and {@code denominator}
+     *
+     * @throws IllegalArgumentException if the {@code numerator} or {@code denominator} are too large
+     *                                  when {@code strict == true}, or if {@code denominator == 0}
+     */
     @SideEffectFree
-    public static FiniteRational fromLongsStrict(
+    public static FiniteRational valueOfStrict(
             long numerator,
             long denominator
     ) {
         return (FiniteRational) fromLongBuilder(numerator, denominator, true);
     }
     
+    /**
+     * Creates a {@link Rational}&mdash;either an {@link ArbitraryRational} or a
+     * {@link FiniteRational} or possibly an {@link org.cb2384.exactalgebra.objects.numbers.integral.AlgebraInteger
+     * AlgebraInteger} type if whole&mdash;depending on the magnitude of the given values.
+     * Note that the inputs will be simplified!
+     *
+     * @param numerator     the numerator the Rational will have
+     * @param denominator   the denominator the Rational will have
+     *
+     * @return  a Rational representing the given {@code numerator} and {@code denominator}
+     *
+     * @throws IllegalArgumentException if {@code denominator == 0}
+     */
     @SideEffectFree
-    public static Rational fromLongs(
+    public static Rational valueOf(
             long numerator,
             long denominator
     ) {
         return fromLongBuilder(numerator, denominator, false);
     }
     
+    /**
+     * simplifies the long inputs, if applicable, and calls the appropriate constructor
+     *
+     * @param numerator     the numerator
+     * @param denominator   the denominator
+     * @param strict        whether to use strict mode, which requires a FiniteRational result,
+     *                      or use normal mode with automatic shrinking or widening
+     *
+     * @return  the built Rational
+     *
+     * @throws IllegalArgumentException if the {@code numerator} or {@code denominator} are too large
+     *                                  when {@code strict == true}, or if {@code denominator == 0}
+     */
     @SideEffectFree
     private static Rational fromLongBuilder(
             long numerator,
@@ -94,7 +181,7 @@ public class FiniteRational
             boolean strict
     ) {
         if (denominator == 0) {
-            throw new ArithmeticException(DIV_0_EXC_MSG);
+            throw new IllegalArgumentException(DIV_0_EXC_MSG);
         }
         
         if (numerator < 0) {
@@ -106,23 +193,88 @@ public class FiniteRational
         numerator /= gcf;
         denominator /= gcf;
         
-        if (doesFit(numerator, denominator)) {
-            return new FiniteRational( compressToLong(numerator, denominator) );
+        if (strict) {
+            if (doesFit(numerator, denominator)) {
+                return new FiniteRational(numerator, denominator);
+            }
+            throw new IllegalArgumentException("Overflow of bounds of "
+                    + StringUtils.getIdealName(FiniteRational.class) + ". Consider using "
+                    + StringUtils.getIdealName(ArbitraryRational.class) + " or factory instead");
         }
         
-        if (strict) {
-            throw new ArithmeticException(STRICT_EXC_MSG);
+        if (denominator == 1) {
+            return IntegerFactory.fromLong(numerator);
         }
-        return RationalFactory.fromLongs(numerator, denominator);
+        if (denominator == -1) {
+            return IntegerFactory.fromLong(-numerator);
+        }
+        
+        if (doesFit(numerator, denominator)) {
+            return new FiniteRational(numerator, denominator);
+        }
+        return ArbitraryRational.valueOfStrict(numerator, denominator);
     }
     
+    /**
+     * Creates a {@link Rational}&mdash;either a {@link FiniteRational} or possibly a
+     * {@link FiniteInteger} if whole.
+     * Note that the inputs will be simplified!
+     *
+     * @param numerator     the numerator the Rational will have
+     * @param denominator   the denominator the Rational will have
+     *
+     * @return  a Rational representing the given {@code numerator} and {@code denominator}
+     *
+     * @throws IllegalArgumentException if {@code denominator == 0}
+     */
     @SideEffectFree
-    public static FiniteRational fromInts(
+    public static Rational valueOf(
             @Unsigned int numerator,
             int denominator
     ) {
+        return fromIntBuilder(numerator, denominator, false);
+    }
+    
+    /**
+     * Creates a FiniteRational representation of the given {@code numerator} and {@code denominator}; unlike
+     * {@link #valueOf(int, int)}, the result will always be a FiniteRational, even if the value is actually
+     * whole.
+     *
+     * @param numerator     the numerator the Rational will have
+     * @param denominator   the denominator the Rational will have
+     *
+     * @return  a FiniteRational representing the given {@code numerator} and {@code denominator}
+     *
+     * @throws IllegalArgumentException if {@code denominator == 0}
+     */
+    @SideEffectFree
+    public static FiniteRational valueOfStrict(
+            @Unsigned int numerator,
+            int denominator
+    ) {
+        return (FiniteRational) fromIntBuilder(numerator, denominator, true);
+    }
+    
+    /**
+     * simplifies the int inputs, if applicable, and calls the appropriate constructor
+     *
+     * @param numerator     the numerator
+     * @param denominator   the denominator
+     * @param strict        whether to use strict mode, which requires a FiniteRational result,
+     *                      or use normal mode with automatic shrinking or widening
+     *
+     * @return  the built Rational
+     *
+     * @throws IllegalArgumentException if {@code denominator == 0}
+     */
+    @SideEffectFree
+    private static Rational fromIntBuilder(
+            @Unsigned int numerator,
+            int denominator,
+            boolean strict
+    ) {
         if (denominator == 0) {
-            throw new ArithmeticException(DIV_0_EXC_MSG);
+            throw new IllegalArgumentException(DIV_0_EXC_MSG);
         }
         
         // We know this gcf will not need to be treated as unsigned,
@@ -131,9 +283,27 @@ public class FiniteRational
         numerator = Integer.divideUnsigned(numerator, gcf);
         denominator /= gcf;
         
+        if (strict) {
+            return new FiniteRational(numerator, denominator);
+        }
+        
+        if (denominator == 1) {
+            return FiniteInteger.valueOfStrict(numerator);
+        }
+        if (denominator == -1) {
+            return FiniteInteger.valueOfStrict(-numerator);
+        }
         return new FiniteRational(numerator, denominator);
     }
     
+    /**
+     * checks if the numerator and denominator fit
+     *
+     * @param numerator     the numerator
+     * @param denominator   the denominator
+     *
+     * @return  true if they would fit, else false
+     */
     @Pure
     private static boolean doesFit(
             long numerator,
@@ -143,6 +313,15 @@ public class FiniteRational
                 PrimMathUtils.canBeInt(denominator, IntegralBoundaryTypes.EXTENDED);
     }
     
+    /**
+     * Takes the two inputs and writes them in the representation used here; first 32 bits denominator,
+     * last 32 bits numerator.
+     *
+     * @param numerator     the numerator
+     * @param denominator   the denominator
+     *
+     * @return   the compressed long value
+     */
     @Pure
     private static long compressToLong(
             @IntRange(from = 0, to = PrimMathUtils.LONG_TO_INT_MASK) long numerator,
@@ -155,29 +334,53 @@ public class FiniteRational
                 (denominator << 32) | numerator;
     }
     
+    /**
+     * The numerator, but unsigned
+     *
+     * @return  the numerator, but unsigned
+     */
     @Pure
     private @NonNegative long numeratorLongUnsigned() {
         return value & PrimMathUtils.LONG_TO_INT_MASK;
     }
     
+    /**
+     * The numerator, but as a primitive value (a {@code long})
+     *
+     * @return  a {@code long} representation of the numerator of this Rational
+     */
     @Pure
     public long numeratorPrim() {
-        long res = numeratorLongUnsigned();
-        return (value < 0) ?
-                -res :
-                res;
+        return (value < 0)
+                ? -numeratorLongUnsigned()
+                : numeratorLongUnsigned();
     }
     
+    /**
+     * The denominator, but unsigned
+     *
+     * @return  the denominator, but unsigned
+     */
     @Pure
     public @Unsigned int numeratorIntUnsigned() {
         return (int) value;
     }
     
+    /**
+     * The denominator, but as a primitive value (a {@code long})
+     *
+     * @return  a {@code long} representation of the denominator of this Rational
+     */
     @Pure
     public @Positive long denominatorPrim() {
         return Math.abs(denominatorLongSigned());
     }
     
+    /**
+     * The denominator as a long
+     *
+     * @return  the denominator with the sign, as a long
+     */
     @Pure
     private long denominatorLongSigned() {
         long denominator = value >> 32;
@@ -186,16 +389,32 @@ public class FiniteRational
                 denominator;
     }
     
+    /**
+     * The denominator, but as a signed {@code int}. Note that if the denominator is the largest possible
+     * positive denominator, it is returned as {@code 0}!
+     *
+     * @return  the denominator in {@code int} form, unless it happens to be 2147483648, in which case it
+     *          overflows to {@code 0}
+     */
     @Pure
     public int denominatorIntSigned() {
         return (int) (value >>> 32);
     }
     
+    /**
+     * The whole number value of this, in primitive ({@code long}) form. Like {@link #wholeBI()}
+     * or {@link #wholeAI()}, the value is rounded towards 0, or truncated.
+     *
+     * @return  the whole number; the value that would be in front of the mixed number representation
+     */
     @Pure
     public long wholePrim() {
         return numeratorLongUnsigned() / denominatorLongSigned();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public BigInteger numeratorBI() {
@@ -205,6 +424,9 @@ public class FiniteRational
                 : numerator;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public BigInteger denominatorBI() {
@@ -214,12 +436,18 @@ public class FiniteRational
                 : denominator;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public BigInteger wholeBI() {
         return BigInteger.valueOf( wholePrim() );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public BigDecimal toBigDecimal(
@@ -231,6 +459,9 @@ public class FiniteRational
         );
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public BigInteger toBigInteger(
@@ -247,14 +478,13 @@ public class FiniteRational
      * If this is whole, returns its value according to the first function, otherwise
      * according to the second function.
      *
-     * @param   methodIfWhole   the function to use if this is whole
-     *
-     * @param   opIfElse    a function that takes the {@link BigDecimal} interpretations
+     * @param methodIfWhole the function to use if this is whole
+     * @param opIfElse      a function that takes the {@link BigDecimal} interpretations
      *                      of the numerator and denominator and gets the value to return from those
      *
      * @return  a big math object according to the provided functions
      *
-     * @param   <N> the type of big math object, {@link BigInteger} or {@link BigDecimal}
+     * @param <N>   the type of big math object, {@link BigInteger} or {@link BigDecimal}
      */
     @SideEffectFree
     private <N extends Number> N getBigMathObject(
@@ -270,12 +500,18 @@ public class FiniteRational
         return opIfElse.apply(numBD, denBD);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public double doubleValue() {
         return (double) numeratorLongUnsigned() / denominatorLongSigned();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String toString(
@@ -291,24 +527,36 @@ public class FiniteRational
         return ans.toString();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isZero() {
         return value == ZERO_VAL;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isOne() {
         return value == ONE_VAL;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isNegative() {
         return value < 0;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isWhole() {
@@ -316,10 +564,13 @@ public class FiniteRational
         return (den == 1) || (den == -1);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public Signum signum() {
-        return Signum.valueOf(denominatorLongSigned());
+        return Signum.valueOf(numeratorPrim());
     }
     
     @Pure
@@ -338,6 +589,9 @@ public class FiniteRational
         return Long.compare(thisNum, thatNum);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int compareTo(
@@ -348,29 +602,52 @@ public class FiniteRational
                 : super.compareTo(that);
     }
     
+    @Pure
+    public boolean equiv(
+            FiniteRational that
+    ) {
+        return value == that.value;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Pure
+    public boolean equiv(
+            Rational that
+    ) {
+        return (that instanceof FiniteRational thatFR)
+                ? equiv(thatFR)
+                : super.equiv(that);
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public FiniteRational negated() {
         long newDen = -denominatorLongSigned();
         long newNum = numeratorLongUnsigned();
-        return new FiniteRational( compressToLong(newNum, newDen) );
+        return new FiniteRational(newNum, newDen);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational inverted() {
-        return RationalFactory.fromLongs(denominatorLongSigned(), numeratorLongUnsigned());
-    }
-    
-    @SideEffectFree
-    private static Rational biOpHandler(
-            Rational that,
-            Function<FiniteRational, Rational> smallOp,
-            Function<Rational, Rational> bigOp
-    ) {
-        return (that instanceof FiniteRational thatFR)
-                ? smallOp.apply(thatFR)
-                : bigOp.apply(that);
+        long numerator = numeratorPrim();
+        if (numerator == 0) {
+            throw new ArithmeticException(DIV_0_EXC_MSG);
+        }
+        long denominator = denominatorPrim();
+        
+        return doesFit(denominator, numerator)
+                ? new FiniteRational(denominator, numerator)
+                : new ArbitraryRational(denominatorBI(), numeratorBI());
     }
     
     @SideEffectFree
@@ -385,7 +662,9 @@ public class FiniteRational
     public Rational sum(
             Rational augend
     ) {
-        return biOpHandler(augend, this::sum, super::sum);
+        return (augend instanceof FiniteRational augendFR)
+                ? sum(augendFR)
+                : super.sum(augend);
     }
     
     @SideEffectFree
@@ -395,14 +674,30 @@ public class FiniteRational
         return arithFind(subtrahend, true, false);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational difference(
             Rational subtrahend
     ) {
-        return biOpHandler(subtrahend, this::difference, super::difference);
+        return (subtrahend instanceof FiniteRational subtrahendFR)
+                ? difference(subtrahendFR)
+                : super.difference(subtrahend);
     }
     
+    /**
+     * Either adds or subtracts this and that, depending on the subtract argument.
+     *
+     * @param that      the thing to add or subtract from this
+     * @param subtract  whether to subtract or add
+     * @param strict    whether strict mode is on, meaning that the answer should only be a FiniteRational
+     *
+     * @return  the sum/difference
+     *
+     * @throws ArithmeticException  if the sum/difference ends up not fitting in a FiniteRational
+     */
     @SideEffectFree
     private Rational arithFind(
             FiniteRational that,
@@ -431,12 +726,17 @@ public class FiniteRational
         return multRes(multiplicand, false, false, Ternary.DEFAULT);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational product(
             Rational multiplicand
     ) {
-        return biOpHandler(multiplicand, this::product, super::product);
+        return (multiplicand instanceof FiniteRational multiplicandFR)
+                ? product(multiplicandFR)
+                : super.product(multiplicand);
     }
     
     @SideEffectFree
@@ -446,12 +746,17 @@ public class FiniteRational
         return multRes(divisor, true, false, Ternary.DEFAULT);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public Rational quotient(
             Rational divisor
     ) {
-        return biOpHandler(divisor, this::quotient, super::quotient);
+        return (divisor instanceof FiniteRational divisorFR)
+                ? quotient(divisorFR)
+                : super.quotient(divisor);
     }
     
     @SideEffectFree
@@ -481,7 +786,7 @@ public class FiniteRational
             case DEFAULT -> fromLongBuilder(newNum, newDen, strict);
             case FALSE -> fromLongBuilder(newNum / newDen, 1, strict);
             case TRUE -> {
-                Rational tempQuo = RationalFactory.fromLongs(newNum / newDen, 1);
+                Rational tempQuo = valueOf(newNum / newDen, 1);
                 Rational ans = difference(tempQuo);
                 
                 if (strict) {

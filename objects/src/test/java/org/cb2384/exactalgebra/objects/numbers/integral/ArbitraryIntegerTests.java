@@ -22,27 +22,27 @@ import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-public final class FiniteIntegerTests {
+public final class ArbitraryIntegerTests {
     
-    private static final FiniteInteger ZERO = FiniteInteger.valueOfStrict(0);
+    private static final ArbitraryInteger ZERO = ArbitraryInteger.valueOfStrict(0);
     
-    private static final List<FiniteInteger> ONE_TO_SIXTEEN = LongStream.rangeClosed(1, 16)
-            .mapToObj(FiniteInteger::valueOfStrict)
+    private static final List<ArbitraryInteger> ONE_TO_SIXTEEN = LongStream.rangeClosed(1, 16)
+            .mapToObj(ArbitraryInteger::valueOfStrict)
             .toList();
     
-    private static final List<FiniteInteger> NEG_ONE_TO_SIXTEEN = LongStream.rangeClosed(1, 16)
+    private static final List<ArbitraryInteger> NEG_ONE_TO_SIXTEEN = LongStream.rangeClosed(1, 16)
             .map(l -> -l)
-            .mapToObj(FiniteInteger::valueOfStrict)
+            .mapToObj(ArbitraryInteger::valueOfStrict)
             .toList();
     
     private static final long LONG_TEST_LONG = 0x123456789ABCDEFL;
     
     private static final BigInteger LONG_TEST_BI = BigInteger.valueOf(LONG_TEST_LONG);
     
-    private static final FiniteInteger LONG_TEST_FI = FiniteInteger.valueOfStrict(LONG_TEST_BI);
+    private static final ArbitraryInteger LONG_TEST_AI = ArbitraryInteger.valueOfStrict(LONG_TEST_BI);
     
-    private static final List<FiniteInteger> ALL_FI = Stream.of(NEG_ONE_TO_SIXTEEN.stream(),
-                    Stream.of(ZERO, LONG_TEST_FI), ONE_TO_SIXTEEN.stream())
+    private static final List<ArbitraryInteger> ALL_AI = Stream.of(NEG_ONE_TO_SIXTEEN.stream(),
+                    Stream.of(ZERO, LONG_TEST_AI), ONE_TO_SIXTEEN.stream())
             .flatMap(UnaryOperator.identity())
             .sorted()
             .toList();
@@ -58,33 +58,23 @@ public final class FiniteIntegerTests {
     @Nested
     public final class ValueOfStrictTests {
         @Test
-        public void testTooBigInputLong() {
-            assertThrows(IllegalArgumentException.class, () -> FiniteInteger.valueOfStrict(Long.MIN_VALUE));
-        }
-        
-        @Test
-        public void testTooBigInputBI() {
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> FiniteInteger.valueOfStrict(BigMathObjectUtils.LONG_MIN_BI)
-            );
-        }
-        
-        @Test
-        public void testCacheIdentityLong() {
-            FiniteInteger a = FiniteInteger.valueOfStrict(15);
-            FiniteInteger b = FiniteInteger.valueOfStrict(15);
-            assertSame(a, b);
-        }
-        
-        @Test
         public void valueTestLong() {
-            assertEquals(-18, FiniteInteger.valueOfStrict(-18).longValue());
+            assertEquals(-18, ArbitraryInteger.valueOfStrict(-18).longValue());
         }
         
         @Test
         public void valueTestBI() {
-            assertEquals(BigInteger.ONE, FiniteInteger.valueOfStrict(BigInteger.ONE).toBigInteger());
+            assertEquals(BigInteger.ONE, ArbitraryInteger.valueOfStrict(BigInteger.ONE).toBigInteger());
+        }
+        
+        @Test
+        public void testNarrowLong() {
+            assertInstanceOf(ArbitraryInteger.class, ArbitraryInteger.valueOfStrict(-7));
+        }
+        
+        @Test
+        public void testNarrowBI() {
+            assertInstanceOf(ArbitraryInteger.class, ArbitraryInteger.valueOfStrict(BigInteger.TWO));
         }
     }
     
@@ -92,30 +82,33 @@ public final class FiniteIntegerTests {
     public final class ValueOfTests {
         @Test
         public void testTooBigInputLong() {
-            assertInstanceOf(ArbitraryInteger.class, FiniteInteger.valueOf(Long.MIN_VALUE));
+            assertInstanceOf(ArbitraryInteger.class, ArbitraryInteger.valueOf(Long.MIN_VALUE));
         }
         
         @Test
         public void testTooBigInputBI() {
-            AlgebraInteger test = FiniteInteger.valueOf(BigMathObjectUtils.LONG_MIN_BI.pow(2));
+            AlgebraInteger test = ArbitraryInteger.valueOf(BigMathObjectUtils.LONG_MIN_BI.pow(2));
             assertInstanceOf(ArbitraryInteger.class, test);
         }
         
         @Test
-        public void testCacheIdentityLong() {
-            AlgebraInteger a = FiniteInteger.valueOf(15);
-            AlgebraInteger b = FiniteInteger.valueOf(15);
-            assertSame(a, b);
-        }
-        
-        @Test
         public void valueTestLong() {
-            assertEquals(-18, FiniteInteger.valueOf(-18).longValue());
+            assertEquals(-18, ArbitraryInteger.valueOf(-18).longValue());
         }
         
         @Test
         public void valueTestBI() {
-            assertEquals(BigInteger.ONE, FiniteInteger.valueOf(BigInteger.ONE).toBigInteger());
+            assertEquals(BigInteger.ONE, ArbitraryInteger.valueOf(BigInteger.ONE).toBigInteger());
+        }
+        
+        @Test
+        public void testNarrowLong() {
+            assertInstanceOf(FiniteInteger.class, ArbitraryInteger.valueOf(-7));
+        }
+        
+        @Test
+        public void testNarrowBI() {
+            assertInstanceOf(FiniteInteger.class, ArbitraryInteger.valueOf(BigInteger.TWO));
         }
     }
     
@@ -125,12 +118,12 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testThisness() {
-            assertSame(LONG_TEST_FI, LONG_TEST_FI.roundQ());
+            assertEquals(LONG_TEST_AI, LONG_TEST_AI.roundQ());
         }
         
         @Test
         public void testNoTrimSplit() {
-            assertSame(LONG_TEST_FI, LONG_TEST_FI.roundQ(LONG_LEN, null));
+            assertEquals(LONG_TEST_AI, LONG_TEST_AI.roundQ(LONG_LEN, null));
         }
         
         private static long trimExp(
@@ -146,21 +139,21 @@ public final class FiniteIntegerTests {
         @Test
         public void testTrimSplit() {
             assertEquals(
-                    FiniteInteger.valueOfStrict(trimExp(LONG_TEST_LONG, 5)),
-                    LONG_TEST_FI.roundQ(5, RoundingMode.DOWN)
+                    ArbitraryInteger.valueOfStrict(trimExp(LONG_TEST_LONG, 5)),
+                    LONG_TEST_AI.roundQ(5, RoundingMode.DOWN)
             );
         }
         
         @Test
         public void testNoTrimMC() {
-            assertSame(LONG_TEST_FI, LONG_TEST_FI.roundQ(null));
+            assertEquals(LONG_TEST_AI, LONG_TEST_AI.roundQ(null));
         }
         
         @Test
         public void testTrimMC() {
             assertEquals(
-                    FiniteInteger.valueOfStrict(trimExp(LONG_TEST_LONG, 7)),
-                    LONG_TEST_FI.roundQ(new MathContext(7, RoundingMode.DOWN))
+                    ArbitraryInteger.valueOfStrict(trimExp(LONG_TEST_LONG, 7)),
+                    LONG_TEST_AI.roundQ(new MathContext(7, RoundingMode.DOWN))
             );
         }
     }
@@ -169,12 +162,12 @@ public final class FiniteIntegerTests {
     public final class RoundZTests {
         @Test
         public void testThisNoArg() {
-            assertSame(LONG_TEST_FI, LONG_TEST_FI.roundZ());
+            assertEquals(LONG_TEST_AI, LONG_TEST_AI.roundZ());
         }
         
         @Test
         public void testThisArg() {
-            assertSame(LONG_TEST_FI, LONG_TEST_FI.roundZ(RoundingMode.UP));
+            assertEquals(LONG_TEST_AI, LONG_TEST_AI.roundZ(RoundingMode.UP));
         }
     }
     
@@ -186,12 +179,12 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testNoArg() {
-            assertEquals(ANS_BD, LONG_TEST_FI.toBigDecimal());
+            assertEquals(ANS_BD, LONG_TEST_AI.toBigDecimal());
         }
         
         @Test
         public void testNoTrimSplit() {
-            assertEquals(ANS_BD, LONG_TEST_FI.toBigDecimal(LONG_LEN, null));
+            assertEquals(ANS_BD, LONG_TEST_AI.toBigDecimal(LONG_LEN, null));
         }
         
         private static long trimExp(
@@ -206,20 +199,20 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testTrimSplit() {
-            BigDecimal exp = BigDecimal.valueOf(trimExp(LONG_TEST_FI.longValue(), 5));
-            BigDecimal act = LONG_TEST_FI.toBigDecimal(5, RoundingMode.DOWN);
+            BigDecimal exp = BigDecimal.valueOf(trimExp(LONG_TEST_AI.longValue(), 5));
+            BigDecimal act = LONG_TEST_AI.toBigDecimal(5, RoundingMode.DOWN);
             assertTrue(exp.compareTo(act) == 0);
         }
         
         @Test
         public void testNoTrimMC() {
-            assertEquals(ANS_BD, LONG_TEST_FI.toBigDecimal(new MathContext(LONG_LEN, RoundingMode.HALF_EVEN)));
+            assertEquals(ANS_BD, LONG_TEST_AI.toBigDecimal(new MathContext(LONG_LEN, RoundingMode.HALF_EVEN)));
         }
         
         @Test
         public void testTrimMC() {
-            BigDecimal exp = BigDecimal.valueOf(trimExp(LONG_TEST_FI.longValue(), 7));
-            BigDecimal act = LONG_TEST_FI.toBigDecimal(new MathContext(7, RoundingMode.DOWN));
+            BigDecimal exp = BigDecimal.valueOf(trimExp(LONG_TEST_AI.longValue(), 7));
+            BigDecimal act = LONG_TEST_AI.toBigDecimal(new MathContext(7, RoundingMode.DOWN));
             assertTrue(exp.compareTo(act) == 0);
         }
     }
@@ -228,12 +221,12 @@ public final class FiniteIntegerTests {
     public final class ToBigIntegerTests {
         @Test
         public void testThisNoArg() {
-            assertSame(LONG_TEST_BI, LONG_TEST_FI.toBigInteger());
+            assertEquals(LONG_TEST_BI, LONG_TEST_AI.toBigInteger());
         }
         
         @Test
         public void testThisArg() {
-            assertSame(LONG_TEST_BI, LONG_TEST_FI.toBigInteger(null));
+            assertEquals(LONG_TEST_BI, LONG_TEST_AI.toBigInteger(null));
         }
     }
     
@@ -242,14 +235,14 @@ public final class FiniteIntegerTests {
         @Test
         public void testWORadix() {
             String val = "2375423485912345713";
-            assertEquals(val, FiniteInteger.valueOfStrict(Long.parseLong(val)).toString());
+            assertEquals(val, ArbitraryInteger.valueOfStrict(Long.parseLong(val)).toString());
         }
         
         @Test
         public void testWRadix() {
             String val = "3236E5FE5674DC";
             assertEquals(val.toLowerCase(),
-                    FiniteInteger.valueOfStrict(Long.parseLong(val, 16)).toString(16));
+                    ArbitraryInteger.valueOfStrict(Long.parseLong(val, 16)).toString(16));
         }
         
         @Test
@@ -257,7 +250,7 @@ public final class FiniteIntegerTests {
             String val = "3236E5FE5674DC";
             assertEquals(
                     val.toLowerCase(),
-                    FiniteInteger.valueOfStrict(Long.parseLong(val, 16))
+                    ArbitraryInteger.valueOfStrict(Long.parseLong(val, 16))
                             .toString(16, "sdga", "zuieroew", "")
             );
         }
@@ -270,22 +263,22 @@ public final class FiniteIntegerTests {
     public final class PrimitiveValueTests {
         @Test
         public void testIntExc() {
-            assertThrows(DisallowedNarrowingException.class, LONG_TEST_FI::intValueExact);
+            assertThrows(DisallowedNarrowingException.class, LONG_TEST_AI::intValueExact);
         }
         
         @Test
         public void testShortExc() {
-            assertThrows(DisallowedNarrowingException.class, LONG_TEST_FI::shortValueExact);
+            assertThrows(DisallowedNarrowingException.class, LONG_TEST_AI::shortValueExact);
         }
         
         @Test
         public void testCharExc() {
-            assertThrows(DisallowedNarrowingException.class, LONG_TEST_FI::charValueExact);
+            assertThrows(DisallowedNarrowingException.class, LONG_TEST_AI::charValueExact);
         }
         
         @Test
         public void testByteExc() {
-            assertThrows(DisallowedNarrowingException.class, LONG_TEST_FI::byteValueExact);
+            assertThrows(DisallowedNarrowingException.class, LONG_TEST_AI::byteValueExact);
         }
     }
     
@@ -298,7 +291,7 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testNot0() {
-            assertTrue(ONE_TO_SIXTEEN.stream().noneMatch(FiniteInteger::isZero));
+            assertTrue(ONE_TO_SIXTEEN.stream().noneMatch(ArbitraryInteger::isZero));
         }
         
         @Test
@@ -308,22 +301,22 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testNot1() {
-            assertTrue(NEG_ONE_TO_SIXTEEN.stream().noneMatch(FiniteInteger::isOne));
+            assertTrue(NEG_ONE_TO_SIXTEEN.stream().noneMatch(ArbitraryInteger::isOne));
         }
         
         @Test
         public void testNegIsNeg() {
-            assertTrue(NEG_ONE_TO_SIXTEEN.stream().allMatch(FiniteInteger::isNegative));
+            assertTrue(NEG_ONE_TO_SIXTEEN.stream().allMatch(ArbitraryInteger::isNegative));
         }
         
         @Test
         public void testNotNeg() {
-            assertTrue(ONE_TO_SIXTEEN.stream().noneMatch(FiniteInteger::isNegative));
+            assertTrue(ONE_TO_SIXTEEN.stream().noneMatch(ArbitraryInteger::isNegative));
         }
         
         @Test
         public void testWhole() {
-            assertTrue(ALL_FI.stream().allMatch(FiniteInteger::isWhole));
+            assertTrue(ALL_AI.stream().allMatch(ArbitraryInteger::isWhole));
         }
     }
     
@@ -332,19 +325,19 @@ public final class FiniteIntegerTests {
         @Test
         public void testPositive() {
             assertTrue(ONE_TO_SIXTEEN.stream()
-                    .map(FiniteInteger::signum)
+                    .map(ArbitraryInteger::signum)
                     .allMatch(Signum.POSITIVE::equals));
         }
         
         @Test
         public void testZero() {
-            assertSame(Signum.ZERO, ZERO.signum());
+            assertEquals(Signum.ZERO, ZERO.signum());
         }
         
         @Test
         public void testNegative() {
             assertTrue(NEG_ONE_TO_SIXTEEN.stream()
-                    .map(FiniteInteger::signum)
+                    .map(ArbitraryInteger::signum)
                     .allMatch(Signum.NEGATIVE::equals));
         }
         
@@ -352,30 +345,30 @@ public final class FiniteIntegerTests {
         public void testPositiveSupOne() {
             assertTrue(ONE_TO_SIXTEEN.subList(1, ONE_TO_SIXTEEN.size())
                     .stream()
-                    .map(FiniteInteger::sigmagnum)
+                    .map(ArbitraryInteger::sigmagnum)
                     .allMatch(Sigmagnum.POSITIVE_SUP_ONE::equals));
         }
         
         @Test
         public void testPositiveOne() {
-            assertSame(Sigmagnum.POSITIVE_ONE, ONE_TO_SIXTEEN.getFirst().sigmagnum());
+            assertEquals(Sigmagnum.POSITIVE_ONE, ONE_TO_SIXTEEN.getFirst().sigmagnum());
         }
         
         @Test
         public void testZeroSigMagNum() {
-            assertSame(Sigmagnum.ZERO, ZERO.sigmagnum());
+            assertEquals(Sigmagnum.ZERO, ZERO.sigmagnum());
         }
         
         @Test
         public void testNegativeOne() {
-            assertSame(Sigmagnum.NEGATIVE_ONE, NEG_ONE_TO_SIXTEEN.getFirst().sigmagnum());
+            assertEquals(Sigmagnum.NEGATIVE_ONE, NEG_ONE_TO_SIXTEEN.getFirst().sigmagnum());
         }
         
         @Test
         public void testNegativeSubMinusOne() {
             assertTrue(NEG_ONE_TO_SIXTEEN.subList(1, NEG_ONE_TO_SIXTEEN.size())
                     .stream()
-                    .map(FiniteInteger::sigmagnum)
+                    .map(ArbitraryInteger::sigmagnum)
                     .allMatch(Sigmagnum.NEGATIVE_SUB_MINUS_ONE::equals));
         }
     }
@@ -385,21 +378,21 @@ public final class FiniteIntegerTests {
         @Test
         public void negationTest() {
             assertArrayEquals(ONE_TO_SIXTEEN.toArray(), NEG_ONE_TO_SIXTEEN.stream()
-                    .map(FiniteInteger::negated)
+                    .map(ArbitraryInteger::negated)
                     .toArray());
         }
         
         @Test
         public void posAbsTest() {
             assertArrayEquals(ONE_TO_SIXTEEN.toArray(), NEG_ONE_TO_SIXTEEN.stream()
-                    .map(FiniteInteger::magnitude)
+                    .map(ArbitraryInteger::magnitude)
                     .toArray());
         }
         
         @Test
         public void negAbsTest() {
             assertTrue(ONE_TO_SIXTEEN.stream()
-                    .map(FiniteInteger::magnitude)
+                    .map(ArbitraryInteger::magnitude)
                     .allMatch(i -> ONE_TO_SIXTEEN.get(i.intValue() - 1) == i));
         }
     }
@@ -408,42 +401,42 @@ public final class FiniteIntegerTests {
     public final class MaxTests {
         @Test
         public void testAI() {
-            assertSame(ONE_TO_SIXTEEN.get(5), ONE_TO_SIXTEEN.get(2).max(ONE_TO_SIXTEEN.get(5)));
+            assertEquals(ONE_TO_SIXTEEN.get(5), ONE_TO_SIXTEEN.get(2).max(ONE_TO_SIXTEEN.get(5)));
         }
         
         @Test
         public void testBI1() {
-            assertSame(ONE_TO_SIXTEEN.get(14), ONE_TO_SIXTEEN.get(14).max(BigInteger.TWO));
+            assertEquals(ONE_TO_SIXTEEN.get(14), ONE_TO_SIXTEEN.get(14).max(BigInteger.TWO));
         }
         
         @Test
         public void testBI2() {
-            assertSame(ONE_TO_SIXTEEN.get(15), ONE_TO_SIXTEEN.get(5).max(BigInteger.valueOf(16)));
+            assertEquals(ONE_TO_SIXTEEN.get(15), ONE_TO_SIXTEEN.get(5).max(BigInteger.valueOf(16)));
         }
         
         @Test
         public void testL1() {
-            assertSame(NEG_ONE_TO_SIXTEEN.get(12), NEG_ONE_TO_SIXTEEN.get(12).max(-65233565));
+            assertEquals(NEG_ONE_TO_SIXTEEN.get(12), NEG_ONE_TO_SIXTEEN.get(12).max(-65233565));
         }
         
         @Test
         public void testL2() {
-            assertSame(NEG_ONE_TO_SIXTEEN.get(2), NEG_ONE_TO_SIXTEEN.get(12).max(-3));
+            assertEquals(NEG_ONE_TO_SIXTEEN.get(2), NEG_ONE_TO_SIXTEEN.get(12).max(-3));
         }
         
         @Test
         public void testR1() {
-            assertSame(ONE_TO_SIXTEEN.get(14), ONE_TO_SIXTEEN.get(14).max((Rational) NEG_ONE_TO_SIXTEEN.getLast()));
+            assertEquals(ONE_TO_SIXTEEN.get(14), ONE_TO_SIXTEEN.get(14).max((Rational) NEG_ONE_TO_SIXTEEN.getLast()));
         }
         
         @Test
         public void testR2() {
-            assertSame(ONE_TO_SIXTEEN.get(15), ONE_TO_SIXTEEN.get(5).max((Rational) ONE_TO_SIXTEEN.getLast()));
+            assertEquals(ONE_TO_SIXTEEN.get(15), ONE_TO_SIXTEEN.get(5).max((Rational) ONE_TO_SIXTEEN.getLast()));
         }
         
         @Test
         public void testAN1() {
-            assertSame(
+            assertEquals(
                     NEG_ONE_TO_SIXTEEN.get(12),
                     NEG_ONE_TO_SIXTEEN.get(12).max((AlgebraNumber) NEG_ONE_TO_SIXTEEN.getLast())
             );
@@ -451,7 +444,7 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testAN2() {
-            assertSame(NEG_ONE_TO_SIXTEEN.get(2), NEG_ONE_TO_SIXTEEN.get(12).max(AlgebraNumber.valueOf(-3)));
+            assertEquals(NEG_ONE_TO_SIXTEEN.get(2), NEG_ONE_TO_SIXTEEN.get(12).max(AlgebraNumber.valueOf(-3)));
         }
         
         @Test
@@ -469,37 +462,37 @@ public final class FiniteIntegerTests {
     public final class MinTests {
         @Test
         public void testAI() {
-            assertSame(ONE_TO_SIXTEEN.get(2), ONE_TO_SIXTEEN.get(5).min(ONE_TO_SIXTEEN.get(2)));
+            assertEquals(ONE_TO_SIXTEEN.get(2), ONE_TO_SIXTEEN.get(5).min(ONE_TO_SIXTEEN.get(2)));
         }
         
         @Test
         public void testBI1() {
-            assertSame(ONE_TO_SIXTEEN.get(1), ONE_TO_SIXTEEN.get(14).min(BigInteger.TWO));
+            assertEquals(ONE_TO_SIXTEEN.get(1), ONE_TO_SIXTEEN.get(14).min(BigInteger.TWO));
         }
         
         @Test
         public void testBI2() {
-            assertSame(ONE_TO_SIXTEEN.get(5), ONE_TO_SIXTEEN.get(5).min(BigInteger.valueOf(19)));
+            assertEquals(ONE_TO_SIXTEEN.get(5), ONE_TO_SIXTEEN.get(5).min(BigInteger.valueOf(19)));
         }
         
         @Test
         public void testL1() {
-            assertSame(NEG_ONE_TO_SIXTEEN.get(12), NEG_ONE_TO_SIXTEEN.get(12).min(65233565));
+            assertEquals(NEG_ONE_TO_SIXTEEN.get(12), NEG_ONE_TO_SIXTEEN.get(12).min(65233565));
         }
         
         @Test
         public void testL2() {
-            assertSame(NEG_ONE_TO_SIXTEEN.get(2), ONE_TO_SIXTEEN.get(12).min(-3));
+            assertEquals(NEG_ONE_TO_SIXTEEN.get(2), ONE_TO_SIXTEEN.get(12).min(-3));
         }
         
         @Test
         public void testR1() {
-            assertSame(ONE_TO_SIXTEEN.get(14), ONE_TO_SIXTEEN.get(14).min((Rational) ONE_TO_SIXTEEN.getLast()));
+            assertEquals(ONE_TO_SIXTEEN.get(14), ONE_TO_SIXTEEN.get(14).min((Rational) ONE_TO_SIXTEEN.getLast()));
         }
         
         @Test
         public void testR2() {
-            assertSame(
+            assertEquals(
                     NEG_ONE_TO_SIXTEEN.get(15),
                     ONE_TO_SIXTEEN.get(5).min((Rational) NEG_ONE_TO_SIXTEEN.getLast())
             );
@@ -507,7 +500,7 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testAN1() {
-            assertSame(
+            assertEquals(
                     NEG_ONE_TO_SIXTEEN.get(12),
                     NEG_ONE_TO_SIXTEEN.get(12).min((AlgebraNumber) ONE_TO_SIXTEEN.getLast())
             );
@@ -515,7 +508,7 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testAN2() {
-            assertSame(NEG_ONE_TO_SIXTEEN.get(2), NEG_ONE_TO_SIXTEEN.get(2).min(AlgebraNumber.valueOf(45)));
+            assertEquals(NEG_ONE_TO_SIXTEEN.get(2), NEG_ONE_TO_SIXTEEN.get(2).min(AlgebraNumber.valueOf(45)));
         }
         
         @Test
@@ -535,21 +528,21 @@ public final class FiniteIntegerTests {
         
         private static final long B = 1040;
         
-        private static final FiniteInteger ANS = FiniteInteger.valueOfStrict(20);
+        private static final ArbitraryInteger ANS = ArbitraryInteger.valueOfStrict(20);
         
         @Test
         public void testL() {
-            assertSame(ANS, FiniteInteger.valueOfStrict(A).gcf(B));
+            assertEquals(ANS, ArbitraryInteger.valueOfStrict(A).gcf(B));
         }
         
         @Test
         public void testBI() {
-            assertSame(ANS, FiniteInteger.valueOfStrict(A).gcf(BigInteger.valueOf(B)));
+            assertEquals(ANS, ArbitraryInteger.valueOfStrict(A).gcf(BigInteger.valueOf(B)));
         }
         
         @Test
         public void testAI() {
-            assertSame(ANS, FiniteInteger.valueOfStrict(A).gcf(FiniteInteger.valueOfStrict(-B)));
+            assertEquals(ANS, ArbitraryInteger.valueOfStrict(A).gcf(ArbitraryInteger.valueOfStrict(-B)));
         }
         
         @Test
@@ -578,21 +571,21 @@ public final class FiniteIntegerTests {
     
     @Nested
     public final class LCMTests {
-        private static final FiniteInteger ANS = FiniteInteger.valueOfStrict(30);
+        private static final ArbitraryInteger ANS = ArbitraryInteger.valueOfStrict(30);
         
         @Test
         public void testL() {
-            assertSame(ANS, ONE_TO_SIXTEEN.get(14).lcm(-10));
+            assertEquals(ANS, ONE_TO_SIXTEEN.get(14).lcm(-10));
         }
         
         @Test
         public void testBI() {
-            assertSame(ANS, ONE_TO_SIXTEEN.get(9).lcm(BigInteger.valueOf(-15)));
+            assertEquals(ANS, ONE_TO_SIXTEEN.get(9).lcm(BigInteger.valueOf(-15)));
         }
         
         @Test
         public void testAI() {
-            assertSame(ANS, ONE_TO_SIXTEEN.get(14).lcm(ONE_TO_SIXTEEN.get(9)));
+            assertEquals(ANS, ONE_TO_SIXTEEN.get(14).lcm(ONE_TO_SIXTEEN.get(9)));
         }
         
         @Test
@@ -706,11 +699,6 @@ public final class FiniteIntegerTests {
     @Nested
     public final class ComparisonTests {
         @Test
-        public void testCompareToFI() {
-            assertTrue(ZERO.compareTo(NEG_ONE_TO_SIXTEEN.getLast()) > 0);
-        }
-        
-        @Test
         public void testCompareToAI() {
             assertTrue(ZERO.compareTo(ArbitraryInteger.valueOfStrict(24564)) < 0);
         }
@@ -727,13 +715,12 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testCompare() {
-            assertSame(Signum.MINUS_ONE, ZERO.compare(ONE_TO_SIXTEEN.getFirst()));
+            assertEquals(Signum.MINUS_ONE, ZERO.compare(ONE_TO_SIXTEEN.getFirst()));
         }
         
         @Test
         public void testNull() {
             tryNull(
-                    (Consumer<FiniteInteger>) ZERO::compareTo,
                     (Consumer<AlgebraInteger>) ZERO::compareTo,
                     (Consumer<Rational>) ZERO::compareTo,
                     (Consumer<AlgebraNumber>) ZERO::compareTo,
@@ -761,7 +748,7 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testCompare() {
-            assertSame(Signum.MINUS_ONE, ZERO.compare(ONE_TO_SIXTEEN.getFirst()));
+            assertEquals(Signum.MINUS_ONE, ZERO.compare(ONE_TO_SIXTEEN.getFirst()));
         }
         
         @Test
@@ -778,12 +765,12 @@ public final class FiniteIntegerTests {
     public final class EqualsAndHCTests {
         @Test
         public void testEqualsAndHCContract() {
-            int size = ALL_FI.size();
+            int size = ALL_AI.size();
             
             for (int i = 0; i < size; i++) {
-                FiniteInteger testI = ALL_FI.get(i);
+                ArbitraryInteger testI = ALL_AI.get(i);
                 for (int j = 0; j <size; j++) {
-                    FiniteInteger testJ = ALL_FI.get(j);
+                    ArbitraryInteger testJ = ALL_AI.get(j);
                     assertFalse((i == j) ^ (testI.equals(testJ) && (testI.hashCode() == testJ.hashCode())) );
                 }
             }
@@ -791,7 +778,7 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testNull() {
-            assertTrue(ALL_FI.stream().noneMatch(i -> i.equals(null)));
+            assertTrue(ALL_AI.stream().noneMatch(i -> i.equals(null)));
         }
     }
     
@@ -801,21 +788,21 @@ public final class FiniteIntegerTests {
         public void testAddAI() {
             var expected = ONE_TO_SIXTEEN.get(2);
             var actual = ONE_TO_SIXTEEN.get(7).sum(NEG_ONE_TO_SIXTEEN.get(4));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testAddR() {
             var expected = NEG_ONE_TO_SIXTEEN.get(9);
             var actual = ONE_TO_SIXTEEN.get(2).sum((Rational) NEG_ONE_TO_SIXTEEN.get(12));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testAddAN() {
             var expected = ONE_TO_SIXTEEN.getLast();
             var actual = ONE_TO_SIXTEEN.get(11).sum((AlgebraNumber) ONE_TO_SIXTEEN.get(3));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -834,21 +821,21 @@ public final class FiniteIntegerTests {
         public void testDiffAI() {
             var expected = ONE_TO_SIXTEEN.get(2);
             var actual = ONE_TO_SIXTEEN.get(7).difference(ONE_TO_SIXTEEN.get(4));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testDiffR() {
             var expected = NEG_ONE_TO_SIXTEEN.get(9);
             var actual = ONE_TO_SIXTEEN.get(2).difference((Rational) ONE_TO_SIXTEEN.get(12));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testDiffAN() {
             var expected = ONE_TO_SIXTEEN.getLast();
             var actual = ONE_TO_SIXTEEN.get(11).difference((AlgebraNumber) NEG_ONE_TO_SIXTEEN.get(3));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -867,21 +854,21 @@ public final class FiniteIntegerTests {
         public void testProdAI() {
             var expected = NEG_ONE_TO_SIXTEEN.getLast();
             var actual = ONE_TO_SIXTEEN.get(7).product(NEG_ONE_TO_SIXTEEN.get(1));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testProdR() {
-            var expected = FiniteInteger.valueOfStrict(24);
+            var expected = ArbitraryInteger.valueOfStrict(24);
             var actual = NEG_ONE_TO_SIXTEEN.get(7).product((Rational) NEG_ONE_TO_SIXTEEN.get(2));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testProdAN() {
             var expected = ONE_TO_SIXTEEN.get(14);
             var actual = ONE_TO_SIXTEEN.get(4).product((AlgebraNumber) ONE_TO_SIXTEEN.get(2));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -897,34 +884,22 @@ public final class FiniteIntegerTests {
     @Nested
     public final class QuotientZTests {
         @Test
-        public void testQuotientZFI() {
-            var expected = NEG_ONE_TO_SIXTEEN.get(2);
-            var actual = ONE_TO_SIXTEEN.get(14).quotientZ(NEG_ONE_TO_SIXTEEN.get(4));
-            assertSame(expected, actual);
-        }
-        
-        @Test
-        public void testQuotientZDiv0FI() {
-            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().quotientZ(ZERO));
-        }
-        
-        @Test
         public void testQuotientZAI() {
             var expected = NEG_ONE_TO_SIXTEEN.get(3);
-            var actual = NEG_ONE_TO_SIXTEEN.getLast().quotientZ((AlgebraInteger) ONE_TO_SIXTEEN.get(3));
-            assertSame(expected, actual);
+            var actual = NEG_ONE_TO_SIXTEEN.getLast().quotientZ(ONE_TO_SIXTEEN.get(3));
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testQuotientZDiv0AI() {
-            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().quotientZ((AlgebraInteger) ZERO));
+            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().quotientZ(ZERO));
         }
         
         @Test
         public void testQuotientZR() {
             var expected = ONE_TO_SIXTEEN.get(6);
             var actual = NEG_ONE_TO_SIXTEEN.get(13).quotientZ((Rational) NEG_ONE_TO_SIXTEEN.get(1));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -935,8 +910,8 @@ public final class FiniteIntegerTests {
         @Test
         public void testQuotientZAN() {
             var expected = ONE_TO_SIXTEEN.getLast();
-            var actual = FiniteInteger.valueOfStrict(64).quotientZ((AlgebraNumber) ONE_TO_SIXTEEN.get(3));
-            assertSame(expected, actual);
+            var actual = ArbitraryInteger.valueOfStrict(64).quotientZ((AlgebraNumber) ONE_TO_SIXTEEN.get(3));
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -947,7 +922,6 @@ public final class FiniteIntegerTests {
         @Test
         public void testNull() {
             tryNull(
-                    (Consumer<FiniteInteger>) ZERO::quotientZ,
                     (Consumer<AlgebraInteger>) ZERO::quotientZ,
                     (Consumer<Rational>) ZERO::quotientZ,
                     (Consumer<AlgebraNumber>) ZERO::quotientZ
@@ -958,28 +932,16 @@ public final class FiniteIntegerTests {
     @Nested
     public final class QuotientZWithRemainderTests {
         @Test
-        public void testQuoRemainFI() {
-            var expected = new NumberRemainderPair<>(NEG_ONE_TO_SIXTEEN.get(1), ONE_TO_SIXTEEN.getFirst());
-            var actual = ONE_TO_SIXTEEN.get(14).quotientZWithRemainder(NEG_ONE_TO_SIXTEEN.get(6));
-            assertEquals(expected, actual);
-        }
-        
-        @Test
-        public void testQuoRemainDiv0FI() {
-            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().quotientZWithRemainder(ZERO));
-        }
-        
-        @Test
         public void testQuoRemainAI() {
             var expected = new NumberRemainderPair<>(ONE_TO_SIXTEEN.get(2), ONE_TO_SIXTEEN.get(1));
-            var actual = ONE_TO_SIXTEEN.get(10).quotientZWithRemainder((AlgebraInteger) ONE_TO_SIXTEEN.get(2));
+            var actual = ONE_TO_SIXTEEN.get(10).quotientZWithRemainder(ONE_TO_SIXTEEN.get(2));
             assertEquals(expected, actual);
         }
         
         @Test
         public void testQuoRemainDiv0AI() {
             assertThrows(ArithmeticException.class,
-                    () -> ONE_TO_SIXTEEN.getFirst().quotientZWithRemainder((AlgebraInteger) ZERO) );
+                    () -> ONE_TO_SIXTEEN.getFirst().quotientZWithRemainder(ZERO) );
         }
         
         @Test
@@ -1011,7 +973,6 @@ public final class FiniteIntegerTests {
         @Test
         public void testNull() {
             tryNull(
-                    (Consumer<FiniteInteger>) ZERO::quotientZWithRemainder,
                     (Consumer<AlgebraInteger>) ZERO::quotientZWithRemainder,
                     (Consumer<Rational>) ZERO::quotientZWithRemainder,
                     (Consumer<AlgebraNumber>) ZERO::quotientZWithRemainder
@@ -1025,14 +986,14 @@ public final class FiniteIntegerTests {
         public void testRoundingMode() {
             var expected = ONE_TO_SIXTEEN.get(3);
             var actual = ONE_TO_SIXTEEN.get(12).quotientRoundZ(ONE_TO_SIXTEEN.get(3), RoundingMode.UP);
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testNoRoundingMode() {
             var expected = ONE_TO_SIXTEEN.get(3);
             var actual = ONE_TO_SIXTEEN.get(14).quotientRoundZ(ONE_TO_SIXTEEN.get(3), null);
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -1050,34 +1011,22 @@ public final class FiniteIntegerTests {
     @Nested
     public final class RemainderTests {
         @Test
-        public void testRemainderFI() {
-            var expected = NEG_ONE_TO_SIXTEEN.getFirst();
-            var actual = NEG_ONE_TO_SIXTEEN.getLast().remainder(NEG_ONE_TO_SIXTEEN.get(4));
-            assertSame(expected, actual);
-        }
-        
-        @Test
-        public void testRemainderDiv0FI() {
-            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().remainder(ZERO));
-        }
-        
-        @Test
         public void testRemainderAI() {
             var expected = ONE_TO_SIXTEEN.get(3);
-            var actual = ONE_TO_SIXTEEN.get(10).remainder((AlgebraInteger) NEG_ONE_TO_SIXTEEN.get(6));
-            assertSame(expected, actual);
+            var actual = ONE_TO_SIXTEEN.get(10).remainder(NEG_ONE_TO_SIXTEEN.get(6));
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testRemainderDiv0AI() {
-            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().remainder((AlgebraInteger) ZERO));
+            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().remainder(ZERO));
         }
         
         @Test
         public void testRemainderR() {
             var expected = NEG_ONE_TO_SIXTEEN.get(6);
             var actual = NEG_ONE_TO_SIXTEEN.get(14).remainder((Rational) ONE_TO_SIXTEEN.get(7));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -1089,7 +1038,7 @@ public final class FiniteIntegerTests {
         public void testRemainderAN() {
             var expected = ONE_TO_SIXTEEN.getFirst();
             var actual = ONE_TO_SIXTEEN.getLast().remainder((AlgebraNumber) ONE_TO_SIXTEEN.get(4));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -1100,7 +1049,6 @@ public final class FiniteIntegerTests {
         @Test
         public void testNull() {
             tryNull(
-                    (Consumer<FiniteInteger>) ZERO::remainder,
                     (Consumer<AlgebraInteger>) ZERO::remainder,
                     (Consumer<Rational>) ZERO::remainder,
                     (Consumer<AlgebraNumber>) ZERO::remainder
@@ -1111,46 +1059,28 @@ public final class FiniteIntegerTests {
     @Nested
     public final class ModuloTests {
         @Test
-        public void testModuloFI() {
-            var expected = ONE_TO_SIXTEEN.get(3);
-            var actual = NEG_ONE_TO_SIXTEEN.getLast().modulo(ONE_TO_SIXTEEN.get(4));
-            assertSame(expected, actual);
-        }
-        
-        @Test
-        public void testModuloDiv0FI() {
-            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().modulo(ZERO));
-        }
-        
-        @Test
-        public void testModuloDivNegFI() {
-            assertThrows(ArithmeticException.class,
-                    () -> ONE_TO_SIXTEEN.getFirst().modulo(NEG_ONE_TO_SIXTEEN.getFirst()) );
-        }
-        
-        @Test
         public void testModulusAI() {
             var expected = ONE_TO_SIXTEEN.get(3);
-            var actual = ONE_TO_SIXTEEN.get(10).modulo((AlgebraInteger) ONE_TO_SIXTEEN.get(6));
-            assertSame(expected, actual);
+            var actual = ONE_TO_SIXTEEN.get(10).modulo(ONE_TO_SIXTEEN.get(6));
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testModuloDiv0AI() {
-            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().modulo((AlgebraInteger) ZERO));
+            assertThrows(ArithmeticException.class, () -> ONE_TO_SIXTEEN.getFirst().modulo(ZERO));
         }
         
         @Test
         public void testModuloDivNegAI() {
             assertThrows(ArithmeticException.class,
-                    () -> ONE_TO_SIXTEEN.getFirst().modulo((AlgebraInteger) NEG_ONE_TO_SIXTEEN.getFirst()) );
+                    () -> ONE_TO_SIXTEEN.getFirst().modulo(NEG_ONE_TO_SIXTEEN.getFirst()) );
         }
         
         @Test
         public void testQuotientR() {
             var expected = ONE_TO_SIXTEEN.getFirst();
             var actual = NEG_ONE_TO_SIXTEEN.get(14).modulo((Rational) ONE_TO_SIXTEEN.get(7));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -1168,7 +1098,7 @@ public final class FiniteIntegerTests {
         public void testQuotientAN() {
             var expected = ONE_TO_SIXTEEN.getFirst();
             var actual = ONE_TO_SIXTEEN.getLast().modulo((AlgebraNumber) ONE_TO_SIXTEEN.get(4));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -1185,7 +1115,6 @@ public final class FiniteIntegerTests {
         @Test
         public void testNull() {
             tryNull(
-                    (Consumer<FiniteInteger>) ZERO::modulo,
                     (Consumer<AlgebraInteger>) ZERO::modulo,
                     (Consumer<Rational>) ZERO::modulo,
                     (Consumer<AlgebraNumber>) ZERO::modulo
@@ -1199,7 +1128,7 @@ public final class FiniteIntegerTests {
         public void testModInv() {
             var expected = ONE_TO_SIXTEEN.get(6);
             var actual = ONE_TO_SIXTEEN.get(3).modInverse(ONE_TO_SIXTEEN.get(8));
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
@@ -1230,26 +1159,26 @@ public final class FiniteIntegerTests {
         public void testSquare() {
             var expected = ONE_TO_SIXTEEN.getLast();
             var actual = NEG_ONE_TO_SIXTEEN.get(3).squared();
-            assertSame(expected, actual);
+            assertEquals(expected, actual);
         }
         
         @Test
         public void testIntRaise() {
-            var expected = FiniteInteger.valueOfStrict(-125);
+            var expected = ArbitraryInteger.valueOfStrict(-125);
             var actual = NEG_ONE_TO_SIXTEEN.get(4).raised(3);
             assertEquals(expected, actual);
         }
         
         @Test
         public void testIntRaiseZ() {
-            var expected = FiniteInteger.valueOfStrict(625);
+            var expected = ArbitraryInteger.valueOfStrict(625);
             var actual = NEG_ONE_TO_SIXTEEN.get(4).raisedZ(4);
             assertEquals(expected, actual);
         }
         
         @Test
         public void testAIRaise() {
-            var expected = FiniteInteger.valueOfStrict(64);
+            var expected = ArbitraryInteger.valueOfStrict(64);
             var actual = ONE_TO_SIXTEEN.get(7).raised(ONE_TO_SIXTEEN.get(1));
             assertEquals(expected, actual);
         }
@@ -1258,7 +1187,7 @@ public final class FiniteIntegerTests {
         public void testAIRaiseZ() {
             var expected = ONE_TO_SIXTEEN.getFirst();
             var actual = NEG_ONE_TO_SIXTEEN.getFirst()
-                    .raisedZ(FiniteInteger.valueOf(
+                    .raisedZ(ArbitraryInteger.valueOfStrict(
                             BigMathObjectUtils.LONG_MIN_BI.multiply(BigInteger.valueOf(-2))) );
             assertEquals(expected, actual);
         }
@@ -1317,7 +1246,7 @@ public final class FiniteIntegerTests {
         @Test
         public void testAIRootWRemain() {
             var expected = new NumberRemainderPair<>(ONE_TO_SIXTEEN.get(3), ONE_TO_SIXTEEN.get(3));
-            var actual = FiniteInteger.valueOfStrict(68).rootZWithRemainder(ONE_TO_SIXTEEN.get(2));
+            var actual = ArbitraryInteger.valueOfStrict(68).rootZWithRemainder(ONE_TO_SIXTEEN.get(2));
             assertEquals(expected, actual);
         }
         
@@ -1365,14 +1294,14 @@ public final class FiniteIntegerTests {
         @Test
         public void testIntRootWRemain() {
             var expected = NEG_ONE_TO_SIXTEEN.get(3);
-            var actual = FiniteInteger.valueOfStrict(-28).rootRoundZ(3, RoundingMode.FLOOR);
+            var actual = ArbitraryInteger.valueOfStrict(-28).rootRoundZ(3, RoundingMode.FLOOR);
             assertEquals(expected, actual);
         }
         
         @Test
         public void testAIRootWRemain() {
             var expected = ONE_TO_SIXTEEN.getFirst();
-            var actual = FiniteInteger.valueOfStrict(68).rootRoundZ(-5, RoundingMode.CEILING);
+            var actual = ArbitraryInteger.valueOfStrict(68).rootRoundZ(-5, RoundingMode.CEILING);
             assertEquals(expected, actual);
         }
         
@@ -1402,11 +1331,11 @@ public final class FiniteIntegerTests {
         
         @Test
         public void testDefaultRound() {
-            assertTrue(ALL_FI.stream().allMatch(RootRoundTests::testDefault));
+            assertTrue(ALL_AI.stream().allMatch(RootRoundTests::testDefault));
         }
         
         private static boolean testDefault(
-                FiniteInteger input
+                ArbitraryInteger input
         ) {
             return switch (input.modulo(ONE_TO_SIXTEEN.get(3)).intValue()) {
                 case 0, 1 -> input.rootRoundZ(ONE_TO_SIXTEEN.get(2), null)
@@ -1434,9 +1363,9 @@ public final class FiniteIntegerTests {
                     ONE_TO_SIXTEEN.get(5),
                     ONE_TO_SIXTEEN.get(7),
                     ONE_TO_SIXTEEN.get(11),
-                    FiniteInteger.valueOfStrict(24)
+                    ArbitraryInteger.valueOfStrict(24)
             );
-            var actual = FiniteInteger.valueOfStrict(-24).factors();
+            var actual = ArbitraryInteger.valueOfStrict(-24).factors();
             assertEquals(expected, actual);
         }
         
@@ -1448,7 +1377,7 @@ public final class FiniteIntegerTests {
                     ONE_TO_SIXTEEN.get(4),
                     ONE_TO_SIXTEEN.get(6)
             );
-            var actual = FiniteInteger.valueOfStrict(210).primeFactorization();
+            var actual = ArbitraryInteger.valueOfStrict(210).primeFactorization();
             assertEquals(expected, actual);
         }
         
@@ -1456,7 +1385,7 @@ public final class FiniteIntegerTests {
         @Test
         public void testNegPrimeFactorization() {
             var expected = List.of();
-            var actual = FiniteInteger.valueOfStrict(-349875623).primeFactorization();
+            var actual = ArbitraryInteger.valueOfStrict(-349875623).primeFactorization();
             assertEquals(expected, actual);
         }
     }

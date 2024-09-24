@@ -20,7 +20,9 @@ import org.checkerframework.dataflow.qual.*;
  * <p>A parameter for a factory; a mutable class built around {@link BigInteger}, though which also tracks
  * a {@code long} primitive value if the value can in fact be represented as a long.</p>
  *
- * <p>Throws: {@link NullPointerException} &ndash; on any {@code null} input</p>
+ * <p>Throws:&ensp;{@link NullPointerException} &ndash; on any {@code null} input</p>
+ *
+ * @author  Corinne Buxton
  */
 public final class IntValuedParameter
         implements ComparableSwitchSignum<IntValuedParameter>,
@@ -66,12 +68,18 @@ public final class IntValuedParameter
         reset(value);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isZero() {
         return BigMathObjectUtils.isZero(value);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isOne() {
@@ -89,6 +97,9 @@ public final class IntValuedParameter
         return value.signum() == -1;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equiv(
             Parameter<?, AlgebraNumber, BigInteger> that
@@ -96,6 +107,9 @@ public final class IntValuedParameter
         return value.equals(that.value());
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int compareTo(
@@ -104,6 +118,9 @@ public final class IntValuedParameter
         return value.compareTo(o.value);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean equals(
@@ -112,18 +129,27 @@ public final class IntValuedParameter
         return (obj instanceof IntValuedParameter objIVP) && value.equals(objIVP.value);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public int hashCode() {
         return ~value.hashCode();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String toString() {
         return toString(10);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String toString(
@@ -134,11 +160,11 @@ public final class IntValuedParameter
     
     /**
      * Determines if the value of this Parameter can be represented by a primitive {@code long},
-     * and thus that {@link #valPrim} is safe to call, if that is not yet known; or,
+     * and thus that {@link #primValue} is safe to call, if that is not yet known; or,
      * or the known value to that question if already determined.
      *
      * @return  {@code true} if this value can be represented as a primitive {@code long}
-     *          (and therefore {@link #valPrim()} is safe to call)
+     *          (and therefore {@link #primValue()} is safe to call)
      */
     @Deterministic
     public boolean isPrim() {
@@ -185,7 +211,7 @@ public final class IntValuedParameter
     
     /**
      * Completely resets this Parameter, as if overwriting it with
-     * {@link #Parameter(BigInteger) new Parameter(}{@code value}{@link #Parameter(BigInteger) )}.
+     * {@link #IntValuedParameter(BigInteger) new Parameter(}{@code value}{@link #IntValuedParameter(BigInteger) )}.
      *
      * @param   value   the {@link BigInteger} whose value this will now represent
      */
@@ -199,7 +225,7 @@ public final class IntValuedParameter
     
     /**
      * Completely resets this Parameter, as if overwriting it with
-     * {@link #Parameter(long) new Parameter(}{@code value}{@link #Parameter(long) )}.
+     * {@link #IntValuedParameter(long) new Parameter(}{@code value}{@link #IntValuedParameter(long) )}.
      *
      * @param   value   the {@code long} whose value this will now represent
      */
@@ -214,12 +240,12 @@ public final class IntValuedParameter
     /**
      * <p>Measures the size of the value of this parameter, and compares it with the given size
      * per {@link NarrowTo#comp}, in effect being equivalent to {@code currentDepth}{@link NarrowTo#comp
-     * .comp(}{@link NarrowTo#getPrimNarrow(BigInteger) NarrowTo.getPrimNarrow(}{@link #valBI()}{@link
+     * .comp(}{@link NarrowTo#getPrimNarrow(BigInteger) NarrowTo.getPrimNarrow(}{@link #value()}{@link
      * NarrowTo#getPrimNarrow(BigInteger) )}{@link NarrowTo#comp )} but while also updating the internal logic
-     * regarding {@link #isPrim()} and {@link #valPrim()} in accordance with the measuring results.</p>
+     * regarding {@link #isPrim()} and {@link #primValue()} in accordance with the measuring results.</p>
      *
-     * <p>Is exactly equivalent to {@code currentDepth}{@link NarrowTo#getAndCompPrimNarrow(NumberFactory.Parameter)
-     * .getAndCompPrimNarrow(}{@code this}{@link NarrowTo#getAndCompPrimNarrow(NumberFactory.Parameter) )}.</p>
+     * <p>Is exactly equivalent to {@code currentDepth}{@link NarrowTo#getAndCompPrimNarrow(IntValuedParameter)
+     * .getAndCompPrimNarrow(}{@code this}{@link NarrowTo#getAndCompPrimNarrow(IntValuedParameter) )}.</p>
      *
      * @param   currentDepth    the current depth of this factory, which is then compared via
      *                          {@link NarrowTo#comp comp} (which uses logic in line with the standard
@@ -237,7 +263,7 @@ public final class IntValuedParameter
     }
     
     /**
-     * Negates the value of this parameter
+     * {@inheritDoc}
      */
     @Override
     public void negate() {
@@ -262,6 +288,6 @@ public final class IntValuedParameter
         assert value != null;
         return (isPrim() && (primValue != Long.MIN_VALUE))
                 ? CacheInteger.valueOf(primValue, value)
-                : new ArbitraryInteger(value);
+                : ArbitraryInteger.valueOfStrict(value);
     }
 }
