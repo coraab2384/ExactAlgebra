@@ -5,6 +5,8 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.numericalmethod.suanshu.Constant;
 import com.numericalmethod.suanshu.number.big.BigDecimalUtils;
@@ -334,7 +336,7 @@ public abstract class AbstractAlgebraNumber
      * @return  {@code this % modulus}, so long as {@code modulus > 0}
      *
      * @throws ArithmeticException  if {@code modulus <= 0}
-     * @throws ClassCastException   if {@code N} is not closed under {@link #remainder}
+     * @throws ClassCastException   if {@code N} is not closed under {@link #remainder} or {@link #sum}
      *
      * @param <N>   the currently-used type of this, {@code modulus}, and the result
      */
@@ -342,11 +344,12 @@ public abstract class AbstractAlgebraNumber
     protected final <N extends AlgebraNumber> N getModulo(
             N modulus
     ) {
-        if (isNegative() || modulus.isNegative()) {
+        if (modulus.isNegative()) {
             throw new ArithmeticException("Cannot do modulo with negative numbers!");
         }
         
-        return (N) remainder(modulus);
+        AlgebraNumber result = remainder(modulus);
+        return (N) (result.isNegative() ? result.sum(modulus) : result);
     }
     
     /**
@@ -600,7 +603,8 @@ public abstract class AbstractAlgebraNumber
             int index
     ) {
         AlgebraInteger floor = rootRoundZ(index, RoundingMode.DOWN);
-        return new NumberRemainderPair<>(this, floor, floor.raised(index));
+        AlgebraNumber reverseAns = floor.isZero() ? floor : floor.raised(index);
+        return new NumberRemainderPair<>(this, floor, reverseAns);
     }
     
     /**
@@ -617,7 +621,8 @@ public abstract class AbstractAlgebraNumber
             AlgebraInteger index
     ) {
         AlgebraInteger floor = rootRoundZ(index, RoundingMode.DOWN);
-        return new NumberRemainderPair<>(this, floor, floor.raised(index));
+        AlgebraNumber reverseAns = floor.isZero() ? floor : floor.raised(index);
+        return new NumberRemainderPair<>(this, floor, reverseAns);
     }
     
 //    @Override
@@ -678,7 +683,7 @@ public abstract class AbstractAlgebraNumber
             @Nullable RoundingMode roundingMode
     ) {
         // If negative with even index
-        if (isNegative() && index.isEven()) {
+        if (index.isEven() && isNegative()) {
             throw new ArithmeticException("Negative value with an even radical index!");
         }
         BigDecimal resBD = rootRound(index, getInitContextZ(roundingMode), null);
@@ -793,11 +798,16 @@ public abstract class AbstractAlgebraNumber
         int firstPrec = initContext.getPrecision();
         boolean isNegative = isNegative();
         BigDecimal thisBD = toBigDecimal(initContext);
-        BigDecimal resBD = BigDecimalUtils.pow(
-                isNegative ? thisBD.negate() : thisBD,
-                rootIndexToPower(index.toBigInteger(), initContext),
-                firstPrec
-        );
+        BigDecimal resBD;
+        if (isZero()) {
+            resBD = BigDecimal.ZERO;
+        } else {
+            resBD = BigDecimalUtils.pow(
+                    isNegative ? thisBD.negate() : thisBD,
+                    rootIndexToPower(index.toBigInteger(), initContext),
+                    firstPrec
+            );
+        }
         assert (rationalContext == null) || (rationalContext.getPrecision() <= firstPrec);
         return finalProcessForRoundedRealOp(isNegative ? resBD.negate() : resBD,
                 initContext, rationalContext);

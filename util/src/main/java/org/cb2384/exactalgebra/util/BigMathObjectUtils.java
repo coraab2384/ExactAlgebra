@@ -183,7 +183,7 @@ public final class BigMathObjectUtils {
             BigInteger dividend,
             BigInteger divisor
     ) {
-        return isZero( dividend.remainder(divisor) );
+        return !isZero(divisor) && isZero( dividend.remainder(divisor) );
     }
     
     /**

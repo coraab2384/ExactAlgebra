@@ -1,7 +1,7 @@
 package org.cb2384.exactalgebra.objects.internalaccess;
 
 import java.io.ObjectStreamException;
-import java.io.Serial;
+import java.io.Serial;´0
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.IntStream;

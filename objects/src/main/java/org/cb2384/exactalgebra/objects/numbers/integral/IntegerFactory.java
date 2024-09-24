@@ -164,7 +164,7 @@ public sealed abstract class IntegerFactory<N extends AlgebraNumber>
     /**
      * Actual implementation of parts that aren't meant to be inherited.
      */
-    private static final class IntegerFabricator
+    static final class IntegerFabricator
             extends IntegerFactory<AlgebraInteger> {
         
         /**

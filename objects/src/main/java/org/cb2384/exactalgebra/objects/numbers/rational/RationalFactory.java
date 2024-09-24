@@ -431,7 +431,7 @@ public sealed abstract class RationalFactory<N extends AlgebraNumber>
     /**
      * Actual implementation of parts that aren't meant to be inherited.
      */
-    private static final class RationalFabricator
+    static final class RationalFabricator
             extends RationalFactory<Rational> {
         
         /**

@@ -8,7 +8,6 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
@@ -16,6 +15,7 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.cb2384.exactalgebra.objects.exceptions.DisallowedNarrowingException;
+import org.cb2384.exactalgebra.objects.internalaccess.CacheInteger;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.rational.AbstractRational;
 import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
@@ -31,6 +31,7 @@ import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 import org.checkerframework.checker.index.qual.*;
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 /**
@@ -63,7 +64,7 @@ public abstract class AbstractAlgebraInteger
     @Override
     @Pure
     public final AlgebraInteger denominatorAI() {
-        return AlgebraInteger.super.denominatorAI();
+        return CacheInteger.CACHE.getLast().getFirst();
     }
     
     /**
@@ -100,6 +101,38 @@ public abstract class AbstractAlgebraInteger
     @SideEffectFree
     public final BigInteger wholeBI() {
         return toBigInteger();
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Pure
+    public @This AlgebraInteger roundQ() {
+        return this;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    public AlgebraInteger roundQ(
+            @Nullable Integer precision,
+            @Nullable RoundingMode roundingMode
+    ) {
+        return AlgebraInteger.super.roundQ(precision, roundingMode);
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SideEffectFree
+    public AlgebraInteger roundQ(
+            @Nullable MathContext mathContext
+    ) {
+        return AlgebraInteger.super.roundQ(mathContext);
     }
     
     /**
@@ -154,6 +187,22 @@ public abstract class AbstractAlgebraInteger
         return AlgebraInteger.super.toBigDecimal(mathContext);
     }
     
+    @SideEffectFree
+    static BigDecimal buildBigDecimal(
+            AlgebraInteger receiver,
+            MathContext mathContext
+    ) {
+        return receiver.toBigDecimal().round(mathContext);
+    }
+    
+    @SideEffectFree
+    static MathContext buildContext(
+            @Nullable Integer precision,
+            @Nullable RoundingMode roundingMode
+    ) {
+        return AbstractAlgebraInteger.getContextFrom(precision, roundingMode);
+    }
+    
     /**
      * {@inheritDoc}
      */
@@ -170,11 +219,36 @@ public abstract class AbstractAlgebraInteger
      *
      * @implNote    This skeletal implementation simply calls {@link #toBigInteger()}{@link
      *              BigInteger#toString(int) .toString(}{@code radix}{@link BigInteger#toString(int) )}
+     *
+     * @throws NumberFormatException    if {@code radix < }{@link Character#MIN_RADIX}
+     *                                  or {@code radix > }{@link Character#MAX_RADIX}
      */
     @Override
     @SideEffectFree
-    public String toString(int radix) {
-        return toBigInteger().toString(radix);
+    public String toString(
+            @IntRange(from = Character.MIN_RADIX, to = Character.MAX_RADIX) int radix
+    ) {
+        if ((Character.MIN_RADIX <= radix) && (radix <= Character.MAX_RADIX)) {
+            return toBigInteger().toString(radix);
+        }
+        throw new NumberFormatException("radix " + radix + "is not an allowed radix!");
+    }
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote    This skeletal implementation simply calls {@link #toString(int) toString(}{@code
+     *              (radix != null) ? radix : 10}{@link #toString(int) )}, since all AlgebraIntegers are whole.
+     *
+     * @throws NumberFormatException    if {@code radix < }{@link Character#MIN_RADIX}
+     *                                  or {@code radix > }{@link Character#MAX_RADIX}
+     */
+    @Override
+    @SideEffectFree
+    public String asMixedNumber(
+            @Nullable Integer radix
+    ) {
+        return toString((radix != null) ? radix : 10);
     }
     
     /**
@@ -648,6 +722,21 @@ public abstract class AbstractAlgebraInteger
     /**
      * {@inheritDoc}
      *
+     * @implNote    The default implementation simply calls {@link #toBigInteger()}{@link
+     *              BigInteger#equals(Object) .equals(}{@code that}{@link
+     *              AlgebraInteger#toBigInteger() .toBigInteger()}{@link BigInteger#equals(Object) )}.
+     */
+    @Override
+    @Pure
+    public boolean equiv(
+            AlgebraInteger that
+    ) {
+        return toBigInteger().equals(that.toBigInteger());
+    }
+    
+    /**
+     * {@inheritDoc}
+     *
      * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
      */
     @Override
@@ -769,7 +858,8 @@ public abstract class AbstractAlgebraInteger
      *
      * @implNote    This skeletal implementation relies on {@link AlgebraInteger#toBigInteger()}.
      *
-     * @throws ArithmeticException  if {@code divisor == 0}
+     * @throws ArithmeticException  if {@code divisor <= 0} or if there is no modular inverse
+     *                              (which would happen if the gcf of this and {@code modulus} is not 1)
      */
     @Override
     @SideEffectFree
@@ -852,7 +942,8 @@ public abstract class AbstractAlgebraInteger
             int index
     ) {
         AlgebraInteger floor = rootRoundZ(index, RoundingMode.DOWN);
-        return new NumberRemainderPair<>(this, floor, floor.raisedZ(index));
+        AlgebraInteger reverseAns = (index < 0) ? floor : floor.raisedZ(index);
+        return new NumberRemainderPair<>(this, floor, reverseAns);
     }
     
     /**
@@ -870,7 +961,8 @@ public abstract class AbstractAlgebraInteger
             AlgebraInteger index
     ) {
         AlgebraInteger floor = rootRoundZ(index, RoundingMode.DOWN);
-        return new NumberRemainderPair<>(this, floor, floor.raisedZ(index));
+        AlgebraInteger reverseAns = index.isNegative() ? floor : floor.raisedZ(index);
+        return new NumberRemainderPair<>(this, floor, reverseAns);
     }
     
     /**

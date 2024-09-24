@@ -14,6 +14,7 @@ import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
 import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
 import org.cb2384.exactalgebra.objects.numbers.rational.RationalFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
+import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
@@ -51,7 +52,7 @@ public interface AlgebraInteger
     @Override
     @Pure
     default AlgebraInteger denominatorAI() {
-        return CacheInteger.CACHE.get(1).getFirst();
+        return CacheInteger.CACHE.getLast().getFirst();
     }
     
     /**
@@ -130,6 +131,15 @@ public interface AlgebraInteger
     }
     
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Pure
+    default @This AlgebraInteger roundQ() {
+        return this;
+    }
+    
+    /**
      * Essentially just returns this, since there is no rounding needed to go between an integer type
      * and a rational type. However, if {@code precision} is specified, and is smaller than
      * the length of the current precision, then the precision of the returned value
@@ -148,7 +158,7 @@ public interface AlgebraInteger
      */
     @Override
     @SideEffectFree
-    default Rational roundQ(
+    default AlgebraInteger roundQ(
             @Nullable Integer precision,
             @Nullable RoundingMode roundingMode
     ) {
@@ -157,11 +167,11 @@ public interface AlgebraInteger
         }
         
         MathContext context = new MathContext(
-                Math.max(precision, MAX_PRECISION),
+                Math.min(precision, MAX_PRECISION),
                 Objects.requireNonNullElse(roundingMode, DEFAULT_ROUNDING)
         );
-        
-        return roundQ(context);
+        BigDecimal thisBD = AbstractAlgebraInteger.buildBigDecimal(this, context);
+        return IntegerFactory.fromBigInteger(thisBD.toBigInteger());
     }
     
     /**
@@ -179,10 +189,15 @@ public interface AlgebraInteger
      */
     @Override
     @SideEffectFree
-    default Rational roundQ(
-            MathContext mathContext
+    default AlgebraInteger roundQ(
+            @Nullable MathContext mathContext
     ) {
-        return RationalFactory.fromBigDecimal(toBigDecimal(mathContext));
+        return NullnessUtils.returnDefaultIfNull(
+                mathContext,
+                c -> IntegerFactory.fromBigInteger(
+                        AbstractAlgebraInteger.buildBigDecimal(this, c).toBigInteger()),
+                this
+        );
     }
     
     /**
@@ -220,12 +235,8 @@ public interface AlgebraInteger
             @Nullable Integer precision,
             @Nullable RoundingMode roundingMode
     ) {
-        MathContext context = new MathContext(
-                (precision != null) ? Math.max(precision, MAX_PRECISION) : DEFAULT_PRECISION,
-                Objects.requireNonNullElse(roundingMode, DEFAULT_ROUNDING)
-        );
-        
-        return toBigDecimal(context);
+        return AbstractAlgebraInteger.buildBigDecimal(this,
+                AbstractAlgebraInteger.buildContext(precision, roundingMode));
     }
     
     /**
@@ -243,9 +254,10 @@ public interface AlgebraInteger
     @Override
     @SideEffectFree
     default BigDecimal toBigDecimal(
-            MathContext mathContext
+            @Nullable MathContext mathContext
     ) {
-        return new BigDecimal(toBigInteger());
+        BigDecimal result = toBigDecimal();
+        return NullnessUtils.returnDefaultIfNull(mathContext, result::round, result);
     }
     
     /**
@@ -416,6 +428,23 @@ public interface AlgebraInteger
     @Override
     @Pure
     int hashCode();
+    
+    /**
+     * Just like {@link #equiv(AlgebraNumber)}, but specialized for members of this specific interface.
+     *
+     * @implNote    The default implementation simply calls {@link #compareTo compareTo(}{@code
+     *              that}{@link #compareTo )&nbsp;}{@code == 0}.
+     *
+     * @param that  the value to check against this
+     *
+     * @return  true if these are equal in numerical value, otherwise false
+     */
+    @Pure
+    default boolean equiv(
+            AlgebraInteger that
+    ) {
+        return compareTo(that) == 0;
+    }
     
     /**
      * {@inheritDoc}

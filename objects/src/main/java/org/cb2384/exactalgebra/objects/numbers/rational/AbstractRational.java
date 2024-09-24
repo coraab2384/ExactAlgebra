@@ -15,6 +15,7 @@ import org.cb2384.exactalgebra.objects.numbers.integral.IntegerFactory;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.util.BigMathObjectUtils;
 import org.cb2384.exactalgebra.objects.Sigmagnum;
+import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 import org.cb2384.exactalgebra.util.corutils.functional.ObjectThenIntToObjectFunction;
 import org.cb2384.exactalgebra.util.corutils.functional.TriFunction;
 import org.cb2384.exactalgebra.util.corutils.ternary.ComparableSwitchSignum;
@@ -22,6 +23,7 @@ import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 /**
@@ -133,12 +135,10 @@ public abstract class AbstractRational
             return this;
         }
         
-        MathContext context = new MathContext(
-                Math.max(precision, MAX_PRECISION),
+        return roundQer(new MathContext(
+                Math.min(precision, MAX_PRECISION),
                 Objects.requireNonNullElse(roundingMode, DEFAULT_ROUNDING)
-        );
-        
-        return roundQ(context);
+        ));
     }
     
     /**
@@ -149,7 +149,7 @@ public abstract class AbstractRational
      *
      * @param   mathContext the {@link MathContext} to use; this mainly just determines if any precision
      *                      should be lost, as if the precision of the given context is higher than
-     *                      the precision of this value, nothing changes
+     *                      the precision of this value, or if {@code null}, nothing changes
      *
      * @return  a value that is either equivalent to this value, or is a less precise representation
      *          of this value
@@ -157,9 +157,35 @@ public abstract class AbstractRational
     @Override
     @SideEffectFree
     public Rational roundQ(
+            @Nullable MathContext mathContext
+    ) {
+        return NullnessUtils.returnDefaultIfNull(mathContext, this::roundQer, this);
+    }
+    
+    /**
+     * Actual implementation for {@link #roundQ(MathContext)}, but after the {@code null} check.
+     *
+     * @param   mathContext the {@link MathContext} to use; this mainly just determines if any precision
+     *                      should be lost, as if the precision of the given context is higher than
+     *                      the precision of this value, nothing changes
+     *
+     * @return  a value that is either equivalent to this value, or is a less precise representation
+     *          of this value
+     */
+    @SideEffectFree
+    protected final Rational roundQer(
             MathContext mathContext
     ) {
-        return RationalFactory.fromBigDecimal(toBigDecimal(mathContext));
+        if (isWhole()) {
+            BigDecimal result = new BigDecimal(numeratorBI()).round(mathContext);
+            return IntegerFactory.fromBigInteger(result.toBigInteger());
+        }
+        return getBMOIfNotWhole(
+                (num, den, mc) -> RationalFactory.fromBigIntegers(
+                        num.round(mc).toBigInteger(),
+                        den.round(mc).toBigInteger()
+                ), mathContext
+        );
     }
     
     /**
@@ -173,7 +199,7 @@ public abstract class AbstractRational
             MathContext mathContext
     ) {
         return isWhole()
-                ? new BigDecimal(numeratorBI(), mathContext)
+                ? new BigDecimal(numeratorBI()).round(mathContext)
                 : getBMOIfNotWhole(BigDecimal::divide, mathContext);
     }
     
@@ -249,16 +275,22 @@ public abstract class AbstractRational
      *
      * @implNote    This skeletal implementation relies on {@link #numeratorBI()} and {@link #denominatorBI()},
      *              as well as {@link #isWhole()}.
+     *
+     * @throws NumberFormatException    if {@code radix < }{@link Character#MIN_RADIX}
+     *                                  or {@code radix > }{@link Character#MAX_RADIX}
      */
     @Override
     @SideEffectFree
     public String toString(
-            int radix
+            @IntRange(from = Character.MIN_RADIX, to = Character.MAX_RADIX) int radix
     ) {
-        String numS = numeratorBI().toString(radix);
-        return isWhole() ?
-                numS :
-                numS + "/" + denominatorBI().toString(radix);
+        if ((Character.MIN_RADIX <= radix) && (radix <= Character.MAX_RADIX)) {
+            String numS = numeratorBI().toString(radix);
+            return isWhole() ?
+                    numS :
+                    numS + "/" + denominatorBI().toString(radix);
+        }
+        throw new NumberFormatException("radix " + radix + "is not an allowed radix!");
     }
     
     /**
@@ -355,17 +387,17 @@ public abstract class AbstractRational
         }
         
         if (isNegative()) {
-            return switch (compare(getFromCache(1))) {
-                case POSITIVE -> Sigmagnum.POSITIVE_SUP_ONE;
-                case ZERO -> Sigmagnum.POSITIVE_ONE;
-                case NEGATIVE -> Sigmagnum.POSITIVE_SUB_ONE;
+            return switch (compare(getFromCache(-1))) {
+                case POSITIVE -> Sigmagnum.NEGATIVE_SUP_MINUS_ONE;
+                case ZERO -> Sigmagnum.NEGATIVE_ONE;
+                case NEGATIVE -> Sigmagnum.NEGATIVE_SUB_MINUS_ONE;
             };
         }
         
-        return switch (compare(getFromCache(-1))) {
-            case POSITIVE -> Sigmagnum.NEGATIVE_SUP_MINUS_ONE;
-            case ZERO -> Sigmagnum.NEGATIVE_ONE;
-            case NEGATIVE -> Sigmagnum.NEGATIVE_SUB_MINUS_ONE;
+        return switch (compare(getFromCache(1))) {
+            case POSITIVE -> Sigmagnum.POSITIVE_SUP_ONE;
+            case ZERO -> Sigmagnum.POSITIVE_ONE;
+            case NEGATIVE -> Sigmagnum.POSITIVE_SUB_ONE;
         };
     }
     
@@ -674,7 +706,7 @@ public abstract class AbstractRational
      */
     @Override
     @SideEffectFree
-    public NumberRemainderPair<AlgebraInteger, ? extends Rational> quotientZWithRemainder(
+    public NumberRemainderPair<? extends AlgebraInteger, ? extends Rational> quotientZWithRemainder(
             Rational divisor
     ) {
         AlgebraInteger floor = quotientZ(divisor);
@@ -857,7 +889,8 @@ public abstract class AbstractRational
             int index
     ) {
         AlgebraInteger floor = rootRoundZ(index, RoundingMode.DOWN);
-        return new NumberRemainderPair<>(this, floor, floor.raised(index));
+        Rational reverseAns = floor.isZero() ? floor : floor.raised(index);
+        return new NumberRemainderPair<>(this, floor, reverseAns);
     }
     
     /**
@@ -875,7 +908,8 @@ public abstract class AbstractRational
             AlgebraInteger index
     ) {
         AlgebraInteger floor = rootRoundZ(index, RoundingMode.DOWN);
-        return new NumberRemainderPair<>(this, floor, floor.raised(index));
+        Rational reverseAns = floor.isZero() ? floor : floor.raised(index);
+        return new NumberRemainderPair<>(this, floor, reverseAns);
     }
     
 //    /**

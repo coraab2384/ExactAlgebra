@@ -62,10 +62,22 @@ public final class ArbitraryInteger
         return new ArbitraryInteger(value);
     }
     
+    public static AlgebraInteger valueOf(
+            BigInteger value
+    ) {
+        return IntegerFactory.fromBigInteger(value);
+    }
+    
     public static ArbitraryInteger valueOfStrict(
             long value
     ) {
         return new ArbitraryInteger(value);
+    }
+    
+    public static AlgebraInteger valueOf(
+            long value
+    ) {
+        return IntegerFactory.fromLong(value);
     }
     
     @Override

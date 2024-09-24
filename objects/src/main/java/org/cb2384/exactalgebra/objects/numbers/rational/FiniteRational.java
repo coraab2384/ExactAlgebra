@@ -129,8 +129,8 @@ public final class FiniteRational
      *
      * @return  a FiniteRational representing the given {@code numerator} and {@code denominator}
      *
-     * @throws ArithmeticException  if the {@code numerator} or {@code denominator} are too large,
-     *                              or if {@code denominator == 0}
+     * @throws IllegalArgumentException if the {@code numerator} or {@code denominator} are too large
+     *                                  when {@code strict == true}, or if {@code denominator == 0}
      */
     @SideEffectFree
     public static FiniteRational valueOfStrict(
@@ -151,7 +151,7 @@ public final class FiniteRational
      *
      * @return  a Rational representing the given {@code numerator} and {@code denominator}
      *
-     * @throws ArithmeticException  if {@code denominator == 0}
+     * @throws IllegalArgumentException if {@code denominator == 0}
      */
     @SideEffectFree
     public static Rational valueOf(
@@ -171,8 +171,8 @@ public final class FiniteRational
      *
      * @return  the built Rational
      *
-     * @throws ArithmeticException  if the {@code numerator} or {@code denominator} are too large
-     *                              when {@code strict == true}, or if {@code denominator == 0}
+     * @throws IllegalArgumentException if the {@code numerator} or {@code denominator} are too large
+     *                                  when {@code strict == true}, or if {@code denominator == 0}
      */
     @SideEffectFree
     private static Rational fromLongBuilder(
@@ -181,7 +181,7 @@ public final class FiniteRational
             boolean strict
     ) {
         if (denominator == 0) {
-            throw new ArithmeticException(DIV_0_EXC_MSG);
+            throw new IllegalArgumentException(DIV_0_EXC_MSG);
         }
         
         if (numerator < 0) {
@@ -197,7 +197,7 @@ public final class FiniteRational
             if (doesFit(numerator, denominator)) {
                 return new FiniteRational(numerator, denominator);
             }
-            throw new ArithmeticException("Overflow of bounds of "
+            throw new IllegalArgumentException("Overflow of bounds of "
                     + StringUtils.getIdealName(FiniteRational.class) + ". Consider using "
                     + StringUtils.getIdealName(ArbitraryRational.class) + " or factory instead");
         }
@@ -225,7 +225,7 @@ public final class FiniteRational
      *
      * @return  a Rational representing the given {@code numerator} and {@code denominator}
      *
-     * @throws ArithmeticException  if {@code denominator == 0}
+     * @throws IllegalArgumentException if {@code denominator == 0}
      */
     @SideEffectFree
     public static Rational valueOf(
@@ -245,14 +245,14 @@ public final class FiniteRational
      *
      * @return  a FiniteRational representing the given {@code numerator} and {@code denominator}
      *
-     * @throws ArithmeticException  if {@code denominator == 0}
+     * @throws IllegalArgumentException if {@code denominator == 0}
      */
     @SideEffectFree
-    public static Rational valueOfStrict(
+    public static FiniteRational valueOfStrict(
             @Unsigned int numerator,
             int denominator
     ) {
-        return fromIntBuilder(numerator, denominator, true);
+        return (FiniteRational) fromIntBuilder(numerator, denominator, true);
     }
     
     /**
@@ -265,7 +265,7 @@ public final class FiniteRational
      *
      * @return  the built Rational
      *
-     * @throws ArithmeticException  if {@code denominator == 0}
+     * @throws IllegalArgumentException if {@code denominator == 0}
      */
     @SideEffectFree
     private static Rational fromIntBuilder(
@@ -274,7 +274,7 @@ public final class FiniteRational
             boolean strict
     ) {
         if (denominator == 0) {
-            throw new ArithmeticException(DIV_0_EXC_MSG);
+            throw new IllegalArgumentException(DIV_0_EXC_MSG);
         }
         
         // We know this gcf will not need to be treated as unsigned,
@@ -570,7 +570,7 @@ public final class FiniteRational
     @Override
     @Pure
     public Signum signum() {
-        return Signum.valueOf(denominatorLongSigned());
+        return Signum.valueOf(numeratorPrim());
     }
     
     @Pure
@@ -600,6 +600,26 @@ public final class FiniteRational
         return (that instanceof FiniteRational thatFR)
                 ? compareTo(thatFR)
                 : super.compareTo(that);
+    }
+    
+    @Pure
+    public boolean equiv(
+            FiniteRational that
+    ) {
+        return value == that.value;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Pure
+    public boolean equiv(
+            Rational that
+    ) {
+        return (that instanceof FiniteRational thatFR)
+                ? equiv(thatFR)
+                : super.equiv(that);
     }
     
     /**

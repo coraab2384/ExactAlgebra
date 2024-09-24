@@ -47,6 +47,8 @@ public sealed class FiniteInteger
     @Serial
     private static final long serialVersionUID = 0xBE0A89B78FE0C0DAL;
     
+    private static final int LONG_MAX_LEN = Long.toString(Long.MAX_VALUE).length();
+    
     /**
      * {@code -}{@link Long#MAX_VALUE}, the lowest support {@code long} value, for the sake of symmetry.
      */
@@ -211,7 +213,7 @@ public sealed class FiniteInteger
             @Nullable Integer precision,
             @Nullable RoundingMode roundingMode
     ) {
-        if ((precision == null) || (precision >= Long.toString(Long.MAX_VALUE).length())) {
+        if ((precision == null) || (precision >= LONG_MAX_LEN)) {
             return this;
         }
         return valueOfStrict(toBigDecimal(precision, roundingMode).longValue());
@@ -225,7 +227,7 @@ public sealed class FiniteInteger
     public FiniteInteger roundQ(
             @Nullable MathContext mathContext
     ) {
-        if ((mathContext == null) || (mathContext.getPrecision() >= Long.toString(Long.MAX_VALUE).length())) {
+        if ((mathContext == null) || (mathContext.getPrecision() >= LONG_MAX_LEN)) {
             return this;
         }
         return valueOfStrict(toBigDecimal(mathContext).longValue());
@@ -248,8 +250,8 @@ public sealed class FiniteInteger
     public BigDecimal toBigDecimal(
             @Nullable MathContext mathContext
     ) {
-        BigDecimal res = BigDecimal.valueOf(value);
-        return NullnessUtils.returnDefaultIfNull(mathContext, res::round, res);
+        BigDecimal result = BigDecimal.valueOf(value);
+        return NullnessUtils.returnDefaultIfNull(mathContext, result::round, result);
     }
     
     /**
@@ -258,7 +260,10 @@ public sealed class FiniteInteger
     @Override
     @SideEffectFree
     public String toString(int radix) {
-        return Long.toString(value, radix);
+        if ((Character.MIN_RADIX <= radix) && (radix <= Character.MAX_RADIX)) {
+            return Long.toString(value, radix);
+        }
+        throw new NumberFormatException("radix " + radix + "is not an allowed radix!");
     }
     
     /**
@@ -543,7 +548,7 @@ public sealed class FiniteInteger
     public boolean canDivideBy(
             long divisor
     ) {
-        return value % divisor == 0;
+        return (divisor != 0) && (value % divisor == 0);
     }
     
     /**
@@ -555,7 +560,7 @@ public sealed class FiniteInteger
             BigInteger divisor
     ) {
         return BigMathObjectUtils.canBeLong(divisor, PrimMathUtils.IntegralBoundaryTypes.SHORTENED)
-                && canDivideBy(divisor.longValue());
+                && !BigMathObjectUtils.isZero(divisor) && canDivideBy(divisor.longValue());
     }
     
     /**
@@ -618,6 +623,19 @@ public sealed class FiniteInteger
         return (that instanceof FiniteInteger thatPI)
                 ? compareTo(thatPI)
                 : super.compareTo(that);
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Pure
+    public boolean equiv(
+            AlgebraInteger that
+    ) {
+        return (that instanceof FiniteInteger thatFR)
+                ? value == thatFR.value
+                : super.equiv(that);
     }
     
     /**
@@ -761,7 +779,10 @@ public sealed class FiniteInteger
             int index
     ) {
         FiniteInteger floor = rootRoundZ(index, RoundingMode.DOWN);
-        return new NumberRemainderPair<>(floor, (FiniteInteger) difference(floor.raisedZ(index)));
+        FiniteInteger reverseAns = (index < 0)
+                ? floor
+                : (FiniteInteger) floor.raisedZ(index);
+        return new NumberRemainderPair<>(this, floor, reverseAns);
     }
     
     /**
@@ -785,7 +806,10 @@ public sealed class FiniteInteger
             AlgebraInteger index
     ) {
         FiniteInteger floor = rootRoundZ(index, RoundingMode.DOWN);
-        return new NumberRemainderPair<>(floor, (FiniteInteger) difference(floor.raisedZ(index)));
+        FiniteInteger reverseAns = index.isNegative()
+                ? floor
+                : (FiniteInteger) floor.raisedZ(index);
+        return new NumberRemainderPair<>(this, floor, reverseAns);
     }
     
     /**

@@ -72,7 +72,7 @@ public final class ArbitraryRational
             BigInteger denominator
     ) {
         if (BigMathObjectUtils.isZero(denominator)) {
-            throw new ArithmeticException(DIV_0_EXC_MSG);
+            throw new IllegalArgumentException(DIV_0_EXC_MSG);
         }
         
         BigInteger gcf = numerator.gcd(denominator);
@@ -116,7 +116,7 @@ public final class ArbitraryRational
     ) {
         switch (denominator.signum()) {
             case 0:
-                throw new ArithmeticException(DIV_0_EXC_MSG);
+                throw new IllegalArgumentException(DIV_0_EXC_MSG);
             
             case -1:
                 numerator = numerator.negate();

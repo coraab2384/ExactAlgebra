@@ -1,6 +1,7 @@
 package org.cb2384.exactalgebra.objects.numbers.rational;
 
 import java.math.BigInteger;
+import java.math.MathContext;
 
 import org.cb2384.exactalgebra.objects.RationalField;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
@@ -184,6 +185,18 @@ public interface Rational
     default @This Rational roundQ() {
         return this;
     }
+    
+    /**
+     * Rounds this to a {@link Rational}, using the given {@code mathContext}
+     *
+     * @param mathContext   the {@link MathContext} to use; if {@code null} then it will be the
+     *                      same as {@link #roundQ()}
+     *
+     * @return  this, as a Rational, rounded according to the given {@link MathContext}
+     */
+    @Override
+    @SideEffectFree
+    Rational roundQ(@Nullable MathContext mathContext);
     
     /**
      * {@inheritDoc}
