@@ -11,6 +11,7 @@ import org.cb2384.exactalgebra.objects.pair.FunctionRemainderPair;
 import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
 import org.cb2384.exactalgebra.objects.pair.RemainderPair;
 import org.cb2384.exactalgebra.objects.relations.polynomial.Polynomial;
+import org.cb2384.exactalgebra.util.corutils.StringUtils;
 
 import org.checkerframework.dataflow.qual.*;
 
@@ -25,6 +26,8 @@ public sealed interface PairRank<T extends AlgebraObject<T>, R extends Rank<T, R
         return switch (pair) {
             case NumberRemainderPair<?, ?> numPair -> NumberPairRank.rankOf(numPair);
             case FunctionRemainderPair<?, ?> funcPair -> FunctionPairRank.rankOf(funcPair);
+            default -> throw new IllegalArgumentException("unrecognized "
+                    + StringUtils.getIdealName(RemainderPair.class) + " implementation");
         };
     }
     

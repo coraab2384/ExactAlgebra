@@ -12,52 +12,10 @@ import org.checkerframework.dataflow.qual.*;
 
 public enum ReservedSymbols
         implements Identifier<ReservedSymbols, String> {
-    COMMAND_KEY("\\"),
-    OBJECT_GROUP("(") {
+    COMMAND_KEY("\\\\"),
+    OBJECT_GROUP("\\(") {
         
-        private static final Set<String> secondarySymbols = Set.of(")");
-        
-        private static final Pattern secondaryPattern = Identifier.patternOrCompiler(secondarySymbols);
-        
-        @Override
-        @Pure
-        public final boolean reservedSecondary(
-                char toTest
-        ) {
-            return secondaryPattern.matcher(Character.toString(toTest)).matches();
-        }
-        
-        @Override
-        @Pure
-        public final boolean reservedSecondary(
-                int toTest
-        ) {
-            return secondaryPattern.matcher(Character.toString(toTest)).matches();
-        }
-        
-        @Override
-        @Pure
-        public final boolean reservedSecondary(
-                CharSequence toTest
-        ) {
-            return secondaryPattern.matcher(toTest).matches();
-        }
-        
-        @Override
-        @Pure
-        public final Set<String> secondaryIdentifier() {
-            return secondarySymbols;
-        }
-        
-        @Override
-        @SideEffectFree
-        public final Pattern secondaryPattern() {
-            return secondaryPattern;
-        }
-    },
-    LIST_GROUP("[") {
-        
-        private static final Set<String> secondarySymbols = Set.of("]");
+        private static final Set<String> secondarySymbols = Set.of("\\)");
         
         private static final Pattern secondaryPattern = Identifier.patternOrCompiler(secondarySymbols);
         
@@ -97,9 +55,51 @@ public enum ReservedSymbols
             return secondaryPattern;
         }
     },
-    ARG_GROUP("{") {
+    LIST_GROUP("\\[") {
         
-        private static final Set<String> secondarySymbols = Set.of("}");
+        private static final Set<String> secondarySymbols = Set.of("\\]");
+        
+        private static final Pattern secondaryPattern = Identifier.patternOrCompiler(secondarySymbols);
+        
+        @Override
+        @Pure
+        public final boolean reservedSecondary(
+                char toTest
+        ) {
+            return secondaryPattern.matcher(Character.toString(toTest)).matches();
+        }
+        
+        @Override
+        @Pure
+        public final boolean reservedSecondary(
+                int toTest
+        ) {
+            return secondaryPattern.matcher(Character.toString(toTest)).matches();
+        }
+        
+        @Override
+        @Pure
+        public final boolean reservedSecondary(
+                CharSequence toTest
+        ) {
+            return secondaryPattern.matcher(toTest).matches();
+        }
+        
+        @Override
+        @Pure
+        public final Set<String> secondaryIdentifier() {
+            return secondarySymbols;
+        }
+        
+        @Override
+        @SideEffectFree
+        public final Pattern secondaryPattern() {
+            return secondaryPattern;
+        }
+    },
+    ARG_GROUP("\\{") {
+        
+        private static final Set<String> secondarySymbols = Set.of("\\}");
         
         private static final Pattern secondaryPattern = Identifier.patternOrCompiler(secondarySymbols);
         

@@ -5,6 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.checkerframework.checker.nullness.qual.*;
+import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 /**
@@ -90,6 +91,29 @@ public final class StringUtils {
     }
     
     /**
+     * Splits a CharSequence into two strings; the first is only the first Code Point, and the second is
+     * all the rest of the input. A utility for, for example, capitalizing the first letter in something.
+     *
+     * @param toSplit   the string-type to split; works as a CharSequence for better flexibility
+     *
+     * @return  an array of length 2, with the first part being the first Code Point, and the other being
+     *          all the rest.
+     *
+     * @throws IllegalArgumentException if {@code toSplit} only has one or fewer Code Points
+     */
+    @SideEffectFree
+    public static @NonNull String@NonNull@ArrayLen(2)[] sliceFirstCodePoint(
+            CharSequence toSplit
+    ) {
+        if (toSplit.codePoints().count() < 2) {
+            throw new IllegalArgumentException("Input is too short!");
+        }
+        String input = toSplit.toString();
+        int sliceIndex = (input.codePointCount(0, 2) == 2) ? 1 : 2;
+        return new String[]{input.substring(0, sliceIndex), input.substring(sliceIndex)};
+    }
+    
+    /**
      * Turns a camelCase {@link CharSequence} into a CONSTANT_CASE String, with an underscore added in front
      * of every capital or every group of capitals.
      *
@@ -102,15 +126,21 @@ public final class StringUtils {
     public static @NonNull String to_CONSTANT_CASE(
             @NonNull CharSequence camelCase
     ) {
+        String input = camelCase.toString();
+        // This is supposed to grab a capital letter that is followed by lowercase
         Matcher matcher = Pattern.compile("(\\p{Lu}|\\p{Lt})(?<=\\p{Ll}\1|(\\p{Lu}|\\p{Ll})\1(?=\\p{Ll}))")
-                .matcher(camelCase);
+                .matcher(input);
         StringBuilder result = new StringBuilder();
-        while (!matcher.hitEnd()) {
-            if (matcher.find()) {
-                result.append( camelCase.subSequence(matcher.start(), matcher.end()) );
-            } else {
-                break;
+        if (matcher.find()) {
+            int startIndex = matcher.start();
+            result.append(input.substring(0, startIndex).toUpperCase());
+            while (matcher.find()) {
+                result.append("_").append(input.substring(startIndex, matcher.start()).toUpperCase());
+                startIndex = matcher.start();
             }
+            result.append("_").append(input.substring(startIndex).toUpperCase());
+        } else {
+            result.append(input.toUpperCase());
         }
         return result.toString();
     }
@@ -127,18 +157,22 @@ public final class StringUtils {
     public static @NonNull String toCamelCase(
             @NonNull CharSequence CONSTANT_CASE
     ) {
+        String input = CONSTANT_CASE.toString();
         Matcher matcher = Pattern.compile("_")
                 .matcher(CONSTANT_CASE);
         StringBuilder result = new StringBuilder();
-        while (!matcher.hitEnd()) {
-            if (matcher.find()) {
-                String substring = CONSTANT_CASE.subSequence(matcher.start(), matcher.end()).toString();
-                int secondIndex = (substring.codePointCount(0, 2) == 1) ? 2 : 1;
-                result.append(substring, 0, secondIndex)
-                        .append( substring.substring(secondIndex).toLowerCase() );
-            } else {
-                break;
+        if (matcher.find()) {
+            int startIndex = matcher.start();
+            result.append(input.substring(0, startIndex).toLowerCase());
+            while (matcher.find()) {
+                String[] word = sliceFirstCodePoint(input.substring(startIndex, matcher.start()));
+                result.append(word[0].toUpperCase()).append(word[1].toLowerCase());
+                startIndex = matcher.start();
             }
+            String[] word = sliceFirstCodePoint(input.substring(startIndex));
+            result.append(word[0].toUpperCase()).append(word[1].toLowerCase());
+        } else {
+            result.append(input.toLowerCase());
         }
         return result.toString();
     }

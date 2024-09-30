@@ -20,11 +20,6 @@ public sealed interface Identifier<I extends Enum<I> & Identifier<I, S>, S exten
         extends ComparableSwitchSignum<I>
         permits Utils, OpNames, ReservedNames, ReservedSymbols {
     
-    Set<CharSequence> ALL_IDENTIFIERS = getAll()
-            .map(Identifier::identifiers)
-            .flatMap(Set::stream)
-            .collect(Collectors.toUnmodifiableSet());
-    
     @Pure
     default boolean reserves(
             char toTest
@@ -204,6 +199,14 @@ public sealed interface Identifier<I extends Enum<I> & Identifier<I, S>, S exten
     private static Stream<Identifier<?, ?>> getAll() {
         return Arrays.stream(Identifier.class.getPermittedSubclasses())
                 .flatMap(c -> enumSetAllOf(c).stream());
+    }
+    
+    @SideEffectFree
+    static Set<CharSequence> allIdentifiers() {
+        return getAll()
+                .map(Identifier::identifiers)
+                .flatMap(Set::stream)
+                .collect(Collectors.toUnmodifiableSet());
     }
     
     @SideEffectFree

@@ -33,7 +33,7 @@ public sealed abstract class Command<O extends U, U extends AlgebraObject<U>>
         RAT,
         POLY;
         
-        public static final Set<String> UTIL_NAMES
+        public static final Set<String> RESERVED_NAMES
                 = (Set<String>) Identifier.identifiersFor( EnumSet.allOf(ReservedNames.class) );
         
         private static final Pattern COMPLETE_PATTERN
@@ -58,7 +58,7 @@ public sealed abstract class Command<O extends U, U extends AlgebraObject<U>>
         @Override
         @Pure
         public Set<String> enumIdentifiers() {
-            return UTIL_NAMES;
+            return RESERVED_NAMES;
         }
         
         @Override
@@ -81,7 +81,7 @@ public sealed abstract class Command<O extends U, U extends AlgebraObject<U>>
     static final MethodHandles.Lookup LOOKUP = MethodHandles.publicLookup();
     
     private static final Pattern DISALLOWED_NAMES
-            = Identifier.patternOrCompiler(Identifier.ALL_IDENTIFIERS);
+            = Identifier.patternOrCompiler(Identifier.allIdentifiers());
     
     final String source;
     

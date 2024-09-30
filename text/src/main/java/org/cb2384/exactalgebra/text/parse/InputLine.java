@@ -89,7 +89,7 @@ public final class InputLine {
         return switch (commandStart.symbolType()) {
             case COMMAND_KEY -> {
                 IndexWithDepth next = postProcessInput.higherKey(commandStart);
-                yield (next.symbolType() == ReservedSymbols.ARG_GROUP)
+                yield ((next != null) && (next.symbolType() == ReservedSymbols.ARG_GROUP))
                         ? fromArg(commandStart, (RangeWithDepth) next, false)
                         : fromNonArgCommand(commandStart);
             }

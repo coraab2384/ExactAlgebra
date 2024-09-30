@@ -1,5 +1,6 @@
 package org.cb2384.exactalgebra.text.parse;
 
+import java.io.Console;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -7,6 +8,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -14,17 +16,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SequencedMap;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.cb2384.exactalgebra.objects.AlgebraObject;
-import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
-import org.cb2384.exactalgebra.objects.pair.FunctionRemainderPair;
-import org.cb2384.exactalgebra.objects.pair.NumberRemainderPair;
-import org.cb2384.exactalgebra.objects.relations.AlgebraFunction;
 import org.cb2384.exactalgebra.objects.relations.polynomial.PolyRat;
-import org.cb2384.exactalgebra.objects.relations.polynomial.Polynomial;
 import org.cb2384.exactalgebra.text.Identifier;
 import org.cb2384.exactalgebra.text.opmanagement.FunctionRank;
 import org.cb2384.exactalgebra.text.opmanagement.NumberRank;
@@ -38,8 +36,6 @@ import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
 public final class Interfacer {
-    
-    private static final Pattern DISALLOWED_NAMES = Identifier.patternOrCompiler(Identifier.ALL_IDENTIFIERS);
     
     private static final SequencedMap<String, SavedAO<?, ?, ?>> SAVED =
             new LinkedHashMap<>(32, 0.75f, true);
@@ -63,15 +59,19 @@ public final class Interfacer {
     
     private @Nullable Path location = DEFAULT_LOCATION;
     
-    private final PrintWriter writer;
+    private final Consumer<String> writer;
+    
+    private final Supplier<String> reader;
     
     private SavedAO<?, ?, ?> lastResult;
     
     private Command<?, ?> lastCommand;
     
     public Interfacer(
-            PrintWriter writer
+            Consumer<String> writer,
+            Supplier<String> reader
     ) {
+        this.reader = reader;
         this.writer = writer;
     }
     
@@ -86,15 +86,15 @@ public final class Interfacer {
     ) {
         Command<?, ?> head = (lastCommand = new InputLine(input, this).parse());
         Object result = head.get();
+        if (ExecutionResult.SUCCESS.equals(result)) {
+            return null;
+        }
+        if (ExecutionResult.CLOSE.equals(result)) {
+            return Command.CLOSE_KEY_STRING;
+        }
         if (result instanceof AlgebraObject<?> object) {
             lastResult = SavedAO.asSavedAO(object);
             return null;
-        }
-        if (result.equals(ExecutionResult.SUCCESS)) {
-            return null;
-        }
-        if (result.equals(ExecutionResult.CLOSE)) {
-            return Command.CLOSE_KEY_STRING;
         }
         return result.toString();
     }
@@ -211,6 +211,7 @@ public final class Interfacer {
             oos.writeObject(SAVED);
             oos.flush();
             oos.close();
+            location = saveLocation;
             return null;
         } catch (IOException oldIOE) {
             CommandStateException newCSE = new CommandStateException(Command.IO_EXC_MSG);
@@ -252,6 +253,7 @@ public final class Interfacer {
                 obj = ois.readObject();
             }
             
+            this.location = location;
             return null;
         } catch (IOException oldIOE) {
             CommandStateException newCSE = new CommandStateException(Command.IO_EXC_MSG);
@@ -493,7 +495,7 @@ public final class Interfacer {
             String toPrint
     ) {
         try {
-            writer.println(toPrint);
+            writer.accept(toPrint);
         } catch (Exception suppressed) {
             throw new RuntimeException(suppressed);
         }
@@ -512,5 +514,15 @@ public final class Interfacer {
         EmptyStreamExc() {
             super("Loaded stream is empty/corrupted" + (char) 0x203D);
         }
+    }
+    
+    public void writeLine(
+            String line
+    ) {
+        writer.accept(line);
+    }
+    
+    public String readLine() {
+        return reader.get();
     }
 }

@@ -69,7 +69,7 @@ public enum OpNames
     OpNames(
             String secondName
     ) {
-        EXTERNAL_NAMES = Set.of(StringUtils.toCamelCase(name()).toLowerCase(), secondName);
+        EXTERNAL_NAMES = Set.of(StringUtils.toCamelCase(name()), secondName);
         pattern = Identifier.patternOrCompiler(EXTERNAL_NAMES);
     }
     

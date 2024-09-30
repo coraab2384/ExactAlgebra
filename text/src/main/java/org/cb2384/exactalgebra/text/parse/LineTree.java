@@ -63,9 +63,11 @@ final class LineTree
                 = new TreeMap<>(Comparator.comparingInt(a -> a[0]));
         
         placeAppearances(keyIndices);
-        
+        keyIndices.forEach((k, v) -> System.out.println(Arrays.toString(k) + ", " + v));
         populateAndCheckSymmetry(keyIndices);
-        
+        int size = size();
+        System.out.println(size);
+        forEach((k, v) -> System.out.println(k + ", " + v));
         finish();
     }
     
@@ -89,7 +91,9 @@ final class LineTree
             ReservedSymbols symbol
     ) {
         keyIndices.put(buildArrayIndex(match.start()), symbol);
-        keyIndices.put(buildArrayIndex(match.end()), ReservedSymbols.SPACE);
+        if (symbol != ReservedSymbols.COMMAND_KEY) {
+            keyIndices.put(buildArrayIndex(match.end()), ReservedSymbols.SPACE);
+        }
     }
     
     private static void placeCloser(
@@ -161,13 +165,17 @@ final class LineTree
                         .allMatch(Objects::isNull);
             }
         }
+        if (keyIndices.isEmpty()) {
+            throw CommandFormatException.forInputString(source);
+        }
         TripleArrayList lastOpeners = new TripleArrayList();
         boolean ignoreNextOpenerForLastOpeners = false;
         int currentDepth = 0;
         
         var keyIndexIter = keyIndices.entrySet().iterator();
         
-        for (var thisEntry = keyIndexIter.next(); keyIndexIter.hasNext();) {
+        while (keyIndexIter.hasNext()) {
+            var thisEntry = keyIndexIter.next();
             int[] thisKey = thisEntry.getKey();
             ReservedSymbols thisType = thisEntry.getValue();
             int grouperIndexOfThisType = GROUPERS.indexOf(thisType);
@@ -228,8 +236,6 @@ final class LineTree
                 }
                 put(newIndex, source.substring(thisKey[0]));
             }
-            
-            thisEntry = keyIndexIter.next();
         }
         
         if ((currentDepth != 0) || !lastOpeners.isNulled()) {
