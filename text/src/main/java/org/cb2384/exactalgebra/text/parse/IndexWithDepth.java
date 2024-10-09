@@ -7,6 +7,12 @@ import org.checkerframework.checker.index.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>An important part of {@link LineTree} and {@link InputLine}. The indices record not just the actual
+ * index in a string, but also what is found there, and how deeply-nested it is.</p>
+ *
+ * @author Corinne Buxton
+ */
 sealed interface IndexWithDepth
         extends ComparableSwitchSignum<IndexWithDepth> {
     

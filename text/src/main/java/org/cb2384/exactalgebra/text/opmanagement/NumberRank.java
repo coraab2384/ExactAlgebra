@@ -9,6 +9,11 @@ import org.cb2384.exactalgebra.objects.numbers.rational.Rational;
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>How complicated a number is, or how for removed from simple counting it is</p>
+ *
+ * @author Corinne Buxton
+ */
 public enum NumberRank
         implements Rank<AlgebraNumber, NumberRank> {
     NATURAL_1(AlgebraInteger.class),

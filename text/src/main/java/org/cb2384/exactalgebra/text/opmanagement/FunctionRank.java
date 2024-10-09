@@ -14,6 +14,15 @@ import org.cb2384.exactalgebra.objects.relations.polynomial.Polynomial;
 
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>A FunctionRank is composed of two parts. One is a {@link NumberRank}, and the other a
+ * {@link FunctionalType}, which is like a NumberRank but for functions. Combining them together
+ * yields a Rank that categorizes both the type of function as well as the complexity of their components
+ * or coefficients. A Polynomial of Rational coefficients can never be relied upon to give an integer answer,
+ * unlike one of integer coefficients, which is why both parts are needed to properly 'bound' their output</p>
+ *
+ * @author Corinne Buxton
+ */
 public final class FunctionRank
         implements Rank<Polynomial<?>, FunctionRank> {
     

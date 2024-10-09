@@ -13,6 +13,19 @@ import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>A Rank is an ({@link Enum}esque) object that indicates the 'complexity' of a result, or, that
+ * creates a hierarchy of results and indicates a highest possible output. Different implementing classes
+ * subdivide different fields or types of algebraic objects.</p>
+ *
+ * <p>The most-used two are {@link NumberRank}, followed by {@link FunctionRank}. {@link PairRank} also exists,
+ * which itself contains two implementations for number-based and function-based pairs.</p>
+ *
+ * @param <T>   The overarching type of algebraic object, such as {@link AlgebraNumber} for {@link NumberRank}
+ * @param <R>   The implementing rank class
+ *
+ * @author Corinne Buxton
+ */
 public sealed interface Rank<T extends AlgebraObject<T>, R extends Rank<T, R>>
         extends ComparableSwitchSignum<R>, Serializable
         permits FunctionRank, NumberRank, PairRank {

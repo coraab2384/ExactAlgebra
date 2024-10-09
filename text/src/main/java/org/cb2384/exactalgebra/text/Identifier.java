@@ -16,6 +16,18 @@ import org.cb2384.exactalgebra.util.corutils.ternary.ComparableSwitchSignum;
 
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>This interface is implemented by all enums that indicate types of names. It is used
+ * more like a parent class than an interface, with a lot of default methods; this is because all
+ * enums already must extent {@link Enum}, and multiple inheritance between multiple full classes is not possible.</p>
+ *
+ * <p>This class permits {@link ReservedSymbols}, {@link OpNames}, {@link Utils}, and {@link ReservedNames}</p>
+ *
+ * @param <I>   The implementing enum class
+ * @param <S>   The type of storage that the text is contained in; so far all Strings
+ *
+ * @author Corinne Buxton
+ */
 public sealed interface Identifier<I extends Enum<I> & Identifier<I, S>, S extends CharSequence>
         extends ComparableSwitchSignum<I>
         permits Utils, OpNames, ReservedNames, ReservedSymbols {

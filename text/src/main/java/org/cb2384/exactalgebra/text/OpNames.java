@@ -11,6 +11,12 @@ import org.cb2384.exactalgebra.util.corutils.StringUtils;
 
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>These constants enumerate the strings that indicate special types of commands. Specifically,
+ * these are operative commands, those that indicate mathematical operations</p>
+ *
+ * @author Corinne Buxton
+ */
 public enum OpNames
         implements Identifier<OpNames, String> {
     NEGATED("negate"),

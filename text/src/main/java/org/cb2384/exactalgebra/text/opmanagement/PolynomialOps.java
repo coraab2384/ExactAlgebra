@@ -14,6 +14,15 @@ import org.cb2384.exactalgebra.util.corutils.StringUtils;
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>These constants enumerate the polynomial operations (at least, those that are accessible through this
+ * interface system). They relate each operation to their recognized names and flags.
+ * Note that this is class where the enum constants are subclasses in their own right
+ * (so the result of {@link Enum#getClass()} and {@link Enum#getDeclaringClass()} would not
+ * be the same, for example).</p>
+ *
+ * @author Corinne Buxton
+ */
 public enum PolynomialOps
         implements AlgebraOp<Polynomial<?>, FunctionRank> {
     NEGATED(

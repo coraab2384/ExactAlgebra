@@ -21,6 +21,21 @@ import org.checkerframework.checker.signedness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>An individual command is a node in the chain of commands that any input invariably results in.
+ * Each command supplies a result to its parent, when called to do so, creating a possibly-bifrucating pipeline
+ * that can be recursively queried.</p>
+ *
+ * <p>Broadly, commands can be categorized as either {@link CreationCommand}, {@link OperativeCommand},
+ * or {@link UtilCommand}; however, this is only the beginning. Each of those have further subclasses, depending on,
+ * for example, the number of arguments a command has.</p>
+ *
+ * @param <O>   The maximal type of the result; the type that {@link #get()} returns
+ * @param <U>   The overarching type of {@link AlgebraObject}, such as
+ *              {@link org.cb2384.exactalgebra.objects.numbers.AlgebraNumber}
+ *
+ * @author Corinne Buxton
+ */
 public sealed abstract class Command<O extends U, U extends AlgebraObject<U>>
         implements Supplier<O>
         permits CreationCommand, OperativeCommand, UtilCommand {

@@ -3,7 +3,6 @@ package org.cb2384.exactalgebra.text.parse;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.cb2384.exactalgebra.objects.AlgebraObject;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;

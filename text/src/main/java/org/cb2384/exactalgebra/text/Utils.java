@@ -11,6 +11,12 @@ import org.cb2384.exactalgebra.util.corutils.StringUtils;
 
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>These constants enumerate the strings that indicate special types of commands. Specifically,
+ * these are utility commands, defined as being a command that does not actually do any math.</p>
+ *
+ * @author Corinne Buxton
+ */
 public enum Utils
         implements Identifier<Utils, String> {
     CREATE("new"),

@@ -10,6 +10,15 @@ import java.util.regex.Pattern;
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>These constants enumerate the strings that indicate fundamental grouping or command presence, or argument
+ * separation. Some of these are "groupers", which have secondary symbols as well. For example, for argument groups,
+ * '{' is a primary symbol, and '}' secondary. Note that this is class where the enum constants are subclasses
+ * in their own right (so the result of {@link Enum#getClass()} and {@link Enum#getDeclaringClass()} would not
+ * be the same, for example).</p>
+ *
+ * @author Corinne Buxton
+ */
 public enum ReservedSymbols
         implements Identifier<ReservedSymbols, String> {
     COMMAND_KEY("\\\\"),

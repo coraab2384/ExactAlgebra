@@ -14,6 +14,13 @@ import org.cb2384.exactalgebra.util.corutils.ternary.Signum;
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>These constants enumerate the operations for the real field (at least, those that are accessible through this
+ * interface system, which currently is mostly geared towards rational-based operations).
+ * They relate each operation to their recognized names and flags.</p>
+ *
+ * @author Corinne Buxton
+ */
 public enum RealFieldOps
         implements AlgebraOp<AlgebraNumber, NumberRank> {
     // Integer Ring ops
