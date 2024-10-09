@@ -78,9 +78,9 @@ public class Main {
         Interfacer instance;
         if (console != null) {
             PrintWriter writer = console.writer();
-            instance = new Interfacer(writer::println, console::readLine);
+            instance = Interfacer.getInstance(writer::println, console::readLine, null);
         } else {
-            instance = new Interfacer(System.out::println, Main::backupReader);
+            instance = Interfacer.getInstance(System.out::println, Main::backupReader, null);
         }
         runLoop(instance);
     }

@@ -47,7 +47,9 @@ public enum OpNames
     LOG_BASE("log", "logarithm"),
     LOG_BASE_REMAINDER("logBaseRemain", "logRemain", "logRemainder",
             "logarithmRemainder", "logarithmRemain"),
-    ROUND;
+    ROUND,
+    SCALE,
+    FACTOR;
     
     public static final Set<String> OP_NAMES
             = (Set<String>) Identifier.identifiersFor(EnumSet.allOf(OpNames.class));

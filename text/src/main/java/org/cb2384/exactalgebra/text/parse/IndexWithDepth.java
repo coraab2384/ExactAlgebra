@@ -21,7 +21,9 @@ sealed interface IndexWithDepth
     
     @Override
     @Pure
-    default int compareTo(IndexWithDepth o) {
+    default int compareTo(
+            IndexWithDepth o
+    ) {
         return Integer.compare(startInclusive(), o.startInclusive());
     }
     
@@ -40,10 +42,10 @@ sealed interface IndexWithDepth
         
         @SideEffectFree
         StartWithDepth(
-                @GTENegativeOne int@ArrayLen(3)[] startEndDepthArray,
+                @GTENegativeOne int@ArrayLen(5)[] startEndDepthArray,
                 ReservedSymbols startType
         ) {
-            this(startEndDepthArray[0], startType, startEndDepthArray[2]);
+            this(startEndDepthArray[0], startType, startEndDepthArray[4]);
         }
     }
     
@@ -56,10 +58,10 @@ sealed interface IndexWithDepth
         
         @SideEffectFree
         RangeWithDepth(
-                @NonNegative int@ArrayLen(3)[] startEndDepthArray,
+                @NonNegative int@ArrayLen(5)[] startEndDepthArray,
                 ReservedSymbols startType
         ) {
-            this(startEndDepthArray[0], startType, startEndDepthArray[2], startEndDepthArray[1]);
+            this(startEndDepthArray[0], startType, startEndDepthArray[4], startEndDepthArray[3]);
         }
     }
 }

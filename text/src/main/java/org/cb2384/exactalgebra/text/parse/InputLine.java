@@ -3,9 +3,9 @@ package org.cb2384.exactalgebra.text.parse;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
@@ -79,6 +79,7 @@ public final class InputLine {
     
     @SideEffectFree
     public Command<?, ?> parse() {
+        postProcessInput.forEach((k, v) -> System.out.println(k + ", " + v));
         return recursiveParse(postProcessInput.firstKey());
     }
     
@@ -87,16 +88,16 @@ public final class InputLine {
             IndexWithDepth commandStart
     ) {
         return switch (commandStart.symbolType()) {
-            case COMMAND_KEY -> {
-                IndexWithDepth next = postProcessInput.higherKey(commandStart);
-                yield ((next != null) && (next.symbolType() == ReservedSymbols.ARG_GROUP))
-                        ? fromArg(commandStart, (RangeWithDepth) next, false)
-                        : fromNonArgCommand(commandStart);
-            }
+            case COMMAND_KEY -> fromNonArgCommand(commandStart);
             case OBJECT_GROUP -> {
-                String number = postProcessInput.get(commandStart);
-                yield CreationCommand.numberCreationCommand(number, interfaceInstance,
-                        prune(number, ReservedSymbols.OBJECT_GROUP), null, null);
+                IndexWithDepth numberKey = postProcessInput.higherKey(commandStart);
+                String local = postProcessInput.get(commandStart);
+                if (numberKey.symbolType() != ReservedSymbols.SPACE) {
+                    throw excFact(local);
+                }
+                String number = postProcessInput.get(numberKey);
+                yield CreationCommand.numberCreationCommand(local, interfaceInstance,
+                        number, null, null);
             }
             case LIST_GROUP -> {
                 Stream<String> coefficients = postProcessInput.valuesSequentialFilteredByDepth(
@@ -104,23 +105,28 @@ public final class InputLine {
                         false,
                         IndexWithDepth.dummyIndex( ((RangeWithDepth) commandStart).endExclusive() ),
                         false,
-                        commandStart.depth(),
+                        commandStart.depth() + 1,
                         Signum.POSITIVE,
                         Boolean.FALSE
                 );
-                yield new FunctionCreationCommand<>(
-                        postProcessInput.get(commandStart),
-                        coefficients.map(s -> prune(s, ReservedSymbols.LIST_GROUP))
-                );
+                yield new FunctionCreationCommand<>(postProcessInput.get(commandStart), coefficients);
             }
             case ARG_GROUP -> {
                 RangeWithDepth rangeStart = (RangeWithDepth) commandStart;
                 int currentDepth = rangeStart.depth();
-                IndexWithDepth actualCommandStart = postProcessInput.keySet().stream()
-                        .filter(i -> (i.symbolType() == ReservedSymbols.COMMAND_KEY) && (i.depth() == currentDepth))
+                
+                Predicate<? super Entry<? extends IndexWithDepth, String>> criterion = e -> {
+                    IndexWithDepth key = e.getKey();
+                    return (key.symbolType() == ReservedSymbols.COMMAND_KEY) && (key.depth() == currentDepth);
+                };
+                LineTree subTree = postProcessInput.filterBy(criterion, rangeStart, Boolean.FALSE,
+                        postProcessInput.ceilingKey(rangeStart.endExclusive()), null);
+                IndexWithDepth actualCommandStart = subTree.keySet()
+                        .stream()
                         .findAny()
                         .orElseThrow(this::excFact);
-                yield fromArg(actualCommandStart, rangeStart, true);
+                boolean commandInsideArgs = actualCommandStart.depth() > rangeStart.depth();
+                yield fromArg(actualCommandStart, rangeStart, commandInsideArgs);
             }
             default -> throw excFact(postProcessInput.get(commandStart));
         };
@@ -130,7 +136,7 @@ public final class InputLine {
     private Command<?, ?> fromNonArgCommand(
             IndexWithDepth commandStart
     ) {
-        String commandString = prune(postProcessInput.get(commandStart), commandStart.symbolType());
+        String commandString = postProcessInput.get(commandStart);
         Identifier<?, ?> id = Identifier.firstMatchingIdentifier(commandString, this::excFact);
         if (id == Utils.PRINT) {
             return new UtilCommand.PrintRetrievedCommand(commandString, interfaceInstance);
@@ -149,15 +155,18 @@ public final class InputLine {
     ) {
         IndexWithDepth rangeEnd = postProcessInput.lowerKey(rangeStart.endExclusive());
         
-        int commandArgCountModifier = commandInsideArgs ? 3 : 2;
-        int argCount = postProcessInput.countByDepth(rangeStart, true,
-                rangeEnd, true, rangeStart.depth() + 1) - commandArgCountModifier;
+        int targetDepth = rangeStart.depth() + 1;
+        Predicate<? super Entry<? extends IndexWithDepth, String>> criterion = e -> {
+            IndexWithDepth key = e.getKey();
+            return (key.symbolType() != ReservedSymbols.COMMAND_KEY) && (key.depth() == targetDepth);
+        };
         
-        String commandString = prune(postProcessInput.get(commandStart), ReservedSymbols.COMMAND_KEY);
+        int argCount = postProcessInput.countBy(rangeStart, true,
+                rangeEnd, true, criterion);
+        
+        String commandString = postProcessInput.get(commandStart);
         String source = postProcessInput.get(rangeStart);
-        if (!commandInsideArgs) {
-            source = postProcessInput.get(commandStart) + source;
-        }
+        
         IndexWithDepth firstIndex = postProcessInput.higherKey(rangeStart);
         IndexWithDepth firstArgIndex = (firstIndex == commandStart)
                 ? postProcessInput.higherKey(firstIndex)
@@ -235,7 +244,7 @@ public final class InputLine {
             String source,
             Utils utilName
     ) {
-        String argString = prune(postProcessInput.get(argIndex), argIndex.symbolType());
+        String argString = postProcessInput.get(argIndex);
         return switch (utilName) {
             case CREATE -> CreationCommand.numberCreationCommand(source, interfaceInstance, argString,
                     null, null);
@@ -265,8 +274,8 @@ public final class InputLine {
             String source,
             Utils utilName
     ) {
-        String firstArgString = prune(postProcessInput.get(firstArgIndex), firstArgIndex.symbolType());
-        String secondArdString = prune(postProcessInput.get(secondArgIndex), secondArgIndex.symbolType());
+        String firstArgString = postProcessInput.get(firstArgIndex);
+        String secondArdString = postProcessInput.get(secondArgIndex);
         return switch (utilName) {
             case CREATE -> {
                 String name;
@@ -307,9 +316,9 @@ public final class InputLine {
             case PRINT -> new UtilCommand.PrintRetrievedCommand(
                     source,
                     interfaceInstance,
-                    prune(postProcessInput.get(firstArgIndex), firstArgIndex.symbolType()),
-                    prune(postProcessInput.get(secondArgIndex), secondArgIndex.symbolType()),
-                    prune(postProcessInput.get(thirdArgIndex), thirdArgIndex.symbolType())
+                    postProcessInput.get(firstArgIndex),
+                    postProcessInput.get(secondArgIndex),
+                    postProcessInput.get(thirdArgIndex)
             );
             case WRITE -> writeOrSaveCommand(false, source, firstArgIndex, secondArgIndex, thirdArgIndex);
             case SAVE -> writeOrSaveCommand(true, source, firstArgIndex, secondArgIndex, thirdArgIndex);
@@ -447,7 +456,7 @@ public final class InputLine {
             IndexWithDepth index = argIndices[i];
             ReservedSymbols type = index.symbolType();
             indexTypes[i] = type;
-            indexStrings[i] = prune(postProcessInput.get(index), type);
+            indexStrings[i] = postProcessInput.get(index);
         }
         
         return switch (length) {
@@ -735,8 +744,7 @@ public final class InputLine {
         }
         Command<?, AlgebraNumber> receiver = (Command<?, AlgebraNumber>) receiverTemp;
         String secondArgString = postProcessInput.get(roundTypeIndex);
-        Identifier<?, ?> secondArgId = Identifier.firstMatchingIdentifier(
-                prune(secondArgString, roundTypeIndex.symbolType()), this::excFact);
+        Identifier<?, ?> secondArgId = Identifier.firstMatchingIdentifier(secondArgString, this::excFact);
         if (thirdArgIndex == null) {
             if (secondArgIndex == null) {
                 if (secondArgId == ReservedNames.INT) {
@@ -800,7 +808,7 @@ public final class InputLine {
             IndexWithDepth@ArrayLenRange(from = 1, to = 4)... argIndices
     ) {
         Command<?, ?> receiver = recursiveParse(receiverIndex);
-        String secondArgString = prune(postProcessInput.get(argIndices[0]), argIndices[0].symbolType());
+        String secondArgString = postProcessInput.get(argIndices[0]);
         if (ReservedNames.ANS.enumReserves(secondArgString)) {
             if (receiver.getResultRank() instanceof NumberRank) {
                 boolean roundZ = intRoundTrueRatRoundFalse(secondArgString, commandString);
@@ -813,7 +821,7 @@ public final class InputLine {
                 Object roundArg = switch (argIndices.length) {
                     case 1 -> null;
                     case 2 -> {
-                        String roundString = prune(postProcessInput.get(argIndices[1]), argIndices[1].symbolType());
+                        String roundString = postProcessInput.get(argIndices[1]);
                         if (roundZ) {
                             yield getRoundingMode(roundString, commandString);
                         }
@@ -826,8 +834,8 @@ public final class InputLine {
                             throw excFact(commandString);
                         }
                         yield getMathContext(
-                                prune(postProcessInput.get(argIndices[1]), argIndices[1].symbolType()),
-                                prune(postProcessInput.get(argIndices[2]), argIndices[2].symbolType()),
+                                postProcessInput.get(argIndices[1]),
+                                postProcessInput.get(argIndices[2]),
                                 commandString
                         );
                     }
@@ -843,13 +851,13 @@ public final class InputLine {
             }
             throw excFact();
         }
-        String roundTypeString = prune(postProcessInput.get(argIndices[1]), argIndices[1].symbolType());
+        String roundTypeString = postProcessInput.get(argIndices[1]);
         if (receiver.getResultRank() instanceof NumberRank) {
             boolean roundZ = intRoundTrueRatRoundFalse(roundTypeString, commandString);
             Object roundArg = switch (argIndices.length) {
                 case 2 -> null;
                 case 3 -> {
-                    String roundString = prune(postProcessInput.get(argIndices[2]), argIndices[2].symbolType());
+                    String roundString = postProcessInput.get(argIndices[2]);
                     if (roundZ) {
                         yield getRoundingMode(roundString, commandString);
                     }
@@ -862,8 +870,8 @@ public final class InputLine {
                         throw excFact(commandString);
                     }
                     yield getMathContext(
-                            prune(postProcessInput.get(argIndices[2]), argIndices[2].symbolType()),
-                            prune(postProcessInput.get(argIndices[3]), argIndices[3].symbolType()),
+                            postProcessInput.get(argIndices[2]),
+                            postProcessInput.get(argIndices[3]),
                             commandString
                     );
                 }
@@ -944,7 +952,7 @@ public final class InputLine {
             @Nullable IndexWithDepth auxArgIndex
     ) {
         Command<?, ?> receiver = recursiveParse(receiverIndex);
-        String truncTypeString = prune(postProcessInput.get(truncationTypeIndex), truncationTypeIndex.symbolType());
+        String truncTypeString = postProcessInput.get(truncationTypeIndex);
         if (opName == OpNames.QUOTIENT_WITH_REMAINDER) {
             if (ReservedNames.INT.reserves(truncTypeString)) {
                 assert secondArgIndex != null;
@@ -988,7 +996,7 @@ public final class InputLine {
                 
                 Integer precision;
                 if (auxArgIndex != null) {
-                    String precString = prune(postProcessInput.get(auxArgIndex), auxArgIndex.symbolType());
+                    String precString = postProcessInput.get(auxArgIndex);
                     precision = parseInt(precString, commandString);
                 } else {
                     precision = null;
@@ -1013,7 +1021,7 @@ public final class InputLine {
             throw excFact();
         }
         
-        String secondArgString = prune(postProcessInput.get(secondArgIndex), secondArgIndex.symbolType());
+        String secondArgString = postProcessInput.get(secondArgIndex);
         if (receiver.getResultRank() instanceof NumberRank) {
             if (intRoundTrueRatRoundFalse(truncTypeString, commandString)) {
                 RealFieldOps op = switch (opName) {
@@ -1045,7 +1053,7 @@ public final class InputLine {
             
             Integer precision;
             if (auxArgIndex != null) {
-                String precString = prune(postProcessInput.get(auxArgIndex), auxArgIndex.symbolType());
+                String precString = postProcessInput.get(auxArgIndex);
                 precision = parseInt(precString, commandString);
             } else {
                 precision = null;
@@ -1172,7 +1180,7 @@ public final class InputLine {
         throw CommandFormatException.forInputString(preProcessInput);
     }
     
-    @SideEffectFree
+    /*@SideEffectFree
     private static String prune(
             String prunee,
             ReservedSymbols pruneTarget
@@ -1201,5 +1209,5 @@ public final class InputLine {
                     : result;
         }
         return result.trim();
-    }
+    }*/
 }

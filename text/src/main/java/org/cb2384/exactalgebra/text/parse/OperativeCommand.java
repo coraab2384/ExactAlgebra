@@ -2,6 +2,8 @@ package org.cb2384.exactalgebra.text.parse;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.cb2384.exactalgebra.objects.AlgebraObject;
 import org.cb2384.exactalgebra.objects.numbers.AlgebraNumber;
@@ -37,10 +39,11 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
     private OperativeCommand(
             String source,
             AlgebraOp<U, R> op,
-            Command<A, U> receiver
+            Command<A, U> receiver,
+            Function<Class<?>, MethodType> typeGetter
     ) {
         this(source, op, receiver,
-                getResultRank(op, (R) receiver.getResultRank(), null));
+                getResultRank(op, (R) receiver.getResultRank(), null), typeGetter);
     }
     
     @SideEffectFree
@@ -48,14 +51,15 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
             String source,
             AlgebraOp<U, R> op,
             Command<A, U> receiver,
-            R resultRankCeiling
+            R resultRankCeiling,
+            Function<Class<?>, MethodType> typeGetter
     ) {
         super(source, op.flags());
         this.op = op;
         this.receiver = receiver;
         this.resultRankCeiling = resultRankCeiling;
         try {
-            opHandle = getHandle();
+            opHandle = getHandle(typeGetter);
         } catch (IllegalAccessException | NoSuchMethodException passed) {
             // This is an unrecoverable occurrence, and should not happen with proper testing
             throw new RuntimeException(passed.getMessage(), passed);
@@ -75,9 +79,9 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
     }
     
     @SideEffectFree
-    MethodHandle getHandle()
-            throws IllegalAccessException, NoSuchMethodException {
-        
+    MethodHandle getHandle(
+            Function<Class<?>, MethodType> typeGetter
+    ) throws IllegalAccessException, NoSuchMethodException {
         Class<?> recieverClass = receiver.getResultRank().resultingClass();
         Class<?> resultType;
         if (flags.contains(OpFlag.OUTPUT_PAIR)) {
@@ -91,11 +95,8 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
             resultType = resultRankCeiling.resultingClass();
         }
         
-        return LOOKUP.findVirtual(recieverClass, op.internalName(), getMethodType(resultType));
+        return LOOKUP.findVirtual(recieverClass, op.internalName(), typeGetter.apply(resultType));
     }
-    
-    @SideEffectFree
-    abstract MethodType getMethodType(Class<?> resultType);
     
     @Override
     @Pure
@@ -112,7 +113,14 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
     @Override
     public O get() {
         try {
-            return (O) opHandle.invoke(getArgs());
+            Object[] args = getArgs();
+            AlgebraObject<?> result = (AlgebraObject<?>) switch (args.length) {
+                case 1 -> opHandle.invoke(args[0]);
+                case 2 -> opHandle.invoke(args[0], args[1]);
+                case 3 -> opHandle.invoke(args[0], args[1], args[2]);
+                default -> throw new RuntimeException("Number of arguments exceeds max; add new switch branches");
+            };
+            return (O) result;
         } catch (Throwable old) {
             CommandFormatException newCFE = excFact();
             newCFE.initCause(old);
@@ -121,6 +129,14 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
     }
     
     abstract Object[] getArgs();
+    
+    @SideEffectFree
+    private static MethodType methodTypeBiGetter(
+            Class<?> resultType,
+            Command<?, ?> secondary
+    ) {
+        return MethodType.methodType(resultType, secondary.getResultRank().resultingClass());
+    }
     
     static final class UnaryCommand<A extends U, O extends U, U extends AlgebraObject<U>, R extends Rank<U, R>>
             extends OperativeCommand<A, O, U, R> {
@@ -131,15 +147,7 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
                 AlgebraOp<U, R> op,
                 Command<A, U> receiver
         ) {
-            super(source, op, receiver);
-        }
-        
-        @Override
-        @SideEffectFree
-        MethodType getMethodType(
-                Class<?> resultType
-        ) {
-            return MethodType.methodType(resultType);
+            super(source, op, receiver, MethodType::methodType);
         }
         
         @Override
@@ -161,8 +169,12 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
                 Command<A, U> receiver,
                 Command<E, U> secondary
         ) {
-            super(source, op, receiver, OperativeCommand.getResultRank(
-                    op, (R) receiver.getResultRank(), secondary.getResultRank() ));
+            super(source,
+                    op,
+                    receiver,
+                    OperativeCommand.getResultRank(op, (R) receiver.getResultRank(), secondary.getResultRank()),
+                    c -> OperativeCommand.methodTypeBiGetter(c, secondary)
+            );
             this.secondary = secondary;
         }
         
@@ -170,14 +182,6 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
         @Pure
         @Unsigned int height() {
             return super.height() + secondary.height();
-        }
-        
-        @Override
-        @SideEffectFree
-        MethodType getMethodType(
-                Class<?> resultType
-        ) {
-            return MethodType.methodType(resultType, secondary.getResultRank().resultingClass());
         }
         
         @Override
@@ -196,8 +200,6 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
         
         private final @Nullable Object secondary;
         
-        private final Class<?> secondaryClass;
-        
         @SideEffectFree
         BinaryPrimCommand(
                 String source,
@@ -206,18 +208,9 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
                 @Nullable Object secondary,
                 Class<?> secondaryClass
         ) {
-            super(source, op, receiver);
+            super(source, op, receiver, c -> MethodType.methodType(c, secondaryClass));
             assert secondaryClass.isInstance(secondary);
             this.secondary = secondary;
-            this.secondaryClass = secondaryClass;
-        }
-        
-        @Override
-        @SideEffectFree
-        MethodType getMethodType(
-                Class<?> resultType
-        ) {
-            return MethodType.methodType(resultType, secondaryClass);
         }
         
         @Override
@@ -239,8 +232,13 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
                 Command<I, Polynomial<?>> receiver,
                 Command<N, AlgebraNumber> secondary
         ) {
-            super(source, op, receiver, OperativeCommand.getResultRank(
-                    op, (FunctionRank) receiver.getResultRank(), secondary.getResultRank() ));
+            super(source,
+                    op,
+                    receiver,
+                    OperativeCommand.getResultRank(op, (FunctionRank) receiver.getResultRank(),
+                            secondary.getResultRank() ),
+                    c -> OperativeCommand.methodTypeBiGetter(c, secondary)
+            );
             this.secondary = secondary;
         }
         
@@ -248,14 +246,6 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
         @Pure
         @Unsigned int height() {
             return super.height() + secondary.height();
-        }
-        
-        @Override
-        @SideEffectFree
-        MethodType getMethodType(
-                Class<?> resultType
-        ) {
-            return MethodType.methodType(resultType, secondary.getResultRank().resultingClass());
         }
         
         @Override
@@ -272,8 +262,6 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
         
         private final @Nullable Object third;
         
-        private final Class<?> thirdClass;
-        
         @SideEffectFree
         TrinaryCommand(
                 String source,
@@ -283,25 +271,20 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
                 @Nullable Object third,
                 Class<?> thirdClass
         ) {
-            super(source, op, receiver,OperativeCommand.getResultRank(
-                    op, (R) receiver.getResultRank(), secondary.getResultRank() ));
+            super(source,
+                    op,
+                    receiver,
+                    OperativeCommand.getResultRank(op, (R) receiver.getResultRank(), secondary.getResultRank()),
+                    c -> MethodType.methodType(c, secondary.getResultRank().resultingClass(), thirdClass)
+            );
             this.secondary = secondary;
             this.third = third;
-            this.thirdClass = thirdClass;
         }
         
         @Override
         @Pure
         @Unsigned int height() {
             return super.height() + secondary.height();
-        }
-        
-        @Override
-        @SideEffectFree
-        MethodType getMethodType(
-                Class<?> resultType
-        ) {
-            return MethodType.methodType(resultType, secondary.getResultRank().resultingClass(), thirdClass);
         }
         
         @Override
@@ -315,11 +298,7 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
         
         private final @Nullable Object secondary;
         
-        private final Class<?> secondaryClass;
-        
         private final @Nullable Object third;
-        
-        private final Class<?> thirdClass;
         
         @SideEffectFree
         TrinaryDoublePrimCommand(
@@ -331,19 +310,9 @@ abstract sealed class OperativeCommand<A extends U, O extends U, U extends Algeb
                 @Nullable Object third,
                 Class<?> thirdClass
         ) {
-            super(source, op, receiver);
+            super(source, op, receiver, c -> MethodType.methodType(c, secondaryClass, thirdClass));
             this.secondary = secondary;
-            this.secondaryClass = secondaryClass;
             this.third = third;
-            this.thirdClass = thirdClass;
-        }
-        
-        @Override
-        @SideEffectFree
-        MethodType getMethodType(
-                Class<?> resultType
-        ) {
-            return MethodType.methodType(resultType, secondaryClass, thirdClass);
         }
         
         @Override

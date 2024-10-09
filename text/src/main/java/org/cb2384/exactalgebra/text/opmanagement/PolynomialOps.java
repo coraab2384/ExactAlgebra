@@ -139,6 +139,7 @@ public enum PolynomialOps
         }
     },
     RAISED_Z(
+            OpNames.POWER,
             EnumSet.of(OpFlag.SECOND_ARG_PRIM, OpFlag.SECOND_ARG_PRIM_OPTION,
                     OpFlag.FUNCTIONAL, OpFlag.RELATIONAL)
     ) {

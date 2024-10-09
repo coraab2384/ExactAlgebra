@@ -1,15 +1,15 @@
 package org.cb2384.exactalgebra.text.parse;
 
-import static java.util.Map.Entry;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -17,7 +17,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,199 +58,285 @@ final class LineTree
     ) {
         source = line.trim();
         
-        SortedMap<@GTENegativeOne int@ArrayLen(3)[], ReservedSymbols> keyIndices
+        SortedMap<@GTENegativeOne int@ArrayLen(5)[], ReservedSymbols> keyIndices
                 = new TreeMap<>(Comparator.comparingInt(a -> a[0]));
         
         placeAppearances(keyIndices);
-        keyIndices.forEach((k, v) -> System.out.println(Arrays.toString(k) + ", " + v));
-        populateAndCheckSymmetry(keyIndices);
-        int size = size();
-        System.out.println(size);
-        forEach((k, v) -> System.out.println(k + ", " + v));
+        
+        new Populator(keyIndices).populateAndCheckSymmetry();
+        
         finish();
     }
     
     private void placeAppearances(
-            SortedMap<@GTENegativeOne int@ArrayLen(3)[], ReservedSymbols> keyIndices
+            SortedMap<@GTENegativeOne int@ArrayLen(5)[], ReservedSymbols> keyIndices
     ) {
-        for (ReservedSymbols symbol : ALL_BUT_SPACE) {
-            Matcher finder = symbol.asMatcher(source);
-            finder.results().forEach(m -> placeOpener(m, keyIndices, symbol));
+        final class Placer {
+            private ReservedSymbols symbol;
             
-            if (GROUPERS.contains(symbol)) {
-                finder = symbol.secondaryPattern().matcher(source);
-                finder.results().forEach(m -> placeCloser(m, keyIndices, symbol));
+            @Deterministic
+            private boolean putKey(
+                    @GTENegativeOne int@ArrayLen(5)[] key
+            ) {
+                ReservedSymbols old = keyIndices.remove(key);
+                keyIndices.put(key, symbol);
+                return old != symbol;
+            }
+            
+            @Deterministic
+            private boolean placeOpener(
+                    MatchResult match
+            ) {
+                assert GROUPERS.contains(symbol);
+                int end = match.end();
+                if (symbol == ReservedSymbols.OBJECT_GROUP) {
+                    keyIndices.putIfAbsent(dummyIndex(end), ReservedSymbols.SPACE);
+                } else {
+                    keyIndices.putIfAbsent(dummyIndex(end), ReservedSymbols.ARG_SEP);
+                }
+                return putKey(buildIndex(match.start(), end));
+            }
+            
+            @Deterministic
+            private boolean placeCloser(
+                    MatchResult match
+            ) {
+                assert GROUPERS.contains(symbol);
+                int end = match.end();
+                keyIndices.putIfAbsent(dummyIndex(end), ReservedSymbols.SPACE);
+                return putKey(new int[]{match.start(), end, 0, 0, -1});
+            }
+            
+            @Deterministic
+            private boolean placeMatch(
+                    MatchResult match
+            ) {
+                assert !GROUPERS.contains(symbol);
+                int end = match.end();
+                if (symbol != ReservedSymbols.COMMAND_KEY) {
+                    keyIndices.putIfAbsent(dummyIndex(end), ReservedSymbols.SPACE);
+                }
+                return putKey(buildIndex(match.start(), end));
             }
         }
-    }
-    
-    private static void placeOpener(
-            MatchResult match,
-            SortedMap<@GTENegativeOne int@ArrayLen(3)[], ReservedSymbols> keyIndices,
-            ReservedSymbols symbol
-    ) {
-        keyIndices.put(buildArrayIndex(match.start()), symbol);
-        if (symbol != ReservedSymbols.COMMAND_KEY) {
-            keyIndices.put(buildArrayIndex(match.end()), ReservedSymbols.SPACE);
+        Placer placer = new Placer();
+        for (ReservedSymbols symbol : ALL_BUT_SPACE) {
+            placer.symbol = symbol;
+            if (GROUPERS.contains(symbol)) {
+                symbol.asMatcher(source)
+                        .results()
+                        .forEachOrdered(placer::placeOpener);
+                symbol.secondaryPattern()
+                        .matcher(source)
+                        .results()
+                        .forEachOrdered(placer::placeCloser);
+            } else {
+                symbol.asMatcher(source)
+                        .results()
+                        .forEachOrdered(placer::placeMatch);
+            }
         }
-    }
-    
-    private static void placeCloser(
-            MatchResult match,
-            SortedMap<@GTENegativeOne int@ArrayLen(3)[], ReservedSymbols> keyIndices,
-            ReservedSymbols symbol
-    ) {
-        keyIndices.put(new int[]{match.start(), 0, -1}, symbol);
-        keyIndices.put(buildArrayIndex(match.end()), ReservedSymbols.SPACE);
+        keyIndices.forEach((k, v) -> System.out.println(Arrays.toString(k) + ", " + v));
     }
     
     @SideEffectFree
-    private static @GTENegativeOne int@ArrayLen(3)[] buildArrayIndex(
+    private static @GTENegativeOne int@ArrayLen(5)[] dummyIndex(
             @NonNegative int start
     ) {
-        return new int[]{start, -1, -1};
+        return new int[]{start, -1, -1, -1, -1};
     }
     
-    private void populateAndCheckSymmetry(
-            SortedMap<@GTENegativeOne int@ArrayLen(3)[], ReservedSymbols> keyIndices
+    @SideEffectFree
+    private static @GTENegativeOne int@ArrayLen(5)[] buildIndex(
+            @NonNegative int start,
+            @GTENegativeOne int end
     ) {
-        final class TripleArrayList extends ArrayList<@GTENegativeOne int[]@ArrayLen(3)[]> {
-            private static final int WIDTH = GROUPERS.size();
-            
-            private boolean add(
-                    @GTENegativeOne int@ArrayLen(3)[] index,
-                    ReservedSymbols grouperType
-            ) {
-                int[][] depthBox = new int[WIDTH][];
-                assert (index[2] == size()) && GROUPERS.contains(grouperType);
-                depthBox[GROUPERS.indexOf(grouperType)] = index;
-                return add(depthBox);
-            }
-            
-            private boolean place(
-                    @GTENegativeOne int@ArrayLen(3)[] index,
-                    ReservedSymbols grouperType
-            ) {
-                assert GROUPERS.contains(grouperType);
-                return switch (Signum.valueOf(size() - index[2])) {
-                    case POSITIVE -> {
-                        int[][] depthBox = get(index[2]);
-                        int typeIndex = GROUPERS.indexOf(grouperType);
-                        int[] old = depthBox[typeIndex];
-                        depthBox[typeIndex] = index;
-                        yield old == null;
-                    }
-                    case ZERO -> add(index, grouperType);
-                    case NEGATIVE -> throw CommandFormatException.forInputString(source);
-                };
-            }
-            
-            @SideEffectFree
-            private @GTENegativeOne int@ArrayLen(3)[] pull(
-                    ReservedSymbols grouperType,
-                    @GTENegativeOne int depth
-            ) {
-                int[][] depthBox = get(depth);
-                int typeIndex = GROUPERS.indexOf(grouperType);
-                int[] result = depthBox[typeIndex];
-                depthBox[typeIndex] = null;
-                return result;
-            }
-            
-            @Pure
-            private boolean isNulled() {
-                return parallelStream()
-                        .flatMap(Arrays::stream)
-                        .allMatch(Objects::isNull);
-            }
-        }
-        if (keyIndices.isEmpty()) {
-            throw CommandFormatException.forInputString(source);
-        }
-        TripleArrayList lastOpeners = new TripleArrayList();
-        boolean ignoreNextOpenerForLastOpeners = false;
-        int currentDepth = 0;
+        return new int[]{start, end, -1, -1, -1};
+    }
+    
+    private final class TripleArrayList
+            extends ArrayList<@GTENegativeOne int[]@ArrayLen(5)[]> {
         
-        var keyIndexIter = keyIndices.entrySet().iterator();
+        private static final int WIDTH = GROUPERS.size();
         
-        while (keyIndexIter.hasNext()) {
-            var thisEntry = keyIndexIter.next();
-            int[] thisKey = thisEntry.getKey();
-            ReservedSymbols thisType = thisEntry.getValue();
-            int grouperIndexOfThisType = GROUPERS.indexOf(thisType);
-            
-            if (grouperIndexOfThisType != -1) {
-                //If it is a closer
-                if (thisKey[1] == 0) {
-                    int[] lastKey = lastOpeners.pull(thisType, currentDepth);
-                    if ((--currentDepth < 0) || (lastKey == null)) {
-                        throw CommandFormatException.forInputString(source);
-                    }
-                    lastKey[1] = thisKey[0];
-                    IndexWithDepth newIndex = new RangeWithDepth(lastKey, thisType);
-                    if (keyIndexIter.hasNext()) {
-                        thisEntry = keyIndexIter.next();
-                        put(newIndex, source.substring(lastKey[0], thisEntry.getKey()[0]));
-                        continue;
-                    }
-                    
-                    put(newIndex, source.substring(lastKey[0]));
-                    
-                } else if (ignoreNextOpenerForLastOpeners) {
-                    thisKey[2] = currentDepth;
-                    ignoreNextOpenerForLastOpeners = false;
-                    
+        @Deterministic
+        private boolean add(
+                @GTENegativeOne int@ArrayLen(5)[] index,
+                ReservedSymbols type
+        ) {
+            assert GROUPERS.contains(type) && (index[4] == size());
+            int[][] depthBox = new int[WIDTH][];
+            depthBox[GROUPERS.indexOf(type)] = index;
+            return add(depthBox);
+        }
+        
+        @Deterministic
+        private boolean place(
+                @GTENegativeOne int@ArrayLen(5)[] index,
+                ReservedSymbols type
+        ) {
+            assert (type == ReservedSymbols.COMMAND_KEY) || GROUPERS.contains(type);
+            int depth = index[4];
+            return switch (Signum.valueOf(size() - depth)) {
+                case POSITIVE -> {
+                    int[][] depthBox = get(depth);
+                    int typeIndex = GROUPERS.indexOf(type);
+                    int[] old = depthBox[typeIndex];
+                    depthBox[typeIndex] = index;
+                    yield old == null;
+                }
+                case ZERO -> add(index, type);
+                case NEGATIVE -> throw CommandFormatException.forInputString(source);
+            };
+        }
+        
+        private @GTENegativeOne int@ArrayLen(5)[] pull(
+                ReservedSymbols type,
+                @NonNegative int depth
+        ) {
+            assert (type == ReservedSymbols.COMMAND_KEY) || GROUPERS.contains(type);
+            int[][] depthBox = get(depth);
+            int typeIndex = GROUPERS.indexOf(type);
+            int[] result = depthBox[typeIndex];
+            depthBox[typeIndex] = null;
+            return result;
+        }
+        
+        @Pure
+        private boolean isNulled() {
+            return parallelStream()
+                    .flatMap(Arrays::stream)
+                    .allMatch(Objects::isNull);
+        }
+    }
+    
+    private final class Populator {
+        
+        private final Iterator<Entry<@GTENegativeOne int@ArrayLen(5)[], ReservedSymbols>> keyIndexIter;
+        
+        private final TripleArrayList previousOpeners = new TripleArrayList();
+        
+        private Entry<@GTENegativeOne int@ArrayLen(5)[], ReservedSymbols> currentEntry;
+        
+        private @GTENegativeOne int@ArrayLen(5)[] currentKey;
+        
+        private ReservedSymbols currentSymbol;
+        
+        private int currentDepth = 0;
+        
+        @SideEffectFree
+        private Populator(
+                SortedMap<@GTENegativeOne int@ArrayLen(5)[], ReservedSymbols> keyIndices
+        ) {
+            if (keyIndices.isEmpty()) {
+                throw CommandFormatException.forInputString(source);
+            }
+            keyIndexIter = keyIndices.entrySet().iterator();
+        }
+        
+        private void populateAndCheckSymmetry() {
+            currentEntry = keyIndexIter.next();
+            boolean end = false;
+            while (!end) {
+                currentKey = currentEntry.getKey();
+                currentSymbol = currentEntry.getValue();
+                if (currentSymbol == ReservedSymbols.COMMAND_KEY) {
+                    end = putCommand();
+                } else if (currentKey[2] == 0) {
+                    end = putCloser();
+                } else if (GROUPERS.contains(currentSymbol)) {
+                    end = putOpener();
                 } else {
-                    thisKey[2] = currentDepth++;
-                    lastOpeners.place(thisKey, thisType);
+                    end = putNonGrouperOrArg();
                 }
-            } else if (thisType == ReservedSymbols.COMMAND_KEY) {
-                if (keyIndexIter.hasNext()) {
-                    thisEntry = keyIndexIter.next();
-                    if (thisEntry.getValue() == ReservedSymbols.ARG_GROUP) {
-                        thisKey[2] = currentDepth++;
-                        lastOpeners.place(thisKey, thisType);
-                        ignoreNextOpenerForLastOpeners = true;
-                    } else {
-                        thisKey[2] = currentDepth;
-                        put(
-                                new StartWithDepth(thisKey, thisType),
-                                source.substring(thisKey[0], thisEntry.getKey()[0])
-                        );
-                    }
-                    continue;
-                }
-                thisKey[2] = currentDepth;
-                put(
-                        new StartWithDepth(thisKey, thisType),
-                        source.substring(thisKey[0])
-                );
-            } else {
-                thisKey[2] = currentDepth;
-                IndexWithDepth newIndex = new StartWithDepth(thisKey, thisType);
-                if (keyIndexIter.hasNext()) {
-                    thisEntry = keyIndexIter.next();
-                    put(newIndex, source.substring(thisKey[0], thisEntry.getKey()[0]));
-                    continue;
-                }
-                put(newIndex, source.substring(thisKey[0]));
+            }
+            
+            if ((currentDepth != 0) || !previousOpeners.isNulled()) {
+                throw CommandFormatException.forInputString(source);
             }
         }
         
-        if ((currentDepth != 0) || !lastOpeners.isNulled()) {
-            throw CommandFormatException.forInputString(source);
+        @Deterministic
+        private boolean putCommand() {
+            assert currentSymbol == ReservedSymbols.COMMAND_KEY;
+            IndexWithDepth commandIndex
+                    = new StartWithDepth(currentKey[1], ReservedSymbols.COMMAND_KEY, currentDepth);
+            if (keyIndexIter.hasNext()) {
+                currentEntry = keyIndexIter.next();
+                ReservedSymbols nextSymbol = currentEntry.getValue();
+                put(commandIndex, source.substring(currentKey[1], currentEntry.getKey()[0]));
+                
+                if (nextSymbol == ReservedSymbols.ARG_GROUP) {
+                    currentKey[4] = currentDepth++;
+                    previousOpeners.place(currentKey, ReservedSymbols.ARG_GROUP);
+                    if (keyIndexIter.hasNext()) {
+                        currentEntry = keyIndexIter.next();
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
+            }
+            put(commandIndex, source.substring(currentKey[1]));
+            return true;
+        }
+        
+        @Deterministic
+        private boolean putOpener() {
+            assert GROUPERS.contains(currentSymbol);
+            currentKey[4] = currentDepth++;
+            previousOpeners.place(currentKey, currentSymbol);
+            return loopIterFinisher();
+        }
+        
+        @Deterministic
+        private boolean putCloser() {
+            assert GROUPERS.contains(currentSymbol) && (currentKey[3] == 0);
+            int[] previousOpener = previousOpeners.pull(currentSymbol, --currentDepth);
+            if ((currentDepth < 0) || previousOpener == null) {
+                throw CommandFormatException.forInputString(source);
+            }
+            previousOpener[2] = currentKey[0];
+            previousOpener[3] = currentKey[1];
+            put(
+                    new RangeWithDepth(previousOpener, currentSymbol),
+                    source.substring(previousOpener[0], previousOpener[3])
+            );
+            return loopIterFinisher();
+        }
+        
+        @Deterministic
+        private boolean putNonGrouperOrArg() {
+            assert !GROUPERS.contains(currentSymbol) && (currentSymbol != ReservedSymbols.COMMAND_KEY);
+            currentKey[4] = currentDepth;
+            IndexWithDepth key = new StartWithDepth(currentKey, currentSymbol);
+            if (keyIndexIter.hasNext()) {
+                currentEntry = keyIndexIter.next();
+                put(key, source.substring(currentKey[0], currentEntry.getKey()[0]));
+                return false;
+            }
+            put(key, source.substring(currentKey[0]));
+            return true;
+        }
+        
+        @Deterministic
+        private boolean loopIterFinisher() {
+            if (keyIndexIter.hasNext()) {
+                currentEntry = keyIndexIter.next();
+                return false;
+            }
+            return true;
         }
     }
     
     private void finish() {
-        int firstIndex = firstKey().startInclusive();
-        if (firstIndex != 0) {
-            put(
-                    new StartWithDepth(0, ReservedSymbols.SPACE, 0),
-                    source.substring(0, firstIndex)
-            );
+        IndexWithDepth lastKey = lastKey();
+        if (lastKey.startInclusive() == source.length()) {
+            remove(lastKey);
         }
+        
         replaceAll((k, v) -> v.trim());
+        entrySet().removeIf(e -> ReservedSymbols.ARG_SEP.asMatcher(e.getValue()).replaceAll("").isEmpty());
     }
     
     @Pure
@@ -282,7 +367,7 @@ final class LineTree
         return lowerKey(IndexWithDepth.dummyIndex(index));
     }
     
-    @SideEffectFree
+    /*@SideEffectFree
     private IndexWithDepth dummyIndex0Check(
             int index
     ) {
@@ -348,7 +433,7 @@ final class LineTree
     }
     
     @SideEffectFree
-    private static Predicate<Entry<? extends IndexWithDepth, ?>> grouperToOpener(
+    private static Predicate<Entry<? extends IndexWithDepth, String>> grouperToOpener(
             ReservedSymbols potentialGrouper
     ) {
         int grouperIndex = GROUPERS.indexOf(potentialGrouper);
@@ -356,11 +441,11 @@ final class LineTree
                 ? GROUPERS.get(grouperIndex - 1)
                 : potentialGrouper;
         return e -> e.getKey().symbolType() == toTest;
-    }
+    }*/
     
     @Pure
     @NonNegative int countBy(
-            Predicate<? super Entry<? extends IndexWithDepth, ? extends String>> toCount
+            Predicate<? super Entry<? extends IndexWithDepth, String>> toCount
     ) {
         return (int) entrySet()
                 .parallelStream()
@@ -370,7 +455,7 @@ final class LineTree
     
     @Pure
     @NonNegative int countBy(
-            Predicate<? super Entry<? extends IndexWithDepth, ? extends String>> toCount,
+            Predicate<? super Entry<? extends IndexWithDepth, String>> toCount,
             @Nullable IndexWithDepth start,
             @Nullable Boolean startInclusive,
             @Nullable IndexWithDepth end,
@@ -395,11 +480,11 @@ final class LineTree
             boolean startInclusive,
             IndexWithDepth end,
             boolean endInclusive,
-            Predicate<? super Entry<? extends IndexWithDepth, ? extends String>> toCount
+            Predicate<? super Entry<? extends IndexWithDepth, String>> toCount
     ) {
         return (int) subMap(start, startInclusive, end, endInclusive)
                 .entrySet()
-                .parallelStream()
+                .stream()
                 .filter(toCount)
                 .count();
     }
@@ -429,7 +514,7 @@ final class LineTree
     }
     
     @SideEffectFree
-    private static Predicate<Entry<? extends IndexWithDepth, ?>> keepByDepth(
+    private static Predicate<Entry<? extends IndexWithDepth, String>> keepByDepth(
             @NonNegative int depth,
             Signum direction,
             @Nullable Boolean inclusive
@@ -455,17 +540,16 @@ final class LineTree
     
     @SideEffectFree
     LineTree filterBy(
-            Predicate<? super Entry<? extends IndexWithDepth, ? extends String>> filterCriterion
+            Predicate<? super Entry<? extends IndexWithDepth, String>> filterCriterion
     ) {
-        return entrySet()
-                .parallelStream()
+        return entrySet().stream()
                 .filter(filterCriterion)
                 .collect(this::emptyCopy, Collectionz::put, Collectionz::putAllUnordered);
     }
     
     @SideEffectFree
     LineTree filterBy(
-            Predicate<? super Entry<? extends IndexWithDepth, ? extends String>> filterCriterion,
+            Predicate<? super Entry<? extends IndexWithDepth, String>> filterCriterion,
             @Nullable IndexWithDepth start,
             @Nullable Boolean startInclusive,
             @Nullable IndexWithDepth end,
@@ -492,10 +576,9 @@ final class LineTree
             boolean startInclusive,
             IndexWithDepth end,
             boolean endInclusive,
-            Predicate<? super Entry<? extends IndexWithDepth, ? extends String>> filterCriterion
+            Predicate<? super Entry<? extends IndexWithDepth, String>> filterCriterion
     ) {
         return filteredSequencialStream(start, startInclusive, end, endInclusive, filterCriterion)
-                .parallel()
                 .collect(this::emptyCopy, Collectionz::put, Collectionz::putAllUnordered);
     }
     
@@ -505,7 +588,7 @@ final class LineTree
             boolean startInclusive,
             IndexWithDepth end,
             boolean endInclusive,
-            Predicate<? super Entry<? extends IndexWithDepth, ? extends String>> filterCriterion
+            Predicate<? super Entry<? extends IndexWithDepth, String>> filterCriterion
     ) {
         return subMap(start, startInclusive, end, endInclusive)
                 .entrySet()

@@ -29,18 +29,32 @@ import org.cb2384.exactalgebra.text.opmanagement.NumberRank;
 import org.cb2384.exactalgebra.text.opmanagement.Rank;
 import org.cb2384.exactalgebra.text.parse.Command.ExecutionResult;
 import org.cb2384.exactalgebra.text.parse.Command.ReservedNames;
+import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 import org.cb2384.exactalgebra.util.corutils.StringUtils;
 
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>A somewhat-modified singleton. Unlike other singletons, it actually has arguments it takes upon construction,
+ * so there is a way to re-initialize it with new arguments. However, that is not intended to be a feature for
+ * normal use.</p>
+ *
+ * <p>This class handles the interfacing between the internals here and the outside world. Even when
+ * something else must interact with the outside world, for example, a print command being run,
+ * it does so through this class. This class also contains the store of saved objects over a runtime.</p>
+ *
+ * @author Corinne Buxton
+ */
 public final class Interfacer {
     
     private static final SequencedMap<String, SavedAO<?, ?, ?>> SAVED =
             new LinkedHashMap<>(32, 0.75f, true);
     
     private static final @Nullable Path DEFAULT_LOCATION;
+    
+    private static @MonotonicNonNull Interfacer INSTANCE;
     
     static {
         String defaultPath = System.getProperty("user.dir");
@@ -67,12 +81,26 @@ public final class Interfacer {
     
     private Command<?, ?> lastCommand;
     
-    public Interfacer(
+    private Interfacer(
             Consumer<String> writer,
             Supplier<String> reader
     ) {
         this.reader = reader;
         this.writer = writer;
+    }
+    
+    public static synchronized Interfacer getInstance(
+            Consumer<String> writer,
+            Supplier<String> reader,
+            @Nullable Boolean reset
+    ) {
+        if ((INSTANCE == null) || NullnessUtils.nullToFalse(reset)) {
+            return (INSTANCE = new Interfacer(writer, reader));
+        }
+        if (writer.equals(INSTANCE.writer) && reader.equals(INSTANCE.reader)) {
+            return INSTANCE;
+        }
+        throw new IllegalArgumentException("Either illegal state or illegal arguments");
     }
     
     public boolean namePresent(
@@ -304,7 +332,7 @@ public final class Interfacer {
             @IntRange(from = Character.MIN_RADIX, to = Character.MAX_RADIX) int radix
     ) {
         print(toPrint.toString(radix));
-        return null;
+        return ExecutionResult.SUCCESS;
     }
     
     Supplier<ExecutionResult> getPrinter(

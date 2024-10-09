@@ -329,10 +329,10 @@ public enum RealFieldOps
     
     @SideEffectFree
     RealFieldOps(
-            Set<OpFlag> flags,
+            EnumSet<OpFlag> unfinishedFlags,
             BiFunction<NumberRank, @PolyNull NumberRank, NumberRank> rankMap
     ) {
-        this(null, flags, rankMap);
+        this(null, Collections.unmodifiableSet(unfinishedFlags), rankMap);
     }
     
     @SideEffectFree
