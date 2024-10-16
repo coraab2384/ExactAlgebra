@@ -32,6 +32,12 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>A special type of {@link TreeMap}, with the primary feature being interactions between the
+ * {@link IndexWithDepth} keys and various sorting or submaps, as well as very specialized construction methods.</p>
+ *
+ * @author Corinne Buxton
+ */
 final class LineTree
         extends TreeMap<IndexWithDepth, String> {
     

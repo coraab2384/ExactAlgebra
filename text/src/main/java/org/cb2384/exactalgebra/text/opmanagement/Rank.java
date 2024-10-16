@@ -30,16 +30,44 @@ public sealed interface Rank<T extends AlgebraObject<T>, R extends Rank<T, R>>
         extends ComparableSwitchSignum<R>, Serializable
         permits FunctionRank, NumberRank, PairRank {
     
+    /**
+     * Yields the larger, as in higher-ranked, of the two.
+     *
+     * @implNote    The default implementation is simply {@link #compareTo(Object) compareTo(}{@code
+     *              that}{@link #compareTo(Object) )&nbsp;}{@code < 0 ? that : this}.
+     *
+     * @param that  the value to compare against this
+     *
+     * @return  {@code that} if and only if it is 'higher-ranked', otherwise this
+     */
     @Pure
     default R ceiling(
             R that
     ) {
-        return (compareTo(that) > 0) ? (R) this : that;
+        return (compareTo(that) < 0) ? that : (R) this;
     }
     
+    /**
+     * Yields the least-nested type interface that can cover the type of this rank. The type could cover
+     * things that are from higher ranks as well (the relationship is not 1-to-1).
+     *
+     * @return  The class object of the type that is guaranteed to cover this rank
+     */
     @Pure
     Class<?> resultingClass();
     
+    /**
+     * Maps a value to its rank
+     *
+     * @implNote    Each implementer or sub-interface carries its own {@code rankOf(T)} static method;
+     *              this one simply redirects to the appropriate one.
+     *
+     * @param value the {@link AlgebraObject} to get a rank for
+     *
+     * @return  the lowest rank of the appropriate type which covers {@code value}
+     *
+     * @param <T>   The specific overarching AlgebraObject type
+     */
     @SideEffectFree
     static <T extends AlgebraObject<T>> Rank<T, ?> rankOf(
             T value
@@ -53,12 +81,37 @@ public sealed interface Rank<T extends AlgebraObject<T>, R extends Rank<T, R>>
         };
     }
     
+    /**
+     * Creates a BiFunction object which, regardless of inputs, always returns this specific rank.
+     * The output could be written as a
+     *
+     * @return  effectively a function object for the lambda {@code (x, y) -> this}
+     */
     @SideEffectFree
     default BiFunction<@Nullable R, @Nullable R, R> constantReturningThis() {
         R thisR = (R) this;
         return (left, right) -> thisR;
     }
     
+    /**
+     * Generates a BiFunction which compares two Ranks and produces a result. The way the comparison
+     * is handled depends on the arguments here.
+     *
+     * @param useSecondArgCeiling       determines whether the ceiling of both inputs will be the subject
+     *                                  for the rest of the function, or if only the first will be used
+     * @param compResultForFirstOption  determines whether the value determined by the previous
+     *                                  parameter should be compared as {@code <, >} or {@code =}
+     * @param firstOption               the value to be returned if the comparison indicated in the
+     *                                  above parameter evaluates as {@code true}; if it is {@code null},
+     *                                  then the result that was compared to this will be used in its place
+     * @param secondOption              the value to be returned if the comparison indicated in the
+     *                                  above parameter evaluates as {@code false}; if it is {@code null},
+     *                                  then the result that was compared to this will be used in its place
+     *
+     * @return  The BiFunction object that performs the indicated comparisons
+     *
+     * @throws NullPointerException if both {@code firstOption} and {@code secondOption} are {@code null}
+     */
     @SideEffectFree
     default BiFunction<R, @PolyNull R, R> compareToThisAndThen(
             boolean useSecondArgCeiling,
@@ -67,7 +120,9 @@ public sealed interface Rank<T extends AlgebraObject<T>, R extends Rank<T, R>>
             @Nullable R secondOption
     ) {
         if (firstOption == null) {
-            assert secondOption != null;
+            if (secondOption == null) {
+                throw new NullPointerException("Both options cannot be null!");
+            }
             return switch (compResultForFirstOption) {
                 case POSITIVE:
                     if (useSecondArgCeiling) {
@@ -142,6 +197,19 @@ public sealed interface Rank<T extends AlgebraObject<T>, R extends Rank<T, R>>
         };
     }
     
+    /**
+     * Generates a BiFunction which compares two Ranks and produces a result. The way the comparison
+     * is handled depends on the arguments here.
+     *
+     * @param isUnary   determines if the returned object first compares its two inputs, or if
+     *                  it simply takes the left and discards the right
+     * @param floorRank if present, this is the minimum rank that the answer must have; if {@code null},
+     *                  no floor check is made
+     *
+     * @return  The BiFunction object that performs the indicated comparisons
+     *
+     * @param <R>   The specific Rank implementation in use
+     */
     @SideEffectFree
     static <R extends Rank<?, R>> BiFunction<R, @PolyNull R, R> simpleCeilingMap(
             boolean isUnary,

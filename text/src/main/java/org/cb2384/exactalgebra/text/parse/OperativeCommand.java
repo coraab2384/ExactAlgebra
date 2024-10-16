@@ -23,7 +23,7 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.checker.signedness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
-abstract sealed class OperativeCommand<A extends U, O extends U, U extends AlgebraObject<U>, R extends Rank<U, R>>
+sealed abstract class OperativeCommand<A extends U, O extends U, U extends AlgebraObject<U>, R extends Rank<U, R>>
         extends Command<O, U> {
     
     private final AlgebraOp<U, R> op;

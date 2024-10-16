@@ -1,14 +1,17 @@
 package org.cb2384.exactalgebra.text.parse;
 
+/**
+ * <p>Indicates a problem with the format of an inputted command</p>
+ *
+ * @author Corinne Buxton
+ */
 public final class CommandFormatException
         extends IllegalArgumentException {
     
     /**
      * Constructs a {@code NumberFormatException} with no detail message.
      */
-    public CommandFormatException() {
-        super();
-    }
+    public CommandFormatException() {}
     
     /**
      * Constructs a {@code NumberFormatException} with the
@@ -22,12 +25,6 @@ public final class CommandFormatException
         super(string);
     }
     
-    /**
-     * Factory method for making a {@code NumberFormatException}
-     * given the specified input which caused the error.
-     *
-     * @param   string  the input causing the error
-     */
     static CommandFormatException forInputString(
             String string
     ) {

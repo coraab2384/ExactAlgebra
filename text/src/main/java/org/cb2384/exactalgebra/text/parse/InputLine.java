@@ -34,6 +34,12 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>A processed line from user input; it contains a tree of the commands, ready to be run recursively from the out
+ * in using {@link #parse()} to get the first or 'head' command</p>
+ *
+ * @author Corinne Buxton
+ */
 public final class InputLine {
     
     private static final Set<OpNames> NON_REV_UNARY = Set.of(OpNames.NEGATED);
@@ -67,6 +73,17 @@ public final class InputLine {
     
     private final LineTree postProcessInput;
     
+    /**
+     * Builds the input line from the actual input line. The second argument is more akin to
+     * the {@link Interfacer being an enclosing class}. However, the resulting class file would
+     * be much too big, so it is captured as a constructor parameter instead.
+     *
+     * @param input             the actual input line
+     * @param interfaceInstance think of this as being the enclosing class instance if this class were a nested
+     *                          class in {@link Interfacer}
+     *
+     * @throws CommandFormatException   if {@code input} was not properly formatted
+     */
     @SideEffectFree
     public InputLine(
             String input,
@@ -77,6 +94,16 @@ public final class InputLine {
         postProcessInput = new LineTree(input.trim());
     }
     
+    /**
+     * At construction, a tree of strings is created, with hierarchical depths. This parses each
+     * 'node' into a being a {@link Command}, and returns the head node.
+     *
+     * @return  the node outermost or surface-depth command, the one that all other commands from this line
+     * are called by (or called by one that is called by this, etc...)
+     *
+     * @throws CommandFormatException   if the original input was not properly formatted, but in a way that
+     *                                  escaped the validation during construction
+     */
     @SideEffectFree
     public Command<?, ?> parse() {
         postProcessInput.forEach((k, v) -> System.out.println(k + ", " + v));

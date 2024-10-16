@@ -2,7 +2,6 @@ package org.cb2384.exactalgebra.text.parse;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -27,6 +26,17 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>A holder for an {@link AlgebraObject} which also holds important information about it. Specifically,
+ * the holder (a concrete subclass of this class) will contain information about the number such as
+ * what {@link Rank} it has.</p>
+ *
+ * @param <R>   the {@link Rank} for the contained type
+ * @param <S>   the specific type that this value is stored as
+ * @param <T>   the overarching {@link AlgebraObject} type
+ *
+ * @author Corinne Buxton
+ */
 public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObject<T>,
                 T extends AlgebraObject<T>>
         implements AlgebraObject<SavedAO<R, ?, T>>, Serializable {
@@ -40,9 +50,22 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
             Set<OpFlag> flags
     ) {
         this.type = type;
-        this.flags = Collections.unmodifiableSet(flags);
+        this.flags = Set.copyOf(flags);
     }
     
+    /**
+     * Constructs a concrete SavedAO for the given input. The input must be an {@link AlgebraNumber}
+     * or {@link AlgebraFunction}, or a {@link NumberRemainderPair} or {@link FunctionRemainderPair}.
+     * The class to use will always be the class from calling the appropriate {@link
+     * Rank#rankOf(AlgebraObject) rankOf} function on the input, and perhaps not the actual
+     * type that the answer had.
+     *
+     * @param input the value to be saved
+     *
+     * @return  the constructed SavedAO box for {@code input}
+     *
+     * @throws CommandStateException    if {@code input} is not one of the supported AlgebraObject types
+     */
     public static SavedAO<?, ?, ?> asSavedAO(
             AlgebraObject<?> input
     ) {
@@ -55,43 +78,75 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
         };
     }
     
+    /**
+     * return the actual stored value for this object
+     *
+     * @return  the value that this SavedAO saves
+     */
     @Pure
     public abstract S value();
     
+    /**
+     * return the rank of this object
+     *
+     * @return  the specific rank type of this SavedAO
+     */
     @Pure
     public R type() {
         return type;
     }
     
+    /**
+     * Yields an (immutable) set of flags regarding the value
+     *
+     * @return  relevant flags about this SavedAO
+     */
     @Pure
     public Set<OpFlag> flags() {
         return flags;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isZero() {
         return value().isZero();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isOne() {
         return value().isOne();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Pure
     public boolean isNegative() {
         return value().isNegative();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String toString() {
         return toString(10, (String[]) null);
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NumberFormatException    {@inheritDoc}
+     */
     @Override
     @SideEffectFree
     public String toString(
@@ -100,12 +155,31 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
         return toString(radix, (String[]) null);
     }
     
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NumberFormatException    {@inheritDoc}
+     */
     @Override
     public abstract String toString(
             @IntRange(from = Character.MIN_RADIX, to = Character.MAX_RADIX) int radix,
             String@Nullable... variables
     );
     
+    /**
+     * Prints this value in a format more amenable to printing the values as saved than normal
+     * {@link #toString}.
+     *
+     * @param name          the name to give this value
+     * @param separation    the amount of spaces between the name and the printed value
+     * @param radix         the radix for representation
+     * @param variable      for objects that use a variable (like functions), the variable to use
+     *
+     * @return  the formatted string
+     *
+     * @throws NumberFormatException    if {@code radix < }{@link Character#MIN_RADIX} or
+     *                                  {@code radix > }{@link Character#MAX_RADIX}
+     */
     @SideEffectFree
     public String print(
             String name,
@@ -135,7 +209,7 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
         return result;
     }
     
-    private sealed static abstract class SavedRP<V extends W, W extends T, T extends AlgebraObject<T>,
+    sealed static abstract class SavedRP<V extends W, W extends T, T extends AlgebraObject<T>,
                     R extends Rank<T, R>, P extends RemainderPair<?, ?, T, P>>
             extends SavedAO<PairRank<T, ?, ?, ?>, V, T> {
         
@@ -150,15 +224,32 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
             this.remainderPair = remainderPair;
         }
         
+        /**
+         * Yields the actual, direct RemainderPair object
+         *
+         * @return  the actual RemainderPair
+         */
         @SideEffectFree
         public abstract P remainderPair();
         
+        /**
+         * Since this is a Saved pair type, rather than the whole value, the value part of the
+         * {@link RemainderPair} type is returned here.
+         *
+         * @return  the value of the pair that this object saves
+         */
         @Override
         @Pure
         public V value() {
             return (V) remainderPair().value();
         }
         
+        /**
+         * Since this is a Saved pair type, the remainder part of the
+         * {@link RemainderPair} type is returned here.
+         *
+         * @return  the remainder of the pair that this object saves
+         */
         @Pure
         public W remainder() {
             return (W) remainderPair().remainder();
@@ -170,12 +261,36 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
         @Pure
         public abstract R remainderType();
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public boolean equiv(
                 SavedAO<PairRank<T, ?, ?, ?>, ?, T> that
         ) {
             return remainderPair.equiv(((SavedRP<?, ?, T, ?, P>) that).remainderPair);
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Pure
+        public int hashCode() {
+            return type.hashCode() + 7 * super.flags.hashCode() + 31 * remainderPair.hashCode();
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Pure
+        public boolean equals(
+                @Nullable Object obj
+        ) {
+            return (obj instanceof SavedRP<?, ?, ?, ?, ?> objSRP) && type.equals(objSRP.type)
+                    && remainderPair.equals(objSRP.remainderPair) && super.flags.equals(objSRP.flags());
         }
     }
     
@@ -203,12 +318,18 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
             this(value, NumberRank.rankOf(value));
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public N value() {
             return value;
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public boolean equiv(
@@ -217,13 +338,37 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
             return value.equiv((AlgebraNumber) that.value());
         }
         
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Pure
+        public int hashCode() {
+            return type.hashCode() + 7 * super.flags.hashCode() + 31 * value.hashCode() + 1;
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Pure
+        public boolean equals(
+                @Nullable Object obj
+        ) {
+            return (obj instanceof SavedNumber<?> objSN) && type.equals(objSN.type)
+                    && value.equals(objSN.value) && super.flags.equals(objSN.flags());
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @SideEffectFree
         public String toString(
                 @IntRange(from = Character.MIN_RADIX, to = Character.MAX_RADIX) int radix,
-                String @Nullable... variables
+                String@Nullable... variables
         ) {
-            return "Saved Number: " + value + " with type " + super.type;
+            return "Saved Number: " + value + " with type " + type;
         }
     }
     
@@ -280,24 +425,45 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
             return new SavedNumbRP<>((NumberRemainderPair<Q, R>) input);
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public NumberRemainderPair<Q, R> remainderPair() {
             return (NumberRemainderPair<Q, R>) super.remainderPair;
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public NumberRank valueType() {
-            return (NumberRank) super.type.valueRank();
+            return (NumberRank) type.valueRank();
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public NumberRank remainderType() {
-            return (NumberRank) super.type.remainderRank();
+            return (NumberRank) type.remainderRank();
         }
         
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Pure
+        public int hashCode() {
+            return super.hashCode() + 3;
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @SideEffectFree
         public String toString(
@@ -305,7 +471,7 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
                 String @Nullable... variables
         ) {
             return "Saved Pair: " + super.remainderPair.toString(radix, variables)
-                    + " with type " + super.type;
+                    + " with type " + type;
         }
     }
     
@@ -333,12 +499,18 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
             this(value, FunctionRank.rankOf(value));
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public F value() {
             return value;
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public boolean equiv(
@@ -347,13 +519,37 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
             return value.equiv((Polynomial<?>) that.value());
         }
         
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Pure
+        public int hashCode() {
+            return type.hashCode() + 7 * super.flags.hashCode() + 31 * value.hashCode() + 2;
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Pure
+        public boolean equals(
+                @Nullable Object obj
+        ) {
+            return (obj instanceof SavedFunction<?> objSF) && type.equals(objSF.type)
+                    && value.equals(objSF.value) && super.flags.equals(objSF.flags());
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @SideEffectFree
         public String toString(
                 @IntRange(from = Character.MIN_RADIX, to = Character.MAX_RADIX) int radix,
                 String @Nullable... variables
         ) {
-            return "Saved Function: " + value + " with type " + super.type;
+            return "Saved Function: " + value + " with type " + type;
         }
     }
     
@@ -413,24 +609,45 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
             return new SavedFuncRP<>((FunctionRemainderPair<Q, R>) input);
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public FunctionRemainderPair<Q, R> remainderPair() {
             return (FunctionRemainderPair<Q, R>) super.remainderPair;
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public FunctionRank valueType() {
-            return (FunctionRank) super.type.valueRank();
+            return (FunctionRank) type.valueRank();
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public FunctionRank remainderType() {
-            return (FunctionRank) super.type.remainderRank();
+            return (FunctionRank) type.remainderRank();
         }
         
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Pure
+        public int hashCode() {
+            return super.hashCode() + 4;
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @SideEffectFree
         public String toString(
@@ -438,7 +655,7 @@ public sealed abstract class SavedAO<R extends Rank<?, ?>, S extends AlgebraObje
                 String @Nullable... variables
         ) {
             return "Saved Pair: " + super.remainderPair.toString(radix, variables)
-                    + " with type " + super.type;
+                    + " with type " + type;
         }
     }
 }

@@ -19,7 +19,7 @@ import org.cb2384.exactalgebra.util.corutils.NullnessUtils;
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
-abstract sealed class CreationCommand<O extends U, U extends AlgebraObject<U>>
+sealed abstract class CreationCommand<O extends U, U extends AlgebraObject<U>>
         extends Command<O, U> {
     
     private final O value;

@@ -1,14 +1,18 @@
 package org.cb2384.exactalgebra.text.parse;
 
+/**
+ * <p>Indicates that the program is not currently in a state compatible with the given command.
+ * For example, a command referencing a last answer being used as the first command.</p>
+ *
+ * @author Corinne Buxton
+ */
 public final class CommandStateException
         extends IllegalStateException {
     
     /**
      * Constructs a {@code NumberFormatException} with no detail message.
      */
-    public CommandStateException() {
-        super();
-    }
+    public CommandStateException() {}
     
     /**
      * Constructs a {@code NumberFormatException} with the

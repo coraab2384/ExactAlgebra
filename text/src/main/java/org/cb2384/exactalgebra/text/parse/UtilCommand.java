@@ -15,7 +15,7 @@ import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.common.value.qual.*;
 import org.checkerframework.dataflow.qual.*;
 
-public sealed abstract class UtilCommand<O extends U, U extends AlgebraObject<U>>
+sealed abstract class UtilCommand<O extends U, U extends AlgebraObject<U>>
         extends Command<O, U> {
     
     private static final Set<OpFlag> FLAGS = Set.of(OpFlag.UTILITY);

@@ -40,20 +40,53 @@ public sealed abstract class Command<O extends U, U extends AlgebraObject<U>>
         implements Supplier<O>
         permits CreationCommand, OperativeCommand, UtilCommand {
     
+    /**
+     * <p>These are names that are specially reserved for specific meanings. They are not commands, and do not
+     * need the {@link org.cb2384.exactalgebra.text.ReservedSymbols#COMMAND_KEY} prepended. They are rather treated
+     * as names that, instead of referring to a previously-saved object, have a specific meaning.</p>
+     */
     public enum ReservedNames
             implements Identifier<ReservedNames, String> {
+        /**
+         * When taken as an argument for {@link org.cb2384.exactalgebra.text.Utils#PRINT} or
+         * {@link org.cb2384.exactalgebra.text.Utils#SAVE}, this prints or saves everything. Its use
+         * in any other context is a {@link CommandFormatException}.
+         */
         ALL,
+        /**
+         * In any context, this refers to the answer from the previously-executed command. The previous command
+         * must have been an {@link OperativeCommand} or one of the {@link UtilCommand}s that results in a returned,
+         * value (so, for example, not {@link org.cb2384.exactalgebra.text.Utils#SAVE}).
+         */
         ANS,
+        /**
+         * When determining a type of rounding, or a class of number, for relevant arguments, such as printing all
+         * integers
+         */
         INT,
+        /**
+         * When determining a type of rounding, or a class of number, for relevant arguments, such as printing all
+         * rationals
+         */
         RAT,
+        /**
+         * When determining a type of function, such as for printing all polynomials
+         */
         POLY;
         
+        /**
+         * The set of all names reserved under this enum
+         */
         public static final Set<String> RESERVED_NAMES
                 = (Set<String>) Identifier.identifiersFor( EnumSet.allOf(ReservedNames.class) );
         
         private static final Pattern COMPLETE_PATTERN
                 = Identifier.groupedPatternCompiler( Arrays.asList(ReservedNames.values()) );
         
+        /**
+         * The set of all names for this particular type (in this particular {@link Identifier} implementation,
+         * each set is in fact a singleton)
+         */
         public final Set<String> EXTERNAL_NAMES;
         
         private final Pattern pattern;
@@ -64,24 +97,36 @@ public sealed abstract class Command<O extends U, U extends AlgebraObject<U>>
             pattern = Identifier.patternOrCompiler(EXTERNAL_NAMES);
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public Set<String> identifiers() {
             return EXTERNAL_NAMES;
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public Set<String> enumIdentifiers() {
             return RESERVED_NAMES;
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public Pattern asPattern() {
             return pattern;
         }
         
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @Pure
         public Pattern enumPattern() {
@@ -89,6 +134,11 @@ public sealed abstract class Command<O extends U, U extends AlgebraObject<U>>
         }
     }
     
+    /**
+     * Used specifically in static nested class {@link ExecutionResult}, but put here in the enclosing class
+     * for easier access. This string in the execution result slot indicates that "quit"
+     * or a synonym has been called, and signals the program to quit.
+     */
     public static final String CLOSE_KEY_STRING = "\tCL0SE";
     
     static final String IO_EXC_MSG = "IO exception in saving or loading";
@@ -122,8 +172,8 @@ public sealed abstract class Command<O extends U, U extends AlgebraObject<U>>
             String toParse
     ) {
         return switch (toParse.toLowerCase()) {
-            case "true", "yes", "y" -> true;
-            case "false", "no", "n" -> false;
+            case "true", "yes", "y" -> Boolean.TRUE;
+            case "false", "no", "n" -> Boolean.FALSE;
             default -> null;
         };
     }

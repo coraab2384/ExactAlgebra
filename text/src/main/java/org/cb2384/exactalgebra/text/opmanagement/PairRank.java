@@ -15,6 +15,19 @@ import org.cb2384.exactalgebra.util.corutils.StringUtils;
 
 import org.checkerframework.dataflow.qual.*;
 
+/**
+ * <p>The {@link Rank} sub-interface for ranks for pair results, specifically {@link RemainderPair} types.</p>
+ *
+ * <p>The two implementations are {@link NumberPairRank} for {@link NumberRemainderPair} and
+ * {@link FunctionPairRank} for {@link FunctionRemainderPair}.</p>
+ *
+ * @param <T>   The type of {@link AlgebraObject} contained within the pair
+ * @param <R>   The specific {@link Rank} type of {@code T}
+ * @param <E>   The implementing class of this interface
+ * @param <P>   The specific {@link RemainderPair} implementation
+ *
+ * @author Corinne Buxton
+ */
 public sealed interface PairRank<T extends AlgebraObject<T>, R extends Rank<T, R>,
                 E extends PairRank<T, R, E, P>, P extends RemainderPair<?, ?, T, P>>
         extends Rank<P, E> {
